@@ -1,3 +1,13 @@
+/* ----------------------------- MNI Header -----------------------------------
+@NAME       : miwritevar.c (standalone)
+@DESCRIPTION: Write values into a variable in a MINC file.
+@GLOBALS    : 
+@CREATED    : June 1993, Mark Wolforth
+@MODIFIED   : 
+@VERSION    : $Id: miwritevar.c,v 1.4 1997-10-21 15:50:58 greg Rel $
+              $Name:  $
+---------------------------------------------------------------------------- */
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -255,20 +265,3 @@ int main (int argc, char *argv[])
     
     ncclose (file_CDF);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

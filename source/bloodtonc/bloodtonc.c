@@ -1,3 +1,14 @@
+/* ----------------------------- MNI Header -----------------------------------
+@NAME       : bloodtonc.c (standalone)
+@DESCRIPTION: Create a "blood netCDF" (BNC) file from a Fortran 
+              formatted CNT file.
+@GLOBALS    : 
+@CREATED    : June 1993, Mark Wolforth
+@MODIFIED   : 
+@VERSION    : $Id: bloodtonc.c,v 1.9 1997-10-21 15:55:05 greg Rel $
+              $Name:  $
+---------------------------------------------------------------------------- */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

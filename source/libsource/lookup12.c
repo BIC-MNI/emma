@@ -1,9 +1,15 @@
-/*
- * lookup12.c - source file containing the linear interpolation functions
- * Lookup1 and Lookup2.  Intended specifically for use by CMEX routine
- * lookup, but can certainly be used by any general C program (as long
- * as a global variable NaN is defined).
- */
+/* ----------------------------- MNI Header -----------------------------------
+@NAME       : lookup12.c
+@DESCRIPTION: Provides the linear interpolation functions Lookup1 and
+              Lookup2.  Intended specifically for use by CMEX routine
+              lookup, but can certainly be used by any general C program
+              (as long as a global variable NaN is defined).
+@GLOBALS    : NaN (must be defined elsewhere)
+@CREATED    : Aug 1993, Greg Ward
+@MODIFIED   : 
+@VERSION    : $Id: lookup12.c,v 1.3 1997-10-21 15:53:06 greg Rel $
+              $Name:  $
+---------------------------------------------------------------------------- */
 
 extern double NaN;
 

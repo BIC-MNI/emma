@@ -1,3 +1,14 @@
+/* ----------------------------- MNI Header -----------------------------------
+@NAME       : bldtobnc.c (standalone)
+@DESCRIPTION: Creates a BNC file from a bld file, for use with blood data
+              acquired on the old automatic sampler.
+@GLOBALS    : 
+@CREATED    : Aug 1994, Mark Wolforth
+@MODIFIED   : 
+@VERSION    : $Id: bldtobnc.c,v 1.4 1997-10-21 15:56:32 greg Rel $
+              $Name:  $
+---------------------------------------------------------------------------- */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -384,5 +395,3 @@ void main (int argc, char *argv[])
     ncclose (file_CDF);
     fclose (in_file);
 }    
-
-
