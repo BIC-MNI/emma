@@ -14,7 +14,7 @@ function ImHandle = openimage (filename, mode)
 % uniquely named temporary directory.  The filename returned by
 % getimageinfo (handle, 'filename') in this case will be the name of
 % the temporary, uncompressed file.  When the file is closed with
-% closeimage, this temporary file will be deleted.
+% closeimage, this temporary file (and its directory) will be deleted.
 % 
 % The value returned by openimage is a handle to be passed to
 % getimages, putimages, getimageinfo, etc.
@@ -139,8 +139,26 @@ if (strcmp (filename(len-2:len), '.gz') | ...
    else
       lastslash = slashes (length (slashes));
    end
-
-   newname = [tempdir filename((lastslash+1):(lastdot-1))];
+   
+   % Create a (hopefully) unique temporary directory -- only way
+   % there'll be a clash is if another MATLAB does an openimage
+   % on a compressed file within the same second as this one.
+   % Note that checking the directory with fopen might not be
+   % portable!  Works on IRIX and SunOS, at least.
+   
+   tdir = [tempdir 'emma' int2str(clock)];
+   id = fopen (tdir, 'r');		% try to open the temp dir
+   if (id ~= -1)			% if it succeeded, that's bad! means
+      fclose (id);			% the dir already exists
+      error (['Temporary directory ' tdir ' already exists']);
+   end
+   unix (['mkdir ' tdir]);
+   
+   % Now generate the name of the temporary file, and uncompress to it.
+   % If the file already exists, that's an internal error -- we
+   % shouldn't make it past the directory check above!
+   
+   newname = [tdir '/' filename((lastslash+1):(lastdot-1))];
    if (exist (newname) ~= 2)
       fprintf ('(uncompressing...');
       status = unix (['gunzip -c ' filename ' > ' newname]);
@@ -148,6 +166,8 @@ if (strcmp (filename(len-2:len), '.gz') | ...
 	 error (['Error trying to uncompress file ' filename]);
       end
       fprintf (')\n');
+   else
+      error (['INTERNAL ERROR - file ' newname ' exists in new directory?!?']);
    end
 
    filename = newname;
