@@ -73,11 +73,12 @@ A = (mean (PET (find(mask),:)))' * 37 / 1.05;
 % Initialise the weighting functions w3 and w2; 
 % w3=sqrt(midftimes) and w2=midftimes. 
 
-w3 = sqrt (midftimes);
 w2 = midftimes;
+w3 = sqrt (midftimes);
 
-PET_int2 = trapz (midftimes, PET' .* (w2 * ones(1,length(PET))))';
-PET_int3 = trapz (midftimes, PET' .* (w3 * ones(1,length(PET))))';
+ImLen = size(PET,1);
+PET_int2 = trapz (MidFTimes, PET' .* (w2 * ones(1,ImLen)))';
+PET_int3 = trapz (MidFTimes, PET' .* (w3 * ones(1,ImLen)))';
 
 % Apply a simple mask to eliminate data outside of the brain.
 
@@ -136,13 +137,11 @@ k2 = lookup(rR, k2_sorted, rL);
 
 %=========================================================
 if (progress); disp ('Calculating K1 image'); end
-[im_size, num_im] = size(PET);
 
 % Note that PET_int1 = PET integrated across frames, with weighting
-% function w1 = ones.  However, we haven't already calculated w3*PET
-% integrated, so we have to do it here.
+% function w1 = ones.
 
-K1_numer = (Ca_int3*PET_int1) - (Ca_int1 * (PET*(w3.*FrameLengths)));
+K1_numer = ((Ca_int3*PET_int1) - (Ca_int1 * PET_int3));
 K1_denom = (Ca_int3 * lookup(k2_lookup,conv_int1,k2)) - ...
            (Ca_int1 * lookup(k2_lookup,conv_int3,k2));
 K1 = K1_numer ./ K1_denom;
