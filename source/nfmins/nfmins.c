@@ -17,9 +17,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include "mex.h"
-
-#define TRUE 1
-#define FALSE 0
+#include "emmageneral.h"
 
 #define min(A, B) ((A) < (B) ? (A) : (B))
 #define max(A, B) ((A) > (B) ? (A) : (B))
@@ -45,8 +43,6 @@
 #define GAMMA              2
 
 #define FUNCVAL            (numvars)
-
-typedef int Boolean;
 
 Boolean progress;
 char    *ErrMsg ;         /*

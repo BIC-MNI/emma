@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "minc.h"
+#include "emmageneral.h"
 #include "bloodtonc.h"
 
 #define PROGNAME        "bloodtonc"
@@ -9,8 +10,6 @@
 #define IN_FILE         argv[1]
 #define OUT_FILE        argv[2]
 
-#define TRUE            1
-#define FALSE           0
 #define FIRST_LINE      0
 #define SECOND_LINE     1
 #define THIRD_LINE      2
@@ -19,7 +18,6 @@
 
 #define MAX_SAMPLES     50
 
-typedef int Boolean;
 typedef struct HEADER
     {
 	char first_name[30];
