@@ -532,7 +532,13 @@ int GetAttValue (int CDF, int nargin, Matrix *InArgs[], int *CurInArg,
 @GLOBALS    : ErrMsg
 @CALLS      : CMEX, NetCDF library functions
 @CREATED    : 93-9-29, Greg Ward
-@MODIFIED   : 
+@MODIFIED   : 94-10-28, Mark Wolforth Fixed a bug in the orientation
+                 calculation, and generally cleaned things up.
+                 Previously, the program would only handle 2D (2
+                 spatial dimensions) data if it was stored transverse
+                 (x and y dimensions only).  Since 2D data is also
+                 sometimes stored in either coronal or transverse
+                 orientation, the program would bomb.
 ---------------------------------------------------------------------------- */
 /* ARGSUSED */
 int GetOrientation (int CDF, int nargin, Matrix *InArgs[], int *CurInArg,
@@ -548,53 +554,63 @@ int GetOrientation (int CDF, int nargin, Matrix *InArgs[], int *CurInArg,
    int       zdim, ydim, xdim;          /* NetCDF dimension ID's corresponding 
                                            to MIzspace, ... */
 
-   /* Find the dimension *id*'s for the image variable -- these are NOT
+   /*
+    * Find the dimension *id*'s for the image variable -- these are NOT
     * (I think) necessarily the dimension numbers, which are relative
     * to the image variable.  
     */
 
-   Result = ncvarinq (CDF, ncvarid (CDF, MIimage), NULL, NULL, &NumDims, DimIDs, NULL);
+   Result = ncvarinq (CDF, ncvarid (CDF, MIimage), NULL, NULL, 
+		      &NumDims, DimIDs, NULL);
    if (Result == MI_ERROR)
    {
-      sprintf (ErrMsg, "Error reading MINC file: %s\n", NCErrMsg (ncerr));
-      return (ERR_BAD_MINC);
+       sprintf (ErrMsg, "Error reading MINC file: %s\n", NCErrMsg (ncerr));
+       return (ERR_BAD_MINC);
+   }
+   
+   /*
+    * Find the dimension numbers corresponding to MIzspace, etc.
+    * If one of the dimensions is missing, we can automatically
+    * guess the orientation.  By setting the missing dimension to
+    * zero, the orientation checking will come out right.
+    */
+   
+   zdim = ncdimid (CDF, MIzspace);
+   if ((zdim == MI_ERROR) && (ncerr == NC_EBADDIM))
+   {
+       zdim = 0;
    }
 
-   /* Find the dimension numbers corresponding to MIzspace, etc. */
-
-   if (NumDims >= 3)
-   {
-      zdim = ncdimid (CDF, MIzspace);
-   }
-   else
-   {
-      zdim = 0;
-   }
    ydim = ncdimid (CDF, MIyspace);
-   xdim = ncdimid (CDF, MIxspace);
+   if ((ydim == MI_ERROR) && (ncerr == NC_EBADDIM))
+   {
+       ydim = 0;
+   }
 
+   xdim = ncdimid (CDF, MIxspace);
+   if ((xdim == MI_ERROR) && (ncerr == NC_EBADDIM))
+   {
+       xdim = 0;
+   }
+   
    if (zdim == MI_ERROR || ydim == MI_ERROR || xdim == MI_ERROR)
    {
-      return (ERR_BAD_MINC);
+       sprintf (ErrMsg, "Error reading MINC dimensions.\n");
+       return (ERR_BAD_MINC);
    }
 
-   /* Now use the dimension position <-> z/y/x dimension mapping exhibited
+   /*
+    * Now use the dimension position <-> z/y/x dimension mapping exhibited
     * between DimIDs and zdim/ydim/xdim to determine the image orientation.
     * Note that the slice
     */
 
-/*
-   if (NumDims >= 3)
-   {
-      SliceDim = DimIDs [NumDims-3];
-   }
-*/
    HeightDim = DimIDs [NumDims-2];
    WidthDim = DimIDs [NumDims-1];
 
    if ((HeightDim == ydim) && (WidthDim == xdim))
    {
-      strcpy (Orient, "transverse");
+       strcpy (Orient, "transverse");
    }
    else if ((HeightDim == zdim) && (WidthDim == ydim))
    {
