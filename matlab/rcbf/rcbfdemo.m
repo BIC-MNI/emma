@@ -1,42 +1,42 @@
-function demo(slice_number, frame_number)
-% DEMO  Demontrate the PAMI blood analysis package.
+function rcbfdemo(slice_number, frame_number)
+% RCBFDEMO Demonstrate the EMMA blood analysis package.
 %
-%     demo(slice_number, frame_number)
+%   rcbfdemo(slice_number, frame_number)
 %
-% Hard-coded to use the arnaud_20547 data
+% Hard-coded to use the yates_19445 data
 % file, but allows input of a slice and
 % frame to display.
 
 
 if (nargin ~= 2)
-  help demo
+  help rcbfdemo
   error ('Incorrect number of input arguments.');
 end
 
 if (length(slice_number) ~= 1)
-  help demo
+  help rcbfdemo
   error ('<slice_number> must be a scalar.');
 end
 
 if (length(frame_number) ~= 1)
-  help demo
+  help rcbfdemo
   error ('<frame_number> must be a scalar.');
 end
   
 
-disp ('Opening arnaud_20547 via openimage');
-h = openimage ('/usr/people/wolforth/matlab/images/arnaud_20547.mnc');
+disp ('Opening yates_19445 via openimage');
+h = openimage ('/usr/local/matlab/toolbox/local/examples/yates_19445.mnc');
 nf = getimageinfo(h,'NumFrames');
 ns = getimageinfo(h,'NumSlices');
 disp (['Image has ' int2str(nf) ' frames and ' int2str(ns) ' slices.']);
 
 if ((slice_number>ns) | (slice_number<1))
-  help demo
+  help rcbfdemo
   error ('<slice_number> was out of range.');
 end
 
 if ((frame_number>nf) | (frame_number<1))
-  help demo
+  help rcbfdemo
   error ('<frame_number> was out of range.');
 end
 
@@ -68,7 +68,7 @@ x=100;y=100;
 while ((x>20) & (y>20))
   disp ('Now, pick a pixel and I will make a time activity curve');
   figure(current_figure);
-  [x,y] = ginput (1);
+  [x,y] = getpixel(1);
   activity = maketac (x,y,pet);
   figure(current_figure+1);
   plot (frame_times, activity);
@@ -76,12 +76,16 @@ while ((x>20) & (y>20))
 end
 
 closeimage (h);
+delete(gcf);
 
-disp (['Now calculating K1 and k2 images for slice' int2str(slice_number)]);
+disp (['Now calculating K1, k2, and V0 images for slice' int2str(slice_number)]);
+set (0, 'DefaultFigurePosition', [100 550 560 420]);
+figure;
 cpustart = cputime;
 tic;
 
-[K1, k2] = rcbf1 ('/usr/people/wolforth/matlab/images/arnaud_20547.mnc', slice_number);
+[K1, k2, V0, delay] = rcbf2('/usr/local/matlab/toolbox/local/examples/yates_19445.mnc', ...
+                            slice_number, 2, 1);
 cpu_elapsed = cputime - cpustart;
 user_elapsed = toc;
 
@@ -94,16 +98,9 @@ figure (gcf+1);
 viewimage (K1);
 title ('Here is the K1 image as calculated within MATLAB');
 
-disp ('Finally, reading the previously calculated K1 image...');
-disp ('(which, you may recall, takes 5 min/slice to calculate on the VAX)');
 
-h2 = openimage ('/usr/people/wolforth/matlab/images/arnaud_20547.k1.mnc');
-k12 = getimages (h2, slice_number);
 
-set (0, 'DefaultFigurePosition', [700 50 560 420]);
-figure(gcf+1);
 
-viewimage (k12);
-title (['This is the previously calculated K1 for slice ' int2str(slice_number)]);
 
-closeimage (h2);
+
+
