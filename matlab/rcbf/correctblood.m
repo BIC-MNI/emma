@@ -49,7 +49,11 @@ function [Ca_even, delta] = correctblood (A, startftimes, flengths, g_even, ts_e
 %  shifts the blood activity curve quite significantly, and completely
 %  screws up delay correction.  (Or so 'twould seem.)
 
-error (nargchk (5, 6, nargin));
+if ((nargin < 5) | (nargin > 6))
+   help correctblood
+   error ('Incorrect number of input arguments.')
+end
+   
 if (nargin < 6), progress = 0; end
 
 if (progress) disp ('Showing progress'), end
