@@ -73,21 +73,11 @@ void mexFunction (int nlhs, Matrix *plhs [],
 	    j++;
 	}
 	
-	if (j == table_size)
+	if (j < table_size)
 	{
-	    mexPrintf ("Reached end of table without interpolating. Uh-oh.\n");
-	}
-	else
-	{
-/*	    mexPrintf ("Bracketing y's: %g, %g\n", oldY[j], oldY[j+1]);
-	    mexPrintf ("Bracketing x's: %g, %g\n", oldX[j], oldX[j+1]);
-*/	    
 	    slope = (oldY[j+1] - oldY[j]) / (oldX[j+1] - oldX[j]);
 	    newY [i] =  oldY[j] + slope*(newX[i] - oldX[j]);
-/*	    mexPrintf ("I think slope=%g, newy=%g\n", slope, temp);
-*/	    
 	}
-		
     }
 }
 
