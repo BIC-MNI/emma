@@ -50,7 +50,7 @@ end
   
 
 disp ('Opening yates_19445 via openimage');
-h = openimage ('/usr/local/matlab/toolbox/local/examples/yates_19445.mnc');
+h = openimage ('/usr/local/matlab/toolbox/emma/examples/yates_19445.mnc');
 nf = getimageinfo(h,'NumFrames');
 ns = getimageinfo(h,'NumSlices');
 disp (['Image has ' int2str(nf) ' frames and ' int2str(ns) ' slices.']);
@@ -109,7 +109,7 @@ figure;
 cpustart = cputime;
 tic;
 
-[K1, k2, V0, delay] = rcbf2('/usr/local/matlab/toolbox/local/examples/yates_19445.mnc', ...
+[K1, k2, V0, delay] = rcbf2('/usr/local/matlab/toolbox/emma/examples/yates_19445.mnc', ...
                             slice_number, 2, 1);
 cpu_elapsed = cputime - cpustart;
 user_elapsed = toc;
