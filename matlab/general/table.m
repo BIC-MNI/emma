@@ -1,6 +1,9 @@
 function [y,failures] = table(tab,x0)
 %TABLE Table look-up.
-%	Y = TABLE(TAB,X0) returns a table of linearly interpolated rows from
+%
+% y = table(TAB,X0) 
+%
+%       returns a table of linearly interpolated rows from
 %	table TAB, looking up X0 in the first column of TAB.
 
 %       NOTE:  TAB's 1st column is checked for monotonicity.
