@@ -106,8 +106,13 @@ end
 % If at least the parent file was given, let's open it so we can override
 % the defaults on the other arguments with values from the parent file.
 
-if (nargin >= 3)
-   Parent = openimage (ParentFile);
+if (nargin >= 3) 
+   if (~isempty (ParentFile))
+      Parent = openimage (ParentFile);
+   else
+      ParentFile = '-';           % indicates that no parent file opened
+      Parent = -1;                % so does this 
+   end
 else
    ParentFile = '-';           % indicates that no parent file opened
    Parent = -1;                % so does this 
@@ -143,6 +148,8 @@ if (isempty (ImageType))
    ImageType = 'byte';
 end
 
+% The default valid ranges here are taken from /usr/include/limits.h
+
 if (isempty (ValidRange))
    if (strcmp (ImageType, 'byte'))
       ValidRange = [0 255];
@@ -169,7 +176,7 @@ if (min(s) ~= 1) | ( (max(s) ~= 2) & (max(s) ~= 4) )
 end
 
 if (max (s) == 2)
-   if (isempty (ParentFile))
+   if (isempty (ParentFile)) | (Parent == -1)
       error ('Must supply all 4 dimension sizes if parent file is not given');
    else
       DimSizes (3) = getimageinfo(Parent,'ImageHeight');
@@ -183,14 +190,14 @@ end
 % set.  So let's create the new MINC file, copying the patient, study
 % and acquisition variables if possible.
 
-disp (['New file: ' NewFile]);
-disp (['Old file: ' ParentFile]);    % will be set to '' if none given by caller
-disp ('DimSizes: ');
-disp (DimSizes);
-disp (['Image type: ' ImageType]);
-disp ('Valid range:');
-disp (ValidRange);
-disp (['Orientation: ', DimOrder]);
+%disp (['New file: ' NewFile]);
+%disp (['Old file: ' ParentFile]);    % will be set to '' if none given by caller
+%disp ('DimSizes: ');
+%disp (DimSizes);
+%disp (['Image type: ' ImageType]);
+%disp ('Valid range:');
+%disp (ValidRange);
+%disp (['Orientation: ', DimOrder]);
 
 execstr = sprintf ('micreate %s %s patient study acquisition', ...
                    ParentFile, NewFile);
