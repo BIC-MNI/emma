@@ -33,6 +33,10 @@ MidFTimes = FrameTimes + (FrameLengths / 2);
 g_even = g_even * 1.05;                 % convert to decay / (mL_blood * sec)
 Ca_even = g_even;                       % no delay/dispersion correction!!!
 
+% Apply the cross-calibration factor.
+XCAL = 0.11;
+Ca_even = Ca_even*XCAL;
+
 PET = getimages (img, slice, 1:length(FrameTimes));
 PET = PET * 37 / 1.05;                  % convert to decay / (g_tissue * sec)
 PET = PET .* (PET > 0);			% set all negative values to zero
