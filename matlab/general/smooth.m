@@ -1,51 +1,29 @@
-function new_data = smooth (old_data)
+function new_data = smooth (old_data, k)
 
-% SMOOTH  do a simple spatial smoothing on an image
+% SMOOTH  do spatial smoothing on an image
 %
 %        new_data = smooth (old_data)
-%
+% 
 % Smooths a two-dimensional image by averaging over a circle with a
-% diameter of 5 pixels.
+% diameter of 5 pixels.  Note that a far better way to perform spatial
+% smoothing is to generate a Gaussian kernel and perform a
+% convolution; this function is only provided for backwards
+% compatibility.  Two functions are available for more sophisticated
+% smoothing: kernel (part of EMMA), to generate a Gaussian kernel; and
+% conv2 (part of the MATLAB Image Processing Toolbox), to perform a
+% fast 2-D convolution.
 
-
-if (nargin ~= 1)
+if (nargin ~= 2)
    help smooth
    error ('Incorrect number of input arguments.');
 end
 
+kernel = [0 0 1 0 0; ...
+          0 1 1 1 0; ...
+          1 1 1 1 1; ...
+          0 1 1 1 0; ...
+          0 0 1 0 0  ];
 
-mask = [0 0 1 0 0; ...
-        0 1 1 1 0; ...
-	1 1 1 1 1; ...
-	0 1 1 1 0; ...
-	0 0 1 0 0  ];
+kernel = kernel / sum(sum(kernel));
 
-[x,y] = size (old_data);
-
-if (x==y)
-    xsize = x;
-else
-    xsize= x^.5;
-    if (xsize ~= floor (xsize))
-        error('Image must be square.');
-    end
-    if (y ~= 1)
-        error('Image must be a vector if not square.');
-    end
-    old_data = reshape (old_data, xsize, xsize);
-end
-
-%
-%  Now old_data is a square image matrix
-%
-
-new_data = zeros(xsize, xsize);
-norm = length (find (mask));          % Number of 1's in the mask
-
-for i=3:xsize-2
-    for j=3:xsize-2
-        new_data(i,j) = sum (sum (old_data(i-2:i+2, j-2:j+2) .* mask)) / norm;
-    end
-end
-
-new_data = reshape (new_data, xsize^2, 1);
+new_data = conv2 (old_data, kernel, 'same');
