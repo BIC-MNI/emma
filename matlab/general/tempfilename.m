@@ -6,8 +6,12 @@ function fname = tempfilename
 %
 % Requires that a directory /tmp/ exists on the current machine.
 
-% $Id: tempfilename.m,v 1.7 1999-10-07 13:01:32 neelin Exp $
+% $Id: tempfilename.m,v 1.8 2000-04-10 16:04:41 neelin Exp $
 % $Name:  $
+
+% Make sure that globals are automatically initialized for octave
+default_global_variable_value = [];
+initialize_global_variables=1;
 
 global TempFileBase;
 global TempFileCount;
