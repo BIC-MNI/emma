@@ -68,7 +68,7 @@ function out = worldtovoxel (volume, in, options)
 % SEE ALSO
 %   getvoxeltoworld, voxeltoworld, gettaggedregion
 
-% $Id: worldtovoxel.m,v 1.6 1997-10-20 18:23:24 greg Rel $
+% $Id: worldtovoxel.m,v 1.7 2000-04-04 14:09:39 neelin Exp $
 % $Name:  $
 
 % by Mark Wolforth; rewritten 95/3/10-12 by Greg Ward, and then
@@ -91,13 +91,15 @@ function out = worldtovoxel (volume, in, options)
 % Check input arguments
 %
 
-if (nargin < 1 | nargin > 3)
+nargs = nargin;
+
+if (nargs < 1 | nargs > 3)
   help worldtovoxel
   error ('Incorrect number of arguments');
 end
 
-if (nargin == 3)
-   nargin = 2;
+if (nargs == 3)
+   nargs = 2;
 else
    options = '';
 end
@@ -112,15 +114,15 @@ wv = inv (voxeltoworld (volume, [], options));
 % supplied (so the user can supply options when they wish to fetch just
 % the transform)
 
-if (nargin == 2)
+if (nargs == 2)
    if (size (in) == [0 0])
-      nargin = 1;
+      nargs = 1;
    end
 end
 
 % If only one argument was supplied, just return the transform
 
-if (nargin == 1)
+if (nargs == 1)
    out = wv;
 
 % If exactly two arguments were supplied, the second is a matrix
@@ -128,7 +130,7 @@ if (nargin == 1)
 % or four-row matrix; if three, we have to tack on ones to make
 % the points homogeneous
 
-elseif (nargin == 2)
+elseif (nargs == 2)
    points = in;
    [m,n] = size (points);     % make sure we have points in homogeneous
    if (m == 3)                % coordinates (i.e. [x y z 1]')

@@ -66,7 +66,7 @@ function [out] = voxeltoworld (volume, in, options)
 % SEE ALSO
 %   worldtovoxel, getvoxeltoworld
 
-% $Id: voxeltoworld.m,v 1.4 1997-10-20 18:23:24 greg Rel $
+% $Id: voxeltoworld.m,v 1.5 2000-04-04 14:09:39 neelin Exp $
 % $Name:  $
 
 % by Greg Ward 95/3/12
@@ -84,8 +84,9 @@ function [out] = voxeltoworld (volume, in, options)
 %
 % Check input arguments
 %
+nargs=nargin;
 
-if (nargin < 1 | nargin > 3)
+if (nargs < 1 | nargs > 3)
   help voxeltoworld
   error ('Incorrect number of arguments');
 end
@@ -97,7 +98,7 @@ reorder = 1;					  % use voxel order
 flip = 1;					  % do flip dimensions
 onebase = 1;					  % do shift array base
 
-if (nargin == 3)
+if (nargs == 3)
    if (~isstr (options))
       error ('options argument must be a string');
    end
@@ -112,9 +113,19 @@ if (nargin == 3)
    % should be used for voxel coordinates displayed by Display and
    % Register (Dave likes xyz order).
    
-   delim = find (options == ' ');
-   num_options = length (delim) + 1;
-   delim = [0 delim length(options)+1];
+   delim = [];
+   if (length(options) == 0)
+     delim = [];
+     num_options = 0;
+   else
+     delim = find (options == ' ');
+     num_options = length (delim) + 1;
+   end
+   if (length(delim) > 0)
+     delim = [0 delim length(options)+1];
+   else
+     delim = [0 length(options)+1];
+   end
    for i = 1:num_options
       opt = options((delim(i)+1):(delim(i+1)-1));
       if (strcmp (opt, 'xyzorder'))
@@ -131,7 +142,7 @@ if (nargin == 3)
       end
    end
    
-   nargin = 2;
+   nargs = 2;
 end
 
 if (size(volume) ~= [1,1])
@@ -192,16 +203,16 @@ vw = vw * perm * flip * shift;
 % supplied (so the user can supply options when they wish to fetch just
 % the transform)
 
-if (nargin == 2)
+if (nargs == 2)
    if (size (in) == [0 0])
-      nargin = 1;
+      nargs = 1;
    end
 end
 
 
 % If only one argument was supplied, just return the transform
 
-if (nargin == 1)
+if (nargs == 1)
    out = vw;
 
 % If exactly two arguments were supplied, the second is a matrix
@@ -209,7 +220,7 @@ if (nargin == 1)
 % or four-row matrix; if three, we have to tack on ones to make
 % the points homogeneous
 
-elseif (nargin == 2)
+elseif (nargs == 2)
    points = in;
    [m,n] = size (points);     % make sure we have points in homogeneous
    if (m == 3)                % coordinates (i.e. [x y z 1]')
