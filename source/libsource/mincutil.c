@@ -56,6 +56,7 @@ char *NCErrMsg (int NCErrCode)
 /* ----------------------------- MNI Header -----------------------------------
 @NAME       : OpenFile
 @INPUT      : Filename - name of the NetCDF/MINC file to open
+              Mode - either NC_WRITE or NC_NOWRITE
 @OUTPUT     : *CDF - handle of the opened file
 @RETURNS    : ERR_NONE if file successfully opened
               ERR_IN_MINC if any error opening file
@@ -67,13 +68,9 @@ char *NCErrMsg (int NCErrCode)
 @CREATED    : 93-5-31, adapted from code in micopyvardefs.c, Greg Ward
 @MODIFIED   : 93-6-4, modified debug/error handling and added Mode parameter
             : 93-6-30, changed error message
-@COMMENTS   : N.B. this is just a copy of the same function from
-              mireadvar... need to work on that modularity thing, eh?
 ---------------------------------------------------------------------------- */
 int OpenFile (char *Filename, int *CDF, int Mode)
 {
-   ncopts = 0;         /* don't abort or print messages */
-
    *CDF = ncopen (Filename, Mode);
 
    if (*CDF == MI_ERROR)
@@ -178,7 +175,7 @@ int GetVarInfo (int CDF, char vName[], VarInfoRec *vInfo)
 @RETURNS    : ERR_NONE if all went well
               ERR_NO_VAR if any of the required variables (currently
               only MIimage) were not found in the file.
-				  ERR_BAD_MINC if the order of dimensions is invalid
+              ERR_BAD_MINC if the order of dimensions is invalid
 @DESCRIPTION: Gets gobs of information about a MINC image variable.  See
               ImageInfoRec in myminc.h for details.
 @METHOD     : 
@@ -187,10 +184,10 @@ int GetVarInfo (int CDF, char vName[], VarInfoRec *vInfo)
 @CREATED    : 93-6-3, Greg Ward
 @MODIFIED   : 93-6-4, modified debug/error handling (GPW)
               93-8-2, removed requirements that MIimagemax and MIimagemin
-				          be present (GPW)
+                      be present (GPW)
                       changed so that SliceDim, FrameDim, HeightDim, and
-							 WidthDim, are picked based on their order in the
-							 MIimage variable rather than solely on their names (GPW)
+                      WidthDim, are picked based on their order in the
+                      MIimage variable rather than solely on their names (GPW)
 @COMMENTS   : Based on GetVarInfo from mireadvar.c, and on Gabe Leger's
               open_minc_file (from mincread.c).
 ---------------------------------------------------------------------------- */
@@ -248,39 +245,39 @@ int GetImageInfo (int CDF, ImageInfoRec *Image)
    {
       ncdiminq (CDF, DimIDs [dim], CurDimName, &CurDimSize);
 
-		/*
+      /*
        * Classify dimensions based on their order (and name, for time dim
-		 * only).  If MItime (frames) is found, it must be dimension 0 or 1;
-		 * the slice dimension will be next, followed by height, and width.
-		 * This code was taken pretty much verbatim from Gabe's mincread.
-		 */
-
-		if (strcmp (CurDimName, MItime) == 0)
-		{
+       * only).  If MItime (frames) is found, it must be dimension 0 or 1;
+       * the slice dimension will be next, followed by height, and width.
+       * This code was taken pretty much verbatim from Gabe's mincread.
+       */
+		
+      if (strcmp (CurDimName, MItime) == 0)
+      {
          Image->FrameDim = dim;
          Image->Frames = CurDimSize;
-			if (dim > Image->NumDims-3)
-			{
-				sprintf (ErrMsg, "Found time as an image dimension (dimension %d)",
-							dim);
-				return (ERR_BAD_MINC);
-			}
-		}
-		else if ((dim == Image->NumDims-3) || (dim == Image->NumDims-4))
-		{
-			Image->SliceDim = dim;
-			Image->Slices = CurDimSize;
-		}
-		else if (dim == Image->NumDims-2)
-		{
-			Image->HeightDim = dim;
-			Image->Height = CurDimSize;
-		}
-		else if (dim == Image->NumDims-1)
-		{
-			Image->WidthDim = dim;
-			Image->Width = CurDimSize;
-		}
+         if (dim > Image->NumDims-3)
+         {
+            sprintf (ErrMsg, "Found time as an image dimension (dimension %d)",
+                     dim);
+            return (ERR_BAD_MINC);
+         }
+      }
+      else if ((dim == Image->NumDims-3) || (dim == Image->NumDims-4))
+      {
+         Image->SliceDim = dim;
+         Image->Slices = CurDimSize;
+      }
+      else if (dim == Image->NumDims-2)
+      {
+         Image->HeightDim = dim;
+         Image->Height = CurDimSize;
+      }
+      else if (dim == Image->NumDims-1)
+      {
+         Image->WidthDim = dim;
+         Image->Width = CurDimSize;
+      }
 
 
       if (debug)
