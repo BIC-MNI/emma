@@ -852,7 +852,7 @@ int GetPermutation (int CDF, int nargin, Matrix *InArgs[], int *CurInArg,
    RawPerm[3*4 + 3] = 1;
    
 
-#ifdef DEBUG
+#if DEBUG
    printf ("permutation matrix (column major!) = \n");
    for (j = 0; j < 16; j++)
       printf ("%g ", RawPerm[j]);
