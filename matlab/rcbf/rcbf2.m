@@ -8,14 +8,13 @@ function [K1,k2,V0,delta] = rcbf2_slice (filename, slices, progress, ...
 % rcbf2 implements the three-weighted integral method of calculating
 % k2, K1, and V0 (in that order) for a particular slice.  This
 % function also returns the delay value calculated for blood
-% correction.  It first reads in a great mess of data (viz., the brain
-% activity for every frame of the slice, frame start times and
-% lengths, plasma activity, and blood sample times).  Then, a simple
-% mask is created and used to filter out roughly all points outside
-% the head.
+% correction.  It first reads in the brain activity for every frame of
+% the slice, frame start times and lengths, plasma activity, and blood
+% sample times.  Then, a simple mask is created and used to filter out
+% roughly all points outside the head.
 % 
 % The actual calculations follow the procedure outlined in the
-% document "RCBF Analysis Using Matlab".  Occasionally, comments in
+% document "RCBF Analysis Using MATLAB".  Occasionally, comments in
 % the source code or documentation for various functions involved in
 % the analysis will refer to equations in this document.  The most
 % relevant functions in this respect are rcbf2 itself, correctblood
@@ -24,20 +23,32 @@ function [K1,k2,V0,delta] = rcbf2_slice (filename, slices, progress, ...
 % The starting point of the three-weighted integration method is Eq.
 % 10 of the RCBF document.  The left hand side of this equation, rL,
 % is calculated for every pixel.  Then, a lookup table relating a
-% series of k2 values to the rR (the right-hand side of Eq. 10) is
+% series of k2 values to rR (the right-hand side of Eq. 10) is
 % calculated.  This lookup table should have a few hundred elements,
 % as calculating rR is considerably more expensive than calculating
 % rL.  Since rL and rR are equal, we use the pixel-wise values of rL
-% to lookup k2 for every pixel.
+% to lookup (linearly interpolate) k2 for every pixel.
 % 
-% Then, Eq. XXX is used to calculate K1.  This requires calculating
-% the moderately complicated int_activity (left hand side of Eq. XXX)
-% and the extremely complicated k2_conv_ints (right hand side).
-% However, the expression for k2_conv_ints appeared already in the
-% numerator of rR, so we preserve that lookup table as conv_int1 and
-% use it to lookup k2_conv_ints.  These two long vectors (with one
-% number for every pixel) are then divided to get K1.  Finally, V0 is
-% calculated via Eq. YYY.
+% Then, the numerator of Eq. 10 is used to calculate K1.  This
+% requires independently calculating the numerators of the left and
+% right hand sides of the equation for every voxel, and taking their
+% ratio to determine the exact value of K1 at that voxel.  However,
+% since the right-hand-side is very expensive to compute, we make use
+% of the fact that most of the information has already been calculated
+% -- in particular, for the k2-rR lookup table.  This is then used to
+% lookup values of the integrals needed, which are then combined to
+% calculate the entire right hand side of Eq. 10.
+% 
+% Note: it is assumed that input PET data is in units of nCi/mL_tissue
+% (= 37 Bq/mL_tissue = 37 Bq / 1.05 g_tissue).  This is converted to
+% Bq/g_tissue for all internal calculations.  Blood data is input in
+% Bq/g_blood; this is calibrated to the PET scanner (using the
+% cross-calibration factor) and converted back to Bq/g_blood.  Thus,
+% K1 is calculated internally as g_blood / (g_tissue * sec).  The
+% final step of the rCBF analysis is to convert this to the more
+% standard mL_blood / (100 g_tissue * min).  k2 and V0 are left in CGS
+% units (1/sec and g_blood/g_tissue, respectively).
+
 
 % ----------------------------- MNI Header -----------------------------------
 % @NAME       : rcbf2
@@ -103,9 +114,22 @@ FrameLengths = getimageinfo (img, 'FrameLengths');
 MidFTimes = FrameTimes + (FrameLengths / 2);
 [g_even, orig_ts_even] = resampleblood (img, 'even');
 
+% QUESTION: doesn't the blood data come in Bq/g_blood?  In that case,
+% isn't the division by 1.05 WRONG here?!?!?  [on the other hand,
+% if blood data comes in Bq/mL_blood, then this is OK -- it just 
+% converts to Bq/g_blood]
+
+% The blood data is initially in units of Bq/g_blood.  The cross-
+% calibration factor, XCAL, converts this to nCi/mL_blood,
+% simultaneously taking into account the unit conversions and
+% equipment differences (well counter to PET scanner).  We then
+% multiply by 37 (to convert nCi to Bq) and divide by 1.05 (to convert
+% 1/mL_blood to 1/g_blood), thus returning to units of Bq/g_blood...
+% but with equipment calibration factored in.
+
 XCAL = 0.11;
 % Apply the cross-calibration factor.
-rescale(g_even, (XCAL*37/1.05));        % units are decay / (g_tissue * sec)
+rescale(g_even, (XCAL*37/1.05));        % units are decay / (g_blood * sec)
 
 w1 = ones(length(MidFTimes), 1);
 w2 = MidFTimes;
@@ -205,7 +229,7 @@ for current_slice = 1:total_slices
   Ca_mft = nframeint (ts_even, Ca_even, FrameTimes, FrameLengths);      
 
   % NaN's will occur if the blood data does not span the frames.
-  % We eliminate them here, thus ignoring the frames that are npt
+  % We eliminate them here, thus ignoring the frames that are not
   % spanned by the blood data.  We print a warning message to
   % inform the user.
   
@@ -219,7 +243,9 @@ for current_slice = 1:total_slices
   Ca_int2 = ntrapz(MidFTimes(select), (w2(select) .* Ca_mft(select)));
   Ca_int3 = ntrapz(MidFTimes(select), (w3(select) .* Ca_mft(select)));
   
-  % Find the value of rL for every pixel of the slice.
+  % Find the values of rL and rR (LHS and RHS of Eq. 10) for every pixel
+  % of the slice.
+
   rL = ((Ca_int3 .* PET_int1) - (Ca_int1 .* PET_int3)) ./ ...
       ((Ca_int3 .* PET_int2) - (Ca_int2 .* PET_int3));
   
@@ -249,7 +275,10 @@ for current_slice = 1:total_slices
   if (progress); disp ('Calculating K1 image'); end
   
   % Note that PET_int1 = PET integrated across frames, with weighting
-  % function w1 = ones.
+  % function w1 = ones.  The calculation of K1_numer is a tiny bit
+  % redundant (see calculation of rR above), but the vector's involved
+  % are fairly small (hundreds of elements, usually) so we don't worry
+  % about it.
 
   K1_numer = ((Ca_int3*PET_int1) - (Ca_int1 * PET_int3));
   K1_denom = (Ca_int3 * lookup(k2_lookup,conv_int1,k2(:,current_slice))) - ...
@@ -259,14 +288,8 @@ for current_slice = 1:total_slices
   %=========================================================
   if (progress); disp ('Calculating V0 image'); end
   
-  % Now calculate V0, using Eq. 26.  Note that the second term of the
-  % numerator is just K1 .* k2_conv_ints; however, K1 was calculate 
-  % from int_activity ./ k2_conv_ints.  Therefore just use int_activity
-  % for that term.  Also, the first term of the numerator -- M(t) 
-  % integrated across frames -- was calculated above for masking
-  % the slice.  The denominator is just Ca(t) integrated across
-  % frames, so we need to use the resampled Ca(t) -- Ca_mft --
-  % for the integral.
+  % Now calculate V0, using Eq. 7 (which is just Eq. 4, weighted and
+  % integrated).
   
   V0(:,current_slice) = (PET_int1 - (K1(:,current_slice) .* lookup(k2_lookup,conv_int1,k2(:,current_slice)))) / Ca_int1;
 
@@ -290,6 +313,9 @@ nuke = find (isnan (V0));
 V0 (nuke) = zeros (size (nuke));
 nuke = find (isinf (V0));
 V0 (nuke) = zeros (size (nuke));
+
+rescale (K1, 100*60/1.05);    % convert from g_blood / (g_tissue * sec)
+                              % to mL_blood / (100 g_tissue * min)
   
 
 % Cleanup
