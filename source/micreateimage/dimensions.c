@@ -235,7 +235,7 @@ Boolean CreateDims (int CDF,
       if (DimIDs [CurDim] == MI_ERROR)
       {
          sprintf (ErrMsg, "Error creating dimensions: %s\n",
-                  NCErrMsg (ncerr));
+                  NCErrMsg (ncerr, 0));
          return (FALSE);
       }
    }

@@ -24,6 +24,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <float.h>
+#include <errno.h>
 #include "mex.h"
 #include "minc.h"
 #include "mierrors.h"         /* mine and Mark's */
@@ -404,7 +405,7 @@ int ReadImages (ImageInfoRec *Image,
          if (RetVal == MI_ERROR)
          {
             sprintf (ErrMsg, "!! BOMB !! error code %d (%s) set by miicv_get",
-                     ncerr, NCErrMsg (ncerr));
+                     ncerr, NCErrMsg (ncerr, errno));
             return (ERR_IN_MINC);
          }
 
