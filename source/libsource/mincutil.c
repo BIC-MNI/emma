@@ -401,7 +401,8 @@ int GetImageInfo (int CDF, ImageInfoRec *Image)
 @GLOBALS    : 
 @CALLS      : OpenFile, GetImageInfo, miicv{...} functions
 @CREATED    : 93-6-3, Greg Ward
-@MODIFIED   : 
+@MODIFIED   : 95-2-1, Mark Wolforth
+                      -Added DO_FILLVALUE to the created ICV.
 ---------------------------------------------------------------------------- */
 int OpenImage (char Filename[], ImageInfoRec *Image, int mode)
 {
@@ -427,6 +428,7 @@ int OpenImage (char Filename[], ImageInfoRec *Image, int mode)
    (void) miicv_setint (Image->ICV, MI_ICV_DO_NORM, TRUE);
    (void) miicv_setint (Image->ICV, MI_ICV_DO_DIM_CONV, TRUE);
    (void) miicv_setint (Image->ICV, MI_ICV_DO_SCALAR, FALSE);
+   (void) miicv_setint (Image->ICV, MI_ICV_DO_FILLVALUE, TRUE);
    (void) miicv_attach (Image->ICV, Image->CDF, Image->ID);
 
    return (ERR_NONE);
