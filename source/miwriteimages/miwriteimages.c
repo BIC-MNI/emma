@@ -237,7 +237,6 @@ FILE *OpenTempFile (char Filename [])
 Boolean ReadNextImage (double *Buffer, long ImageSize, FILE *InFile)
 { 
    int   AmtRead;
-   int   i;
 
    AmtRead = fread (Buffer, sizeof (double), (size_t) ImageSize, InFile);
 
@@ -599,6 +598,6 @@ int main (int argc, char *argv [])
 
    miicv_free (ImInfo.ICV);
    ncclose (ImInfo.CDF);
-   exit (ERR_NONE);
+   return (ERR_NONE);
 
 }     /* main */
