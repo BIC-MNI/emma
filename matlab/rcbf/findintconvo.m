@@ -31,6 +31,32 @@ function [int1, int2, int3] = findintconvo (Ca_even, ts_even, k2_lookup,...
 % mid-frame times (passed as midftimes) and integrated across frames
 % using flengths as dt.
 
+% ----------------------------- MNI Header -----------------------------------
+% @NAME       : findintconvo
+% @INPUT      : 
+% @OUTPUT     : 
+% @RETURNS    : 
+% @DESCRIPTION: 
+% @METHOD     : 
+% @GLOBALS    : 
+% @CALLS      : 
+% @CREATED    : 
+% @MODIFIED   : 
+% @COPYRIGHT  :
+%             Copyright 1993 Mark Wolforth and Greg Ward, McConnell Brain
+%             Imaging Centre, Montreal Neurological Institute, McGill
+%             University.
+%             Permission to use, copy, modify, and distribute this
+%             software and its documentation for any purpose and without
+%             fee is hereby granted, provided that the above copyright
+%             notice appear in all copies.  The author and McGill University
+%             make no representations about the suitability of this
+%             software for any purpose.  It is provided "as is" without
+%             express or implied warranty.
+%
+% ---------------------------------------------------------------------------- */
+
+
 if ((nargin < 6) | (nargin > 8))
     help findintconvo
     error ('Incorrect number of input arguments.');

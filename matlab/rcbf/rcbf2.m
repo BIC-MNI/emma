@@ -39,6 +39,31 @@ function [K1,k2,V0,delta] = rcbf2_slice (filename, slices, progress, ...
 % number for every pixel) are then divided to get K1.  Finally, V0 is
 % calculated via Eq. YYY.
 
+% ----------------------------- MNI Header -----------------------------------
+% @NAME       : rcbf2
+% @INPUT      : 
+% @OUTPUT     : 
+% @RETURNS    : 
+% @DESCRIPTION: 
+% @METHOD     : 
+% @GLOBALS    : 
+% @CALLS      : 
+% @CREATED    : 
+% @MODIFIED   : 
+% @COPYRIGHT  :
+%             Copyright 1993 Mark Wolforth and Greg Ward, McConnell Brain
+%             Imaging Centre, Montreal Neurological Institute, McGill
+%             University.
+%             Permission to use, copy, modify, and distribute this
+%             software and its documentation for any purpose and without
+%             fee is hereby granted, provided that the above copyright
+%             notice appear in all copies.  The author and McGill University
+%             make no representations about the suitability of this
+%             software for any purpose.  It is provided "as is" without
+%             express or implied warranty.
+%
+% ---------------------------------------------------------------------------- */
+
 
 % Input argument checking
 

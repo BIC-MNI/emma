@@ -9,6 +9,30 @@ function integral = b_curve (args, shifted_g_even, ts_even, A, fstart, flengths)
 % two-compartment rCBF model used for fitting the blood
 % curve data to the head curve data.
 
+% ----------------------------- MNI Header -----------------------------------
+% @NAME       : b_curve
+% @INPUT      : 
+% @OUTPUT     : 
+% @RETURNS    : 
+% @DESCRIPTION: 
+% @METHOD     : 
+% @GLOBALS    : 
+% @CALLS      : 
+% @CREATED    : 
+% @MODIFIED   : 
+% @COPYRIGHT  :
+%             Copyright 1993 Mark Wolforth and Greg Ward, McConnell Brain
+%             Imaging Centre, Montreal Neurological Institute, McGill
+%             University.
+%             Permission to use, copy, modify, and distribute this
+%             software and its documentation for any purpose and without
+%             fee is hereby granted, provided that the above copyright
+%             notice appear in all copies.  The author and McGill University
+%             make no representations about the suitability of this
+%             software for any purpose.  It is provided "as is" without
+%             express or implied warranty.
+%
+% ---------------------------------------------------------------------------- */
 
 % N.B.: alpha = args(1)
 %        beta = args(2)

@@ -53,6 +53,31 @@ function [new_ts_even, Ca_even, delta] = correctblood (A, FrameTimes, FrameLengt
 %  used as delta to do delay correction without the time-consuming
 %  fitting.
 
+% ----------------------------- MNI Header -----------------------------------
+% @NAME       : correctblood
+% @INPUT      : 
+% @OUTPUT     : 
+% @RETURNS    : 
+% @DESCRIPTION: 
+% @METHOD     : 
+% @GLOBALS    : 
+% @CALLS      : 
+% @CREATED    : 
+% @MODIFIED   : 
+% @COPYRIGHT  :
+%             Copyright 1993 Mark Wolforth and Greg Ward, McConnell Brain
+%             Imaging Centre, Montreal Neurological Institute, McGill
+%             University.
+%             Permission to use, copy, modify, and distribute this
+%             software and its documentation for any purpose and without
+%             fee is hereby granted, provided that the above copyright
+%             notice appear in all copies.  The author and McGill University
+%             make no representations about the suitability of this
+%             software for any purpose.  It is provided "as is" without
+%             express or implied warranty.
+%
+% ---------------------------------------------------------------------------- */
+
 if ((nargin < 5) | (nargin > 6))
    help correctblood
    error ('Incorrect number of input arguments.')
