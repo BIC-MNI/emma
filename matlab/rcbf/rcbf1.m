@@ -26,15 +26,13 @@ MidFrameTimes = FrameTimes + (FrameLengths / 2);
 PET = getimages (img, slice, 1:length(FrameTimes));
 
 rL = findrl (PET, MidFrameTimes, FrameLengths);
-[k2_lookup, rR, Ca] = findrr (img, MidFrameTimes, FrameLengths);
+[k2_lookup, rR, Ca_even, ts_even] = findrr (img, MidFrameTimes, FrameLengths);
 
 % Generate K1 and K2 images
 
 k2 = lookup(rR, k2_lookup, rL);
 k1 = zeros(length(PET),1);
 
-
-keyboard
 
 % Cleanup
 
