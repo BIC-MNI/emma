@@ -23,16 +23,18 @@
 %   miinquire     - Get NetCDF variable, dimension, or attribute information.
 %
 %     Note: these seven functions should not generally be called by 
-%     general purpose image analysis applications.
+%     general purpose image analysis applications.  Use the high-
+%     level functions instead.
 %
 % General utility functions
 %   calpix        - Generate a vector index for a point in an image vector.
 %   viewimage     - View an image.
 %   spectral      - Generate the RGB numbers for a spectral colourmap.
-%   C_trapz       - Fast CMEX function for trapezoidal integration.
+%   hotmetal      - Generate the RGB numbers for a hotmetal colourmap.
+%   ntrapz        - Fast CMEX function for trapezoidal integration.
 %   lookup        - Fast CMEX function for linear interpolation.
 %   nframeint     - Fast CMEX integration across frames.
-%   deriv         - Calculate the derivative of a numerical function
+%   deriv         - Calculate the derivative of a numerical function.
 %   smooth        - Perform a simple spatial smoothing on an image.
 %
 % rCBF analysis functions
