@@ -1,4 +1,17 @@
-#define _IEEE 1                 /* Needed for nan.h to work */
+/* ----------------------------- MNI Header -----------------------------------
+@NAME       : intframes.c (CMEX)
+@DESCRIPTION: Provides two functions for doing frame-by-frame integration:
+              IntOneFrame (which integrates a function across a range of
+              x-values) and IntFrames (which calls IntOneFrame in a loop
+              across several frames).
+@METHOD     : 
+@GLOBALS    : 
+@CALLS      : TrapInt(), Lookup1()
+@CREATED    : Sep 1993, Greg Ward
+@MODIFIED   : see RCS log
+@VERSION    : $Id: intframes.c,v 1.6 1997-10-17 18:56:02 greg Exp $
+---------------------------------------------------------------------------- */
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
@@ -66,7 +79,7 @@ extern double NaN;
               the Frames must be non-overlapping and increasing.
 @METHOD     : 
 @GLOBALS    : 
-@CALLS      : 
+@CALLS      : TrapInt(), Lookup1()
 @CREATED    : 13 August 1993, Greg Ward (from code originally by Mark
               Wolforth [9 August] and modified by GPW [12-13 August])
 @MODIFIED   : 23 August 1993, GPW: moved to intframes.c, removed
