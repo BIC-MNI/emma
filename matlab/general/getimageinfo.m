@@ -25,6 +25,9 @@ function info = getimageinfo (handle, what)
 %                     frame, relative to start of study, in seconds
 %      MidFrameTimes  time at the middle of each frame (calculated by
 %                     FrameTimes + FrameLengths/2) in seconds
+%      ImageHeight or
+%      ImageWidth     same as ImageSize currently (because we can't yet
+%                     handle non-square images)
 %      
 % If the requested data item is invalid or the image specified by handle
 % is not found (ie. has not been opened), then info will be empty.
@@ -86,6 +89,8 @@ if exist ([what int2str(handle)]) ~= 1
       info = eval(['ImageSize' int2str(handle)]);
    elseif (strcmp (what, 'MidFrameTimes'))
       info = eval(['FrameTimes' int2str(handle) ' + FrameLengths' int2str(handle) ' / 2']);
+   elseif (strcmp (what, 'ImageHeight')) | (strcmp (what, 'ImageWidth'))
+      info = eval(['ImageSize' int2str(handle)]);
    else
       disp (['getimageinfo: data item not found: ' what int2str(handle)]);
       info = [];
