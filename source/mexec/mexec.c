@@ -2,13 +2,14 @@
 @NAME       : mexec (CMEX)
 @INPUT      : Name of file to execute along with argument list (to be
               passed to execvp).
-@OUTPUT     : 
+@OUTPUT     : pargout[0] - if given, contains the output of the
+                exec'd command
 @RETURNS    : 
 @DESCRIPTION: 
 @METHOD     : 
 @GLOBALS    : 
 @CALLS      : 
-@CREATED    : 
+@CREATED    : Feb 94, Greg Ward
 @MODIFIED   : 
 ---------------------------------------------------------------------------- */
 #include <stdlib.h>
@@ -25,11 +26,16 @@
 
 typedef enum { false=0, true=1 } boolean;
 
-#define DEBUG
+
+
+char   ErrMsg [256];
+char   TempFilename [L_tmpnam];
 
 
 void RunShell (int nargout, Matrix *pargout [],
 	       int nargin, Matrix *pargin []);
+void GetOutput (char *Filename, Matrix **mOutputStr);
+
 
 
 void mexFunction (int nargout, Matrix *pargout [],
@@ -54,14 +60,21 @@ void mexFunction (int nargout, Matrix *pargout [],
       mexErrMsgTxt ("Too many output arguments");
    }
 
-   GrabOutput = (nargout == 2);
-
+   GrabOutput = (nargout == 1);
+   if (GrabOutput)
+   {
+      tmpnam (TempFilename);
+      if (TempFilename [0] == '\0')
+      {
+	 mexErrMsgTxt ("Could not generate temporary filename for output (tmpnam failed)");
+      }
+   }
 
    kidpid = fork ();
 
    if (kidpid == 0)		/* now in child process? */
    {
-      if (!GrabOutput || freopen ("temp.output", "w", stdout) != NULL)
+      if (!GrabOutput || freopen (TempFilename, "w", stdout) != NULL)
       {
 	 RunExtern (nargout, pargout, nargin, pargin);
       }
@@ -92,35 +105,44 @@ void mexFunction (int nargout, Matrix *pargout [],
       
       if (WIFEXITED (statptr) && WEXITSTATUS (statptr) != 0)
       {
-	 mexErrMsgTxt ("Error executing child process");
+	 sprintf (ErrMsg, "Error executing child process");
+	 mexErrMsgTxt (ErrMsg);
       }
       else if (WIFSIGNALED (statptr))
       {
-	 mexErrMsgTxt ("Child process unexpectedly terminated");
+	 sprintf (ErrMsg, "Child process unexpectedly terminated (signal %d)",
+		  WTERMSIG (statptr));
+	 mexErrMsgTxt (ErrMsg);
       }
-
-      pargout[0] = mxCreateFull (1,1,REAL);
 
       if (GrabOutput)
       {
-	 FILE  *OutputFile;
-	 struct stat statbuf;
-	 char  *OutputStr;
-	 
-	 stat ("temp.output", &statbuf);
-	 OutputStr = malloc (statbuf.st_size + 1);
-	 OutputFile = fopen ("temp.output", "r");
-	 fread (OutputStr, 1, statbuf.st_size, OutputFile);
-	 OutputStr [statbuf.st_size] = '\0';
-	 pargout[1] = mxCreateString (OutputStr);
-	 fclose (OutputFile);
+	 GetOutput (TempFilename, &(pargout[0]));
       }
 
    }
-}    /* mexFunction/main */
+}    /* mexFunction */
 
 
 
+/* ----------------------------- MNI Header -----------------------------------
+@NAME       : RunExtern
+@INPUT      : Standard CMEX arguments (nargout, pargout, nargin, pargin)
+@OUTPUT     : Standard CMEX arguments (contents of pargout[])
+@RETURNS    : Never.  On success, the process exec's and subsequently
+              terminates according to the new process' wishes.  On 
+              failure (which can only happen if execvp fails) an error
+	      message is printed and the process exits.
+@DESCRIPTION: Turns the list of MATLAB strings in pargin[] into an
+              array of C strings, and passes these to execvp.  That is,
+	      attempts to execute the file named in pargin[0], with
+	      arguments pargout[1]..pargout[nargin-1].  
+@METHOD     : 
+@GLOBALS    : 
+@CALLS      : 
+@CREATED    : Feb 94, Greg Ward.
+@MODIFIED   : 
+---------------------------------------------------------------------------- */
 void RunExtern (int nargout, Matrix *pargout [],
 		int nargin, Matrix *pargin [])
 {
@@ -151,7 +173,43 @@ void RunExtern (int nargout, Matrix *pargout [],
    if (execvp (argv[0], argv) == -1)
    {
       printf ("%s: %s\n", argv[0], _sys_errlist [errno]);
-      exit (-errno);
+      exit (errno);
    }
 
+}
+
+
+
+void GetOutput (char *Filename, Matrix **mOutputStr)
+{
+   FILE  *OutputFile;
+   struct stat statbuf;
+   char  *OutputStr;
+   
+#ifdef DEBUG
+   printf ("Getting output from temporary file\n");
+#endif
+   
+   if (stat (Filename, &statbuf) == -1)
+   {
+      sprintf (ErrMsg, "Error accessing temporary file: %s", 
+	       _sys_errlist[errno]);
+      mexErrMsgTxt (ErrMsg);
+   }
+
+   OutputStr = mxCalloc (statbuf.st_size, 1);
+   OutputFile = fopen (Filename, "r");
+   if (OutputFile == NULL)
+   {
+      sprintf (ErrMsg, "Error opening temporary file %s: %s", 
+	       Filename, _sys_errlist[errno]);
+      mexErrMsgTxt (ErrMsg);
+   }
+
+   fread (OutputStr, 1, statbuf.st_size, OutputFile);
+   OutputStr [statbuf.st_size] = '\0';
+   *mOutputStr = mxCreateString (OutputStr);
+   fclose (OutputFile);
+   unlink (Filename);
+   mxFree (OutputStr);
 }
