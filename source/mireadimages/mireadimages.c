@@ -285,6 +285,10 @@ int ReadImages (ImageInfoRec *Image,
 
    Size = Image->Width * NumRows;
 
+#ifdef DEBUG
+   printf ("Size: %ld\n", Size);
+#endif
+
    /* 
     * If the caller has set NumFrames (NumSlices) to 0, that REALLY means
     * read one frame (slice) from a file with no frame (slice) dimension.
@@ -337,7 +341,9 @@ int ReadImages (ImageInfoRec *Image,
    if (*Mimages == NULL)
    {
 
-       /* *Mimages is NULL, so allocate an appropriate Matrix */
+       /*
+	* *Mimages is NULL, so allocate an appropriate Matrix
+	*/
 
 #ifdef DEBUG
        printf ("Allocating new memory for return value.\n");
@@ -351,10 +357,12 @@ int ReadImages (ImageInfoRec *Image,
            return (ERR_NO_MEM);
        }
    }
-
-   /* *Mimages points at some memory, so we want to use the memory */
-   /* that it points at. */
-
+   
+   /* 
+    * *Mimages points at some memory, so we want to use the memory 
+    * that it points at.
+    */
+   
    VectorImages = mxGetPr (*Mimages);
 
 
@@ -410,14 +418,31 @@ int ReadImages (ImageInfoRec *Image,
     * We want to map -DBL_MAX to a MATLAB NaN
     */
 
+#ifdef DEBUG
+   printf ("Total number of doubles: %ld\n", 
+	   Size*NumFrames*NumSlices);
+#endif   
+
+   /*
+    * For some reason that I can't quite figure out, this bit goes
+    * into an infinite loop, and I am therefore leaving it commented
+    * out for the time being.  MW.
+    */
+
+#if 0
+
    for (j=0; j<(Size*NumFrames*NumSlices); j++)
    {
+       printf ("%ld\n", j);
        if (VectorImages[j] == -DBL_MAX)
        {
+	   printf ("Made a -DBL_MAX into a NaN.\n");
+
 	   VectorImages[j] = NaN;
        }
    }
 
+#endif
 
 #ifdef DEBUG
    putchar ('\n');
