@@ -66,9 +66,9 @@ num_tags = length (keep);
 % range of slices in the volume).
 % 
 
-slices = round (vtags(1,:));
+slices = vtags(1,:);
 unique_slices = sort (slices);
-unique_slices = unique_slices ([1 diff(unique_slices)]);
+unique_slices = unique_slices (find ([1 diff(unique_slices)]));
 
 % 
 % Extract the pixel coordinates (ie. coords for the two image
