@@ -27,7 +27,7 @@ FrameTimes = getimageinfo (img, 'FrameTimes');
 FrameLengths = getimageinfo (img, 'FrameLengths');
 MidFrameTimes = FrameTimes + (FrameLengths / 2);
 PET = getimages (img, slice, 1:length(FrameTimes));
-
+PET = PET .* (PET > 0);			% set all negative values to zero
 
 if (progress); disp ('Calculating rL image'); end
 rL = findrl (PET, MidFrameTimes, FrameLengths);
