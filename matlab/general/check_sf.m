@@ -6,9 +6,9 @@ function msg = check_sf (handle, slices, frames)
 % check_sf - makes sure that the given slices and frames vectors
 % are consistent with the image specified by handle.  Checks for:
 %   * both slices and frames cannot be vectors
-%   * if image has no frames, frames vector should be empty (warning only)
+%   * if image has no frames, frames vector should be empty
 %   * if frames vector is empty, image must have no frames
-%   * if image has no slices, slices vector should be empty (warning only)
+%   * if image has no slices, slices vector should be empty
 %   * if slices vector is empty, image must have no slices
 
 msg = [];
@@ -26,7 +26,8 @@ end
 
 if (num_frames == 0)
    if ~isempty (frames)
-      disp ('Warning: image has no frames, frame list will be ignored');
+%     disp ('Warning: image has no frames, frame list will be ignored');
+      msg = 'Image has no time dimension: list of frames not allowed';
    end
 end
 
@@ -36,7 +37,8 @@ end
 
 if (num_slices == 0)
    if ~isempty (slices)
-      disp ('Warning: image has no slices, slice list will be ignored');
+%     disp ('Warning: image has no slices, slice list will be ignored');
+      msg = 'Image has no slice dimension: list of slices not allowed';
    end
 end
 
