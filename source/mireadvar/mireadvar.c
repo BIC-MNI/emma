@@ -19,8 +19,8 @@
 @CREATED    : 93/5/31 - 93/6/2, Greg Ward
 @MODIFIED   : 93/6/16, robustified/standardized error and debug handling.
               Added gpw.h and mierrors.h includes, deleted def_mni.h.
-				  93/6/25, changed handling of missing variable case so that
-				  an empty matrix is returned rather than a fatal error.
+              93/6/25, changed handling of missing variable case so that
+              an empty matrix is returned rather than a fatal error.
 @COMMENTS   : 
 ---------------------------------------------------------------------------- */
 
@@ -403,19 +403,19 @@ void mexFunction (int nlhs, Matrix *plhs [],
     * Open the file and get info about the variable and its dimensions
     */
 
-   Result = OpenFile (Filename, &CDFid, debug);
+   Result = OpenFile (Filename, &CDFid, NC_NOWRITE);
    if (Result != ERR_NONE)
    {
-		ncclose (CDFid);
+      ncclose (CDFid);
       ErrAbort (ErrMsg, TRUE, Result);
    }
    Result = GetVarInfo (CDFid, Varname, &VarInfo);
-   if (Result != ERR_NONE)			/* variable does not exist */
-   {										/* so return empty matrix */
-	/*	printf ("GetVarInfo returned %d - variable %s not found (?)\n",
-				  Result, Varname); */
-		RET_VECTOR = mxCreateFull (0, 0, REAL);
-		return;
+   if (Result != ERR_NONE)       /* variable does not exist */
+   {                             /* so return empty matrix */
+   /* printf ("GetVarInfo returned %d - variable %s not found (?)\n",
+              Result, Varname); */
+      RET_VECTOR = mxCreateFull (0, 0, REAL);
+      return;
    }
 
    /*
@@ -429,7 +429,7 @@ void mexFunction (int nlhs, Matrix *plhs [],
    {
       if (nrhs < COUNT_POS)         /* can't have one without the other! */
       {
-			ncclose (CDFid);
+         ncclose (CDFid);
          ErrAbort ("Cannot supply just one of start and count vectors", 
                    TRUE, ERR_ARGS);
       }
@@ -441,7 +441,7 @@ void mexFunction (int nlhs, Matrix *plhs [],
       Result = VerifyVectors (&VarInfo,Start,Count,NumStart,NumCount);
       if (Result != ERR_NONE)
       {
-			ncclose (CDFid);
+         ncclose (CDFid);
          ErrAbort (ErrMsg, TRUE, Result);
       }
    }     /* if start and count vectors given */
@@ -451,7 +451,7 @@ void mexFunction (int nlhs, Matrix *plhs [],
    }
 
    Result = ReadValues (&VarInfo, Start, Count, &RET_VECTOR);
-	ncclose (CDFid);
+   ncclose (CDFid);
    if (Result != ERR_NONE)
    {
       ErrAbort (ErrMsg, TRUE, Result);
