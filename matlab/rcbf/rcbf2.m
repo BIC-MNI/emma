@@ -1,5 +1,8 @@
 function [K1,k2,V0] = rcbf2 (filename, slice, progress)
-% RCBF2  a two-compartment rCBF model implemented as a MATLAB function.
+
+% RCBF2  a two-compartment (triple-weighted integral) rCBF model.
+%
+%                [K1,k2,V0] = rcbf2 (filename, slice)
 %
 % rcbf2 implements the three-weighted integral method of calculating k2,
 % K1, and V0 (in that order) for a particular slice.  It first reads in
@@ -25,8 +28,7 @@ function [K1,k2,V0] = rcbf2 (filename, slice, progress)
 % table as conv_int1 and use it to lookup k2_conv_ints.  These
 % two long vectors (with one number for every pixel) are then
 % divided to get K1.  Finally, V0 is calculated via Eq. 26.
-%
-% [K1,k2,V0] = rcbf2 (filename, slice)
+
 
 % Input argument checking
 
@@ -84,7 +86,6 @@ end
 if (progress); disp ('Calculating rL image'); end
 rL = findrl2 (PET, midftimes, FrameLengths, ts_even, Ca_even);
 
-
 % Initialise the weighting functions w3 and w2; 
 % w3=sqrt(midftimes) and w2=midftimes. 
 
@@ -100,7 +101,7 @@ w2 = midftimes;
 % simply scalars.
 
 if (progress); disp ('Generating k2/rR lookup table'); end
-k2_lookup = (-50:0.02:50) / 60;
+k2_lookup = (-50:0.05:50) / 60;
 [conv_int1,conv_int2,conv_int3] = findintconvo (Ca_even,ts_even,k2_lookup,...
       midftimes, FrameLengths, [], w2, w3);
 
