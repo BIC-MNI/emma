@@ -80,7 +80,7 @@ end
 % g(t) by using the method of Sayers described in "Inferring
 % Significance from Biological Signals."
 
-[smooth_g_even, deriv_g] = deriv (21, length(ts_even), g_even, (ts_even(2)-ts_even(1)));
+[smooth_g_even, deriv_g] = deriv (3, length(ts_even), g_even, (ts_even(2)-ts_even(1)));
 g_even = smooth_g_even + tau*deriv_g;
 
 if (progress)
