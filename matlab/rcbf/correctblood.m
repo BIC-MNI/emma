@@ -68,6 +68,12 @@ if (progress)
    hold on
 end
 
+if (progress)
+   plot (ts_even, g_even, 'y:');
+   title ('Blood activity: dotted=g(t), solid=g(t) + tau*dg/dt');
+   drawnow
+end
+
 % First let's do the dispersion correction: differentiate g (t) by
 % smoothing it and taking differences, and add tau * dg/dt to g.
 
@@ -82,7 +88,7 @@ g_even (z) = zeros (size (z));
 ts_even = ts_even(1:length(ts_even)-1);      % cut ts_even down to size to
                                              % match g_even
 if (progress)
-   plot (ts_even, g_even);
+   plot (ts_even, g_even, 'r');
    drawnow
    figure;
 end
@@ -148,12 +154,12 @@ for i = 1:length(deltas)
 
    params (i,:) = final;
 %   rss (i) = sum (f .^ 2) ;            % if using leastsq
-   rss(i) = fit_b_curve (final, shifted_g_even, ts_even, A, midftimes);
+   rss(i) = fit_b_curve (final, shifted_g_even(g_select), ts_even(g_select), A, midftimes);
    if (progress)
       fprintf ('; final = [%g %g %g]; error = %g\n', ...
 	    final, rss (i));
       plot (midftimes, ...
-            b_curve(final, shifted_g_even, ts_even, A, midftimes));
+            b_curve(final, shifted_g_even(g_select), ts_even(g_select), A, midftimes));
       drawnow
 
    end
