@@ -18,6 +18,7 @@
                  and changed all debugging info to #ifdef DEBUG
 ---------------------------------------------------------------------------- */
 #include <stdlib.h>
+#include <stdio.h>
 #include "minc.h"
 #include "emmageneral.h"
 #include "mincutil.h"
