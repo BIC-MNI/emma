@@ -110,7 +110,7 @@ if (progress)
    drawnow;
 end
 
-shifted_g_even = zeros (length(g_even), 1);
+%  shifted_g_even = zeros (length(g_even), 1);
 
 % Here are the initial values of alpha, beta, and gamma, in units of:
 %  alpha = (mL blood) / ((g tissue) * sec)
@@ -134,15 +134,17 @@ for i = 1:length(deltas)
    
    % Get the shifted activity function, g(t - delta), by shifting g(t)
    % to the right (ie. subtract delta from its actual times, ts_even)
-   % and resampling at the "correct" times ts_even.  Then do the 
+   % and resample at the "correct" times ts_even).  Then do the 
    % three-parameter fit to optimise the function wrt. alpha, beta,
    % and gamma.  Plot this fit.  (Could get messy, but what the hell)
 
+   
    shifted_g_even = lookup ((ts_even-delta), g_even, ts_even);
+   g_select = find (~isnan (shifted_g_even));
 %   [final,options,f] = leastsq ('fit_b_curve', init, options, [], ...
 %	 shifted_g_even, ts_even, A, midftimes);
    final = fmins ('fit_b_curve', init, options, [], ...
-	 shifted_g_even, ts_even, A, midftimes);
+	 shifted_g_even (g_select), ts_even (g_select), A, midftimes);
 
    params (i,:) = final;
 %   rss (i) = sum (f .^ 2) ;            % if using leastsq
