@@ -22,8 +22,6 @@
               names = miinquire (<filename>, 'dimnames')
      etc.
 */
-   
-
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -404,7 +402,10 @@ int GetAttValue (int CDF, int nargin, Matrix *InArgs[], int *CurInArg,
 
    /* Make sure we have enough input parameters (variable and attribute name)*/
 
-   (*CurInArg)++;
+   (*CurInArg)++;		/* point to the variable name */
+#ifdef DEBUG
+   printf ("GetAttValue:\n");
+#endif
    if (*CurInArg > nargin-2)
    {
       sprintf (ErrMsg, "attvalue: not enough input arguments "
@@ -423,36 +424,59 @@ int GetAttValue (int CDF, int nargin, Matrix *InArgs[], int *CurInArg,
 
    /* Convert variable and attribute names to C strings */
 
-   mVarName = InArgs [(*CurInArg)++];
+   mVarName = InArgs [*CurInArg];
    if (ParseStringArg (mVarName, &VarName) == NULL)
    {
       sprintf (ErrMsg, "attvalue: variable name must be a character string");
       return (ERR_ARGS);
    }
+#ifdef DEBUG
+   printf ("  CurInArg = %d (%s)\n", *CurInArg, VarName);
+#endif
 
-   mAttName = InArgs [(*CurInArg)];
+   (*CurInArg)++;		/* point to attribute name */
+   mAttName = InArgs [*CurInArg];
    if (ParseStringArg (mAttName, &AttName) == NULL)
    {
       sprintf (ErrMsg, "attvalue: attribute name must be a character string");
       return (ERR_ARGS);
    }
+#ifdef DEBUG
+   printf ("  CurInArg = %d (%s)\n", *CurInArg, AttName);
+#endif
 
-   /* Get the variable ID; return empty matrix if variable not found */
+   (*CurInArg)++;		/* point to next option argument */
+				/* (done here because of multiple */
+				/* exit points...) */
+
+   /* get the variable ID; return empty matrix if variable not found */
 
    VarID = ncvarid (CDF, VarName);
    if (VarID == MI_ERROR)       /* variable not found */
    {                            /* so return empty matrix */
       OutArgs [*CurOutArg] = mxCreateFull (0, 0, REAL); 
+      (*CurOutArg)++;
       return (ERR_NONE);
    }
+
+#ifdef DEBUG
+   printf ("Got variable name (%s), attribute name (%s), variable ID (%d)\n",
+	   VarName, AttName, VarID);
+#endif
 
    /* Get the attribute type and length; again, return empty if not found */
 
    if (ncattinq (CDF, VarID, AttName, &AttType, &AttLen) == MI_ERROR)
    {
-      OutArgs [*CurOutArg] = mxCreateFull (0, 0, REAL); 
+      OutArgs [*CurOutArg] = mxCreateFull (0, 0, REAL);  
+      (*CurOutArg)++;
       return (ERR_NONE);
    }  
+
+#ifdef DEBUG
+   printf ("Got attribute type (%s) and length (%d)\n",
+	   type_names[AttType], AttLen);
+#endif
 
    /* If the attribute is a character, allocate a temporary string for it,
     * get the string, convert it to a MATLAB string, and free the temporary
@@ -474,8 +498,10 @@ int GetAttValue (int CDF, int nargin, Matrix *InArgs[], int *CurInArg,
    }
 
    OutArgs[*CurOutArg] = mAttValue;
-   (*CurInArg)++;
    (*CurOutArg)++;
+#ifdef DEBUG
+   printf ("  CurInArg = %d\n", *CurInArg);
+#endif
    
    return (ERR_NONE);
 }
