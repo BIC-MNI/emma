@@ -1,5 +1,6 @@
 #define _IEEE 1                 /* Needed for nan.h to work */
 #include <stdlib.h>
+#include <stdio.h>
 #include <math.h>
 #include <nan.h>
 #include "emmageneral.h"
@@ -9,6 +10,11 @@
 
 void TrapInt (int num_bins, double *times, double *values,
 	      double *area);
+void Lookup1 (double *oldX, double *oldY,
+              double *newX, double *newY,
+              int TableRows,
+              int OutputRows);
+
 
 extern double NaN;
 
@@ -95,7 +101,7 @@ Boolean IntOneFrame (double X[], double Y[], int XYLength, int *LowIndex,
       printf ("Frame entirely out of bounds\n");
 #endif
       *Integral = NaN;
-      return;
+      return (FALSE);
    }
    
    /*
@@ -211,6 +217,8 @@ Boolean IntOneFrame (double X[], double Y[], int XYLength, int *LowIndex,
 #endif
       *Integral = *Integral / (x_values[numBins-1] - x_values[0]);
    }
+
+   return (TRUE);
 
 }     /* IntOneFrame () */
 
