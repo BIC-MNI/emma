@@ -34,7 +34,6 @@
 #include "mexutils.h"
 #include "emmageneral.h"
 
-
 #define PROGNAME "miinquire"
 
 
@@ -386,7 +385,7 @@ int GetVarType (int CDF, int nargin, Matrix *InArgs[], int *CurInArg,
 @GLOBALS    : ErrMsg
 @CALLS      : CMEX, NetCDF, MINC libraries
 @CREATED    : Aug 93 (but not finished until 30 Sep), Greg Ward
-@MODIFIED   : 
+@MODIFIED   : 94/7/15, GW: removed a spurious increment of *CurInArg
 ---------------------------------------------------------------------------- */
 int GetAttValue (int CDF, int nargin, Matrix *InArgs[], int *CurInArg,
                          int nargout, Matrix *OutArgs[], int *CurOutArg)
@@ -431,7 +430,7 @@ int GetAttValue (int CDF, int nargin, Matrix *InArgs[], int *CurInArg,
       return (ERR_ARGS);
    }
 
-   mAttName = InArgs [(*CurInArg)++];
+   mAttName = InArgs [(*CurInArg)];
    if (ParseStringArg (mAttName, &AttName) == NULL)
    {
       sprintf (ErrMsg, "attvalue: attribute name must be a character string");
