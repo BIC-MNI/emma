@@ -1,13 +1,13 @@
-function rcbfdemo(slice_number, frame_number)
+function rcbfdemo (filename, slice_number, frame_number)
 % RCBFDEMO Demonstrate the RCBF blood analysis package.
 %
-%   rcbfdemo(slice_number, frame_number)
+%   rcbfdemo (filename, slice_number, frame_number)
 %
-% Hard-coded to use the yates_19445 data
-% file, but allows input of a slice and
-% frame to display.
+% Does some interactive demos of EMMA capabilites and solves the two-
+% compartment regional cerebral blood flow problem for a single slice
+% of a given file (using rcbf2).
 
-% $Id: rcbfdemo.m,v 1.8 1997-10-20 18:23:25 greg Exp $
+% $Id: rcbfdemo.m,v 1.9 1997-10-21 22:36:03 greg Rel $
 % $Name:  $
 
 % ----------------------------- MNI Header -----------------------------------
@@ -36,10 +36,7 @@ function rcbfdemo(slice_number, frame_number)
 % ---------------------------------------------------------------------------- */
 
 
-if (nargin ~= 2)
-  help rcbfdemo
-  error ('Incorrect number of input arguments.');
-end
+error (nargchk (3, 3, nargin));
 
 if (length(slice_number) ~= 1)
   help rcbfdemo
@@ -53,7 +50,7 @@ end
   
 
 disp ('Opening yates_19445 via openimage');
-h = openimage ('/usr/local/matlab/toolbox/emma/examples/yates_19445.mnc');
+h = openimage (filename);
 nf = getimageinfo(h,'NumFrames');
 ns = getimageinfo(h,'NumSlices');
 disp (['Image has ' int2str(nf) ' frames and ' int2str(ns) ' slices.']);
@@ -85,7 +82,7 @@ title (['Here is the integrated image: all frames of slice ' int2str(slice_numbe
 drawnow
 
 
-disp ('TAC generation: Click in the fruit salad to quit.');
+disp ('TAC generation: Click in the lower left-hand corner to quit.');
 
 current_figure = gcf;
 set (0, 'DefaultFigurePosition', [750 250 300 200]);
@@ -112,8 +109,7 @@ figure;
 cpustart = cputime;
 tic;
 
-[K1, k2, V0, delay] = rcbf2('/usr/local/matlab/toolbox/emma/examples/yates_19445.mnc', ...
-                            slice_number, 2, 1);
+[K1, k2, V0, delay] = rcbf2(filename, slice_number, 3, 1);
 cpu_elapsed = cputime - cpustart;
 user_elapsed = toc;
 
@@ -125,10 +121,3 @@ figure (gcf+1);
 
 viewimage (K1);
 title ('Here is the K1 image as calculated within MATLAB');
-
-
-
-
-
-
-
