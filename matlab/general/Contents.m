@@ -17,7 +17,6 @@
 %   mireadimages  - Read images from a MINC file (used by getimages).
 %   mireadvar     - Read a hyperslab from any NetCDF variable.
 %   micreate      - Create a new MINC file from scratch.
-%   micreateimage - Create the MIimage variable in a new MINC file.
 %   miwriteimages - Write images to a MINC file (used by putimages).
 %   miwritevar    - Write a hyperslab to any NetCDF variable.
 %   miinquire     - Get NetCDF variable, dimension, or attribute information.
@@ -28,19 +27,34 @@
 %
 % General utility functions
 %   calpix        - Generate a vector index for a point in an image vector.
-%   getpixel      - Use this instead of ginput.
-%   viewimage     - View an image.
-%   spectral      - Generate the RGB numbers for a spectral colourmap.
-%   hotmetal      - Generate the RGB numbers for a hotmetal colourmap.
-%   ntrapz        - Fast CMEX function for trapezoidal integration.
-%   lookup        - Fast CMEX function for linear interpolation.
-%   nframeint     - Fast CMEX integration across frames.
 %   deriv         - Calculate the derivative of a numerical function.
+%   getmask       - Returns a mask that is the same size as the passed image.
+%   getpixel      - Use this instead of ginput.
+%   gettaggedhist - Get a histogram of tagged points within a volume.
+%   getvolumehist - Get a histogram of a volume.
+%   hotmetal      - Generate the RGB numbers for a hotmetal colourmap.
+%   igrate        - Performs a piecewise linear integration.
+%   loadtagfile   - Load coordinates from an MNI tag file.
+%   lookup        - Fast CMEX function for linear interpolation.
+%   maketac       - Generate a time-activity curve from a set of data.
+%   nconv         - Convolution of two vectors with not necessarily unit spacing.
+%   nfmins        - Minimize a function of several variables.
+%   nframeint     - Fast CMEX integration across frames.
+%   ntrapz        - Fast CMEX function for trapezoidal integration.
+%   rescale       - Multiply a matrix by a scalar.
 %   smooth        - Perform a simple spatial smoothing on an image.
+%   spectral      - Generate the RGB numbers for a spectral colourmap.
+%   viewimage     - View an image.
+%   world2voxel   - Convert world coordinates to voxel coordinates.
 %
 % rCBF analysis functions
+%   rcbfanalysis  - Perform two compartment rCBF analysis, and write out
+%                   K1 and V0 in MINC files.
+%   rcbfdemo      - Demonstrates the RCBF blood analysis package.
 %   rcbf1         - Performs a single compartment rCBF analysis.
 %   rcbf2         - Performs a full two compartment rCBF analysis, with
 %                   blood dispersion and delay correction.
-%   rcbfanalysis  - Perform two compartment rCBF analysis, and write out
-%                   K1 and V0 in MINC files.
+%
+% Rat Data Analysis
+%   ratbrain      - Analyze rat data.
+%   ratdemo       - Rat data analysis demo.
