@@ -1,4 +1,6 @@
 function handle = newimage (new_file, parent_image, numslices, numframes)
+% NEWIMAGE   create a new image and possibly an associated MINC file.
+%
 % handle = newimage (new_file, parent_file, numslices, numframes)
 %
 %  Creates a new image.  If the character string new_file is not
@@ -59,7 +61,8 @@ end
 % parent.
 
 if isstr (parent_image)
-	[Tmp, imagesize] = mcdinq (parent_image, 'xspace');
+	[res, out] = unix (['mincinfo -dimlength xspace ' parent_image]);
+	imagesize = sscanf (out, '%d');
 else
 	imagesize = getimageinfo (parent_image, 'ImageSize');
 	parent_image = getimageinfo (parent_image, 'Filename');
@@ -112,7 +115,7 @@ if (numslices > 1) | (numframes == 0)
 	else
 		eval(['AvailFrames'  int2str(ImageCount) ' = 1;']);
 	end
-	eval(['AvailSlices'  int2str(ImageCount) ' = 1:numslices'']);
+	eval(['AvailSlices'  int2str(ImageCount) ' = 1:numslices;']);
 	eval(['PETimages'    int2str(ImageCount) ' = zeros(imagelen, numslices);']);
 else
 	if (numslices == 0)
