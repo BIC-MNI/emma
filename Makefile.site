@@ -41,11 +41,11 @@ MATLABINC   = $(MATLAB_ROOT)/extern/include
 MATLABLIB   = $(MATLAB_ROOT)/extern/lib/$(MACHINE)
 
 #
-# These are directories where the various components of EMMA will
-# be installed.  All MATLAB files (*.m and CMEX) will be copied
-# there, so it is actually better if you have EMMA its own directory,
-# such as $(MATLAB_ROOT)/toolbox/emma.  You will then have to add
-# this directory to the default MATLAB path by putting the line
+# These are directories where the various components of EMMA will be
+# installed.  All MATLAB files (*.m and CMEX) will be copied there;
+# there are quite a lot of them, so the default is to give EMMA its own
+# directory, $(MATLAB_ROOT)/toolbox/emma.  You will have to add this
+# directory to the default MATLAB path by putting the line
 #
 #  path(path, '/usr/local/matlab/toolbox/emma');
 #
@@ -55,7 +55,7 @@ MATLABLIB   = $(MATLAB_ROOT)/extern/lib/$(MACHINE)
 # BIN_INSTALL_DIR and DOC_INSTALL_DIR.
 #
 
-MATLAB_INSTALL_DIR = $(MATLAB_ROOT)/toolbox/local
+MATLAB_INSTALL_DIR = $(MATLAB_ROOT)/toolbox/emma
 BIN_INSTALL_DIR    = /usr/local/bin
 DOC_INSTALL_DIR    = /usr/local/doc
 
