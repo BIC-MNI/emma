@@ -25,8 +25,11 @@
 @CREATED    : September - November 1993, Greg Ward.
 @MODIFIED   : 
 ---------------------------------------------------------------------------- */
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <errno.h>
 #include <string.h>
 #include <assert.h>
 #include <netcdf.h>
@@ -39,7 +42,7 @@
 #include "dimensions.h"
 #define PROGNAME      "micreateimage"
 
-#define ERROR_CHECK(success) { if (!(success)) { ErrAbort (ErrMsg, TRUE, 1); }}
+#define ERROR_CHECK(success) { if (!(success)) { ErrAbort (ErrMsg, FALSE, 1); }}
 
 
 
@@ -217,6 +220,8 @@ void DumpInfo (int CDF)
 Boolean OpenFiles (char parent_file[], char child_file[],
                    int *parent_CDF,    int *child_CDF)
 {
+   struct stat statbuf;		/* used to check that created file exists */
+
    /*
     * If a filename for the parent MINC file was supplied, open the file;
     * else return -1 for *parent_CDF.
@@ -237,16 +242,56 @@ Boolean OpenFiles (char parent_file[], char child_file[],
       *parent_CDF = -1;
    }
 
-   /* Create the child file, bomb if any error */
+   /* 
+    * Create the child file, bomb if any error.  N.B. we call nccreate() 
+    * with a mode of NC_NOCLOBBER here because if we use NC_CLOBBER and 
+    * the file is uncreatable (eg. permission denied), then the NetCDF
+    * code incorrectly attempts to delete the file; this results in
+    * errno being clobbered, so we'd print out an inaccurate error 
+    * message here.
+    */
    
-   *child_CDF = nccreate (child_file, NC_CLOBBER);
+   *child_CDF = nccreate (child_file, NC_NOCLOBBER);
    if (*child_CDF == MI_ERROR) 
    {
-      sprintf (ErrMsg, "Error creating child file %s: %s\n", 
-               child_file, NCErrMsg (ncerr));
+      char *errmsg;
+      
+      if (ncerr == NC_NOERR || ncerr == NC_SYSERR)
+      {
+	 errmsg = strerror (errno);
+      }
+      else
+      {
+	 errmsg = NCErrMsg (ncerr);
+      }
+      
+      sprintf (ErrMsg, "Error creating file %s: %s\n",
+               child_file, errmsg);
       ncclose (*parent_CDF);
       return (FALSE);
    }
+
+   /* 
+    * Now just check to make sure the file exists and has non-zero size
+    * (because NetCDF fails to report disk full!)
+    */
+
+   if (stat (child_file, &statbuf) != 0)
+   {
+      sprintf (ErrMsg, "File %s was not created: disk may be full\n",
+	       child_file);
+      ncclose (*parent_CDF);
+      ncclose (*child_CDF);
+      return (FALSE);
+   }
+   if (statbuf.st_size == 0)
+   {
+      sprintf (ErrMsg, "Error creating file %s: disk may be full\n",
+	       child_file);
+      ncclose (*parent_CDF);
+      ncclose (*child_CDF);
+      return (FALSE);
+   }      
    
 #ifdef DEBUG
    printf ("OpenFiles:\n");
