@@ -13,12 +13,10 @@ to perform delay correction on plasma data for RCBF studies.  The
 delay correction involves fitting an equation in four parameters
 ($\alpha$, $\beta$, $\gamma$, and $\delta$) to the average brain
 activity across gray matter, $A(t)$:
-
 \begin{equation}
 A(t) = \alpha g(t+\delta) \otimes e^{-\beta t} + \gamma g(t+\delta)
 \label{eq:fiteqn}
 \end{equation}
-
 where $g(t+\delta)$ is the dispersion-corrected plasma activity
 shifted by the delay time $\delta$.  Since this problem was found to
 be horribly overdetermined, we switched to the method recommended by
@@ -46,14 +44,14 @@ ubiquitous task of integrating a set of data across several frames and
 dividing by the frame lengths.  (In previous implementations of the
 RCBF analysis, this was not done; rather, the data set was simply
 interpolated at the mid-frame time.  This achieves essentially the
-same thing -- it approximates the average of the data set across the
-frame -- much faster, but at the cost of accuracy.)  Upon re-writing
+same thing---it approximates the average of the data set across the
+frame---much faster, but at the cost of accuracy.)  Upon re-writing
 frameint in C, we observed a speed increase of roughly 50-fold, on the
 order of the increase observed for other MATLAB-to-C translations.
 This resulted in a speed increase of 2.5 times for \verb|b_curve|.
 (Specifically: 100 calls to \verb|b_curve| using the MATLAB frameint
-took ~16.8 sec; the same trial with \verb|b_curve| calling the CMEX
-routine nframeint took ~6.6 sec.  Tests were done on the 50 MHz ursula
+took \verb|~|16.8 sec; the same trial with \verb|b_curve| calling the CMEX
+routine nframeint took \~6.6 sec.  Tests were done on the 50 MHz ursula
 with no other users.  I also verified that the results of the two
 version of \verb|b_curve| were identical.)
 
@@ -129,7 +127,7 @@ In an effort to get anything meaningful out of \verb|lmdif|, I then
 wrote a very simple \verb|fcn|, that takes a single value $x$, and
 returns a single value $fvec = x^{2}$.  \verb|lmdif| did in fact come
 close to $x=0$ as a minimum of the function quickly.  However, it did
-not stop -- it got as low as $x ~ 10^{-60}$ before giving up after
+not stop -- it got as low as $x$ $10^{-60}$ before giving up after
 performing too many calls to \verb|fcn| (the maximum number of calls
 allowed by my main program was 400, on the recommendation of the
 \verb|lmdif| example code).
