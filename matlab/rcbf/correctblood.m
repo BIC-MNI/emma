@@ -1,9 +1,12 @@
 function [new_ts_even, Ca_even, delta] = correctblood ...
-      (A, FrameTimes, FrameLengths, g_even, ts_even, options)
+      (A, FrameTimes, FrameLengths, g_even, ts_even, ...
+       tau, delta, do_delay, progress)
+
 % CORRECTBLOOD  perform delay and dispersion corrections on blood curve
 %
 %  [new_ts_even, Ca_even, delta] = correctblood (A, FrameTimes, ...
-%                                  FrameLengths, g_even, ts_even, progress)
+%                                     FrameLengths, g_even, ts_even, ...
+%                                     tau, delta, do_delay, progress)
 %
 %  The required input parameters are: 
 %      A - brain activity, averaged over all gray matter in a slice.  This
@@ -15,6 +18,16 @@ function [new_ts_even, Ca_even, delta] = correctblood ...
 %               some *evenly spaced* time domain.  Should be in units
 %               of decay / (mL-blood * sec)
 %      ts_even - the time domain at which g_even is resampled
+%
+%  Optional input parameters:
+%      tau - the dispersion constant (default: 4 sec)
+%      delta - the delay constant; only used if do_delay is 0
+%      do_delay - boolean variable that controls whether to perform delay 
+%                 correction (i.e. compute a value of delta) 
+%                 (default: 1, to do the correction)
+%      progress - 0 for total silence (except for errors)
+%                 1 to print progress messages
+%                 2 to print progress messages and graph intermediate steps
 %
 %  The returned variables are:
 %      new_ts_even - generally the same as the old time scale,
@@ -52,34 +65,28 @@ function [new_ts_even, Ca_even, delta] = correctblood ...
 %  used as delta to do delay correction without the time-consuming
 %  fitting.
 
-if ((nargin < 5) | (nargin > 6))
-   help correctblood
-   error ('Incorrect number of input arguments.')
-end
+error (nargchk (5, 9, nargin));
 
-progress = 0;                   % defaults in case of no options vector - 
-do_delay = 1;                   % may be overridden below
+% Set defaults for any optional arguments that weren't supplied
+
+if (nargin < 9)                 % progress not given, assign default value
+   progress = 0;
+end;
+
+if (nargin < 8)                 % do_delay not given, assign default
+   do_delay = 1;
+end;
+
+if (nargin < 7)                 % delta not given
+   delta = 0;
+end;
+
+if (nargin < 6)                 % tau not given
+   tau = 4;
+end;
    
-if (nargin == 6)                % options vector
-
-   if (length(options)>=1)      % options vector given; if it has an element
-      progress = options(1);    % 1, that will be progress
-   end
-
-   if (length(options)>=2)      % delay correction toggle supplied
-      do_delay = options(2);
-   end
-
-   if (length(options)>=3)      % value to use for delta supplied
-      delta = options(3);
-   else                         % no delta value given, so use 0
-      delta = 0;                
-   end
-
-end
-
 if (progress) 
-   disp ('Showing progress');
+   disp ('correctblood:');
 end
 
 if (~do_delay) 
@@ -96,6 +103,8 @@ first60 = find (FrameTimes < 60);
 A = A (first60);                        % chop off stuff after 60 seconds
 MidFTimes = MidFTimes (first60);        % first minute again
 
+% If graphical progress: plot the caller-supplied PET activity
+
 if (progress >= 2)
    figure;
    plot (MidFTimes, A, 'or');
@@ -103,9 +112,9 @@ if (progress >= 2)
    title ('Average activity across gray matter in first minute');
    old_fig = gcf;
    drawnow;
-end
+end;
 
-tau = 4;                                    % assumed dispersion time constant
+% If graphical progress: plot the uncorrected blood data
 
 if (progress >= 2)
    figure;
@@ -113,7 +122,7 @@ if (progress >= 2)
    title ('Blood activity: dotted=g(t), solid=g(t) + tau*dg/dt');
    drawnow
    hold on
-end
+end;
 
 % First let's do the dispersion correction: differentiate and smooth
 % g(t) by using the method of Sayers described in "Inferring
@@ -130,6 +139,8 @@ ts_even(length(smooth_g_even)) = [];
 % differentiated versions of g_even
 
 g_even = smooth_g_even + tau*deriv_g;
+
+% Add the dispersion-corrected blood curve to the uncorrected one
 
 if (progress >= 2)
    plot (ts_even, g_even, 'r');
