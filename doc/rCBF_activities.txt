@@ -20,7 +20,14 @@ while ignoring V0, the following must be completed:
 
    COMPLETED ON: June 25, 1993
 
-   STATUS: June 25, 1993: Completed.
+   STATUS: June 29, 1993: Overhauled the function since we realized that
+			  the convolution was not being performed correctly.
+			  The function now creates evenly sampled data sets
+			  for the purpose of convolution, convolutes, and then
+			  re-samples back to the original sample spacing.  We
+			  discovered that unevenly sampled data sets did not
+			  convolute correctly.
+	   June 25, 1993: Completed.
            June 21, 1993: Created an rR lookup table with Matlab, but not
                           an actual .m file.  However, all of the commands
 			  used were saved in a matlab diary.
@@ -41,7 +48,13 @@ while ignoring V0, the following must be completed:
 
    COMPLETED ON:
 
-   STATUS: June 25, 1993: A .m file exists, but it is very rudimentary.
+   STATUS: June 30, 1993: Routine now calculates a K1 image as well as
+                          a K2 image.  However, while this image appears
+                          qualitatively similar to a K1 image produced
+                          by Jin's K1_image_auto.for, the values themselves
+			  are off by a little more than four orders of
+			  magnitude.
+           June 25, 1993: A .m file exists, but it is very rudimentary.
                           Data for a K2 image is generated, but no
                           K1 image is generated.
            June 21, 1993: Played around with getting values for K2 by
