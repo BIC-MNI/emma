@@ -1,5 +1,6 @@
 function [int1, int2, int3] = findintconvo (Ca_even, ts_even, k2_lookup,...
                                      midftimes, flengths, w1, w2, w3)
+
 % FINDINTCONVO   calculate tables of the integrated convolutions commonly used
 %
 %   [int1,int2,int3] = findintconvo (Ca_even, ts_even, k2_lookup,...
@@ -27,8 +28,8 @@ function [int1, int2, int3] = findintconvo (Ca_even, ts_even, k2_lookup,...
 % resampleblood before calling findconvints.)
 %
 % Then, the convolution of Ca(t) and exp(-k2*t) is resampled at the
-% mid-frame times (passed as, you guessed it, midftimes) and
-% integrated across frames using flengths as dt.
+% mid-frame times (passed as midftimes) and integrated across frames
+% using flengths as dt.
 
 
 error (nargchk (6, 8, nargin));
@@ -37,6 +38,7 @@ error (nargchk (6, 8, nargin));
 
 NumEvenTimes = length(ts_even);
 NumFrames = length(midftimes);
+fstart = midftimes - (flengths / 2);
 
 % Now we need to calculate the function to convolve with Ca_even
 % [a/k/a Ca(t)].  A note on the variables: exp_fun and integrand
@@ -49,27 +51,44 @@ NumFrames = length(midftimes);
 % integrated convolutions conv_int1 and conv_int2 as described above.
 
 TableSize = length (k2_lookup);
-integrand = zeros (NumFrames, 1);		% this is integrated across frames
+integrand = zeros (NumFrames, 1);               % this is integrated across frames
 
 if (nargin >= 6); int1 = zeros (1, TableSize); end;
 if (nargin >= 7); int2 = zeros (1, TableSize); end;
 if (nargin == 8); int3 = zeros (1, TableSize); end;
 
+% if w1 is empty, assume that it should be all ones
+
+if isempty (w1)
+   w1 = ones (size(NumFrames));
+end
+
+
 for i = 1:TableSize
+
+fprintf('.')
+
    exp_fun = exp(-k2_lookup(i) * ts_even);
    convo = conv(Ca_even, exp_fun);
-   integrand = lookup (ts_even, convo(1:NumEvenTimes), midftimes);
 
-   if (nargin >= 6)                    % w1 present?
-      if isempty (w1)                  % if empty, assume all ones
-	 int1 (i) = integrand' * flengths;
-      else                             % otherwise use it as given
-	 int1 (i) = (w1 .* integrand)' * flengths;
-      end
+   integrand = frameint (ts_even, convo(1:length(ts_even)), fstart, flengths);
+
+   % w1 given?
+
+   if (nargin >= 6)
+      int1 (i) = trapz(midftimes, (w1 .* integrand));
    end
    
-   % w2 given? then use it to create int2. ditto for w3 and int3.
+   % w2 given?
 
-   if (nargin >= 7); int2 (i) = (w2 .* integrand)' * flengths; end
-   if (nargin == 8); int3 (i) = (w3 .* integrand)' * flengths; end
+   if (nargin >= 7)
+      int2 (i) = trapz(midftimes, (w2 .* integrand));
+   end
+
+   % w3 given?
+   
+   if (nargin == 8)
+       int3 (i) = trapz(midftimes, (w3 .* integrand));
+   end
 end
+
