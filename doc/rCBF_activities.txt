@@ -80,3 +80,33 @@ V0, delay or dispersion into account.
 We are currently adding delay and dispersion correction to the
 above routines, and from there we will move on to performing
 an analysis that also solves for V0.
+
+
+The steps for finding the delay constant delta are:
+
+1) Find A(t) by:
+      i) integrating a slice across its frames, and then selecting
+         all pixels that have a value greater than 1.8 times the mean of
+         the integrated image.
+     ii) allow the user to interactively adjust the mask by selecting a 
+         new scale factor.
+    iii) use pixels selected by the above procedure as a mask applied to
+         every frame in the slice, and then calculate the mean of each
+         image.  The resulting values are used as A(t).
+
+   COMPLETED ON:
+
+   STATUS: July 7, 1993: Created getmask.m.  This function handles the second
+                         part of the above by displaying the image, and
+                         allowing the user to interactively adjust the scale
+                         factor.  getmask returns the resulting mask as
+                         0's and 1's.
+
+2) Use the A(t) to do a least squares fit to the blood delay and dispersion
+   equation.
+
+   COMPLETED ON: 
+
+   STATUS: July 7, 1993: Took a first pass look at least squares fitting
+                         in general, and the matlab functions that support
+                         it in particular.
