@@ -1,5 +1,7 @@
 function [activity, start_times, stop_times] = getblooddata (study)
-%  GETBLOODDATA  - retrieve blood activity and sample times from a study
+%  GETBLOODDATA retrieve blood activity and sample times from a study
+%
+%        [activity, start_times, stop_times] = getblooddata (study)
 %
 %  The study variable can be a handle to an open image, or the name of 
 %  a NetCDF (MNC or BNC) file containing the blood activity data for
@@ -12,8 +14,7 @@ function [activity, start_times, stop_times] = getblooddata (study)
 %  If a file that does not exist is specified, or getblooddata cannot
 %  find the blood activity data in either the MINC or BNC file, it will
 %  print a warning message and return nothing (ie. empty matrices).
-%
-%  [activity, start_times, stop_times] = getblooddata (study)
+
 
 % ------------------------------ MNI Header ----------------------------------
 %@NAME       : getblooddata

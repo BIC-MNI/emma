@@ -1,9 +1,12 @@
 function msg = check_sf (handle, slices, frames)
-%  check_sf  - for internal use only
+
+%  CHECK_SF  for internal use only
+%
+%      msg = check_sf (handle, slices, frames)
+%
 %  msg = []: all is OK
 %  msg = error message if there's anything wrong
-
-% check_sf - makes sure that the given slices and frames vectors
+% makes sure that the given slices and frames vectors
 % are consistent with the image specified by handle.  Checks for:
 %   * both slices and frames cannot be vectors
 %   * if image has no frames, frames vector should be empty
