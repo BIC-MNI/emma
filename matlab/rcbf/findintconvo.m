@@ -69,7 +69,8 @@ for i = 1:TableSize
 fprintf('.')
 
    exp_fun = exp(-k2_lookup(i) * ts_even);
-   convo = conv(Ca_even, exp_fun);
+%   convo = conv (Ca_even, exp_fun);
+   convo = conv(Ca_even, exp_fun, ts_even(2) - ts_even(1));
 
    integrand = frameint (ts_even, convo(1:length(ts_even)), fstart, flengths);
 
