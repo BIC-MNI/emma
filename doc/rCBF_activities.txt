@@ -1,5 +1,3 @@
-PRELIMINARY
-
 The following must be completed in order to implement a two-compartment
 rCBF model in Matlab:
 
@@ -20,9 +18,10 @@ while ignoring V0, the following must be completed:
    (100 values of rR corresponding to values of K2 from 0.01 minutes to
    1 minute).
 
-   COMPLETED ON:
+   COMPLETED ON: June 25, 1993
 
-   STATUS: June 21, 1993: Created an rR lookup table with Matlab, but not
+   STATUS: June 25, 1993: Completed.
+           June 21, 1993: Created an rR lookup table with Matlab, but not
                           an actual .m file.  However, all of the commands
 			  used were saved in a matlab diary.
 
@@ -42,7 +41,10 @@ while ignoring V0, the following must be completed:
 
    COMPLETED ON:
 
-   STATUS: June 21, 1993: Played around with getting values for K2 by
+   STATUS: June 25, 1993: A .m file exists, but it is very rudimentary.
+                          Data for a K2 image is generated, but no
+                          K1 image is generated.
+           June 21, 1993: Played around with getting values for K2 by
                           using the above two functions.  No actual
                           .m file exists yet, but once again all of
   			  the commands used were saved in a matlab
