@@ -1,38 +1,63 @@
+                    ------------------------------
+                              EMMA 0.9.4
+
+                           14 October, 1997
+                    ------------------------------
+
+
 Welcome to EMMA!
 ================
 
-EMMA stands for Extensible Matlab Medical Analysis.  It is a MATLAB
-package developed at the Montreal Neurological Institute McConnell
-Brain Imaging Centre, and was created to allow non-programmers to
-develop medical analysis applications quickly and interactively.
-Previously this development was done on a VAX in FORTRAN.  Obviously,
-the execution time of software developed under an interactive
-environment such as MATLAB cannot compete with the execution time of
-compiled code.  However, the reduced complexity of development, and
-consequently reduced development time is a significant advantage.
+EMMA is a MATLAB package developed at the McConnell Brain Imaging
+Centre (BIC) of the Montreal Neurological Institute, created to allow
+MATLAB programmers to develop medical image analysis applications
+quickly and interactively.  Previously this development was done on a
+VAX in FORTRAN.  In spite of the inherent loss of speed due to using
+an interpreted language, the reduced time and complexity of
+development offer a significant advantage.  (In fact, MATLAB code
+written to carefully take advantage of MATLAB's vectorized nature can
+compete with code written in compiled languages.  Of course, it
+doesn't hurt that today's Unix workstations are a heck of a lot faster
+than yesterday's VAXes.)
+
+Release 0.9.4 is mostly a bug-fix release; see the CHANGES file for
+details.  Several of those bugs only revealed themselves when we
+tested EMMA under MATLAB 5, though, so this release has the
+distinction of running under both MATLAB 4 and 5.
+
+The acronym EMMA stands for whatever you want it to stand for.
+Current favourites include:
+   EMMA Makes MATLAB Acceptable
+   EMMA: MATLAB and MINC Arguing
+   Elbowing MATLAB and MINC into Agreement
+   Everyone's Memory Munching Alternative
+   Effortlessly Making MINC Accessible
+
+In a nutshell: it makes quantitative analysis of medical image data in
+MINC files readily accessible to MATLAB programmers.
 
 
--Mark Wolforth (March, 1994)
-
-
-
-How to Install EMMA
--------------------
+Components
+----------
 
 EMMA consists of:
 
-     a) MATLAB scripts.  These do not need to be compiled.
-     b) CMEX programs.  These are dynamically loaded by MATLAB when
+     1) MATLAB scripts.  These do not need to be compiled.
+     2) CMEX programs.  These are dynamically loaded by MATLAB when
         they are called, and must be compiled.  You will need the cmex
 	script supplied with MATLAB, as well as the MINC and NetCDF
 	libraries.  You should have obtained these along with EMMA;
 	if not, they are available by anonymous ftp from 
-	yorick.mni.mcgill.ca:/pub/minc.
-     c) Stand-alone C programs.  These require both the MINC and
+	ftp.bic.mni.mcgill.ca, in /pub/minc.
+     3) Stand-alone C programs.  These require both the MINC and
         netCDF libraries.
-     d) LaTeX documentation.  Figures are included using the widely
-        available psfig package.
+     4) LaTeX documentation.  Figures are included using the widely
+        available psfig package.  PostScript versions of the
+        documentation are included in case you don't have LaTeX.
 
+
+Building
+--------
 
 To build EMMA (after unpacking the archive):
 
@@ -47,7 +72,8 @@ To build EMMA (after unpacking the archive):
      3) Type "make"
 
 
-To install EMMA:
+Installation
+------------
 
      1) Type "make install".  (Note that you must have already edited
 	Makefile.site to set the destination directories.)  All MATLAB
@@ -57,59 +83,61 @@ To install EMMA:
 
 Assuming that MATLAB is installed under /usr/local/matlab (this can be
 changed in Makefile.site), then EMMA will by default be installed to
-/usr/local/matlab/toolbox/local.  Since there are a large number of
-MATLAB files in EMMA, however, we recommend that you create a separate
-directory for EMMA, and modify the MATLAB path to search there.  For
-instance, you could change MATLAB_INSTALL_DIR in Makefile.site to
-/usr/local/matlab/toolbox/emma.  You would then have to change the
-MATLAB path to also search for files in this directory; this can be
-done for an individual user by setting the MATLABPATH environment
-variable, i.e. add
+/usr/local/matlab/toolbox/emma.  You will have to modify the MATLAB
+path to search this directory; this can be done for an individual user
+by setting the MATLABPATH environment variable, i.e. add
 
      setenv MATLABPATH /usr/local/matlab/toolbox/emma
 
-to your .cshrc file.  To make a system-wide modification, add
-the line
+to your .cshrc file (or equivalent to your .profile, if you're a
+sh/zsh/bash/ksh type of person).  To make a system-wide modification,
+add the line
 
-     path(path, '/usr/local/matlab/toolbox/emma');
+     path (path, '/usr/local/matlab/toolbox/emma');
 
-to your matlabrc.m file.  (This file lives in toolbox/local under the 
-root MATLAB directory.)
+to the system matlabrc.m file.  (This file lives in toolbox/local
+under the root MATLAB directory.)  (Of course, you could also set
+MATLABPATH for all users, or you could put a 'path' statement in your
+personal startup.m file.  Take your pick.)
 
 The binary executables should be somewhere in your default search
-path.  Therefore, they could go in /local/bin, /usr/bin,
-/usr/local/bin or wherever else is convenient.  Alternatively, you
-could create a separate directory for these files as well, and add
-this directory to your path variable.
+path.  Therefore, the default is to put them in /usr/local/bin; you
+could give them their own directory, but you'd have to ensure that
+they are on the system search path ($PATH, not MATLAB's search path)
+whenever EMMA is used.
 
 The documentation files can go wherever you normally put documentation
-files.  We provide our original LaTeX source files, our DVI files, and
-compressed PostScript(tm) output files.  Between all these options,
-you should have some way of printing out the final documentation.  We
-are currently working on an interactive HTML (Hyper Text Markup
-Language) version of the documentation suitable for browsing with a
-World Wide Web (WWW) client such as NCSA Mosaic (available from
-ftp.ncsa.uiuc.edu, and well worth looking at).  You can view this
-documentation via http://www.mni.mcgill.ca/system/mni/emma/emma.html.
+files.  We provide the original LaTeX source files, DVI files, and
+PostScript(tm) output files.  Between all these options, you should
+have some way of printing out the final documentation.  We are
+currently working on an interactive HTML (Hyper Text Markup Language)
+version of the documentation suitable for browsing with a World Wide
+Web (WWW) client; you should be able to find this documentation at the
+BIC's web site:
+
+   http://www.bic.mni.mcgill.ca/
+
 
 
 Bug Reports
 -----------
 
-At this time, EMMA is still an experimental system under development.
-However, since this software is actually used for medical research, we
-make every effort to ensure that the code is bug free.  We welcome bug
-reports, or suggestions for further improvements.
+EMMA is fairly mature at this point (even though it's still not at
+release 1.0), but we make no guarantees that it's free of bugs.  If
+you think you have found a bug, we very much want to hear about it.
+(Even if you haven't found a bug, it may be that the documentation
+isn't clear or is erroneous; this is considered a documentation bug,
+and will be dealt with accordingly.)
 
 The current maintainer of EMMA is Greg Ward; he can be reached at:
 
-E-mail:      greg@pet.mni.mcgill.ca
+E-mail:      greg@bic.mni.mcgill.ca
 
 Snail-mail:  McConnell Brain Imaging Centre
              McGill University
              3801 University Street
              Montreal, Quebec        H3A 2B4
-             CANADA
+             Canada
 
 
 Authors & Acknowledgements
@@ -118,10 +146,12 @@ The authors of EMMA are:
              Mark Wolforth
              Greg Ward
 
-    We are both students at McGill University (Mark is a graduate
-    student in Biomedical Engineering, and Greg is a graduate student
-    in Computer Science), and started this project as part of a summer
-    job.
+    EMMA started as a summer project back in 1993, when both of us
+    were undergraduates (Mark in electrical engineering, Greg in
+    physics).  It has undergone continued maintenance throughout our
+    years of graduate school (biomedical engineering and computer
+    science, respectively), and has been in constant use at the BIC
+    for the last four years.
 
     We would like to thank Sean Marrett for being the driving force
     behind this project.  He provided invaluable guidance when all
@@ -135,7 +165,7 @@ The authors of EMMA are:
 Copyright Notice and Disclaimer
 -------------------------------
 
-    Copyright (c) 1993-95 Mark Wolforth and Greg Ward, McConnell Brain
+    Copyright (c) 1993-97 Mark Wolforth and Greg Ward, McConnell Brain
     Imaging Centre, Montreal Neurological Institute, McGill
     University.
 
@@ -145,4 +175,3 @@ Copyright Notice and Disclaimer
     copies.  The authors and McGill University make no representations
     about the suitability of this software for any purpose.  It is
     provided "as is" without express or implied warranty.
-
