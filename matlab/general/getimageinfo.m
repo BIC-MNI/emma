@@ -27,10 +27,13 @@ function info = getimageinfo (handle, whatinfo)
 %      Filename       the name of the MINC file (if applicable)
 %                     as supplied to openimage or newimage; will be
 %                     empty if data set has no associated MINC file.
+%
 %      NumFrames      number of frames in the study, 0 if non-dynamic
 %                     study (equivalent to 'time')
+%
 %      NumSlices      number of slices in the study (0 if no slice
 %                     dimension)
+%
 %      ImageHeight    the size of the second-fastest varying spatial 
 %                     dimension in the MINC file.  For transverse
 %                     images, this is just the length of MIyspace.
@@ -44,6 +47,14 @@ function info = getimageinfo (handle, whatinfo)
 %                     images.  When an image is displayed with
 %                     viewimage, the image width is the horizontal
 %                     dimension on your display.
+%
+%      ImageSize      a two-element vector containing ImageHeight and
+%                     ImageWidth (in that order).  Useful for viewing 
+%                     non-square images, because viewimage needs to know
+%                     the image size in that case.
+%
+%      DimSizes       a four-element vector containing NumFrames, NumSlices,
+%                     ImageHeight, and ImageWidth (in that order)
 %
 %      FrameLengths   vector with NumFrames elements - duration of
 %                     each frame in the study, in seconds.  This is
@@ -85,6 +96,7 @@ function info = getimageinfo (handle, whatinfo)
 %@MODIFIED   : 93-6-17, Greg Ward: added standard MINC dimension names,
 %              spruced up help
 %              93-7-6, Greg Ward: added this header
+%              93-8-18, Greg Ward: massive overhaul (see RCS log for details)
 %-----------------------------------------------------------------------------
 
 if nargin ~= 2
@@ -145,6 +157,12 @@ elseif (strcmp (lwhatinfo, 'imageheight'))
 
 elseif (strcmp (lwhatinfo, 'imagewidth'))
    info = dimsizes (4);
+
+elseif (strcmp (lwhatinfo, 'imagesize'))
+   info = dimsizes (3:4);
+
+elseif (strcmp (lwhatinfo, 'dimsizes'))
+   info = dimsizes;
 
 % Now check if it's an option calculated from other options (currently
 % this is only MidFrameTimes).
