@@ -35,6 +35,22 @@ if (nargin==1)
   colourbar = 1;
 end
 
+% If any NaN's or infinities are present in the image, find the min/max
+% of the image *without* them, and assign them all to the minimum -- that 
+% way they will display as black.
+
+nuke = (isnan (img) | isinf (img));
+if any (nuke)
+   lo = min(img(~nuke));
+   hi = max(img(~nuke));
+   disp ('viewimage warning: image contains NaN''s and/or infinities');
+   nuke = find(nuke);
+   img(nuke) = zeros (size (nuke));
+else
+   lo = min(min(img));
+   hi = max(max(img));
+end
+
 
 % img is now square, xsize by xsize.  Set the colourmap, and 
 % shift/scale img so that it maps onto 1..length(colourmap)
@@ -46,8 +62,6 @@ else
 end
 num_colors = length (colormap);
 
-lo = min(min(img));
-hi = max(max(img));
 img = ((img - lo) * ((num_colors-1) / (hi-lo))) + 1;
 
 % Now display it, and fix the y-axis to normal (rather than reverse) dir.
