@@ -298,6 +298,26 @@ Boolean OpenFiles (char parent_file[], char child_file[],
 
 
 
+/* ----------------------------- MNI Header -----------------------------------
+@NAME       : FinishExclusionLists
+@INPUT      : ParentCDF
+              NumChildDims
+              ChildDimNames
+@OUTPUT     : NumExclude
+              Exclude
+@RETURNS    : 
+@DESCRIPTION: Finishes off the list of variables to exclude from mass
+              copying from parent to child file.  This includes
+              dimension and dimension-width variables associated with
+              dimensions in the parent file that don't exist in the
+              child file; and the obvious ones not to copy:
+              MIrootvariable, MIimage, MIimagemax, MIimagemin.
+@METHOD     : 
+@GLOBALS    : 
+@CALLS      : MINC/NetCDF stuff
+@CREATED    : fall 1993, Greg Ward
+@MODIFIED   : 
+---------------------------------------------------------------------------- */
 void FinishExclusionLists (int ParentCDF,
 			   int NumChildDims, char *ChildDimNames[],
 			   int *NumExclude, int Exclude[])
@@ -409,7 +429,10 @@ void FinishExclusionLists (int ParentCDF,
       }
    }     /* for CurParentDim */
 
-   /* Now add all the obvious ones: MIrootvariable, MIimage, MIimagemax, MIimagemin */
+   /* 
+    * Now add all the obvious ones: MIrootvariable, MIimage, 
+    * MIimagemax, MIimagemin 
+    */
 
    ParentVar = ncvarid (ParentCDF, MIrootvariable);
    if (ParentVar != -1)
@@ -590,6 +613,29 @@ void UpdateHistory (int ChildCDF, char *TimeStamp)
 
 
 
+/* ----------------------------- MNI Header -----------------------------------
+@NAME       : CopyOthers
+@INPUT      : ParentCDF  - CDF ID of the parent file
+              ChildCDF   - CDF ID of the child file
+              NumExclude - number of variables to exclude from the copy
+              Exclude    - list of variable ID's to be excluded
+              TimeStamp  - line to add to the history attribute
+@OUTPUT     : 
+@RETURNS    : TRUE if successfull
+              FALSE if any of micopy_all_var_defs(), ncendef(), 
+                 or mi_copy_all_var_values() indicate failure
+@DESCRIPTION: Copies the definitions and values of all variables except 
+              those in the exclusion list.  Also calls UpdateHistory() to
+              update the history line.  The child file should be in 
+              definition mode when CopyOthers() is called; it will be
+	      ncendef()'d (put in update mode) before variable values are
+	      copied, and left that way on exit.
+@METHOD     : 
+@GLOBALS    : 
+@CALLS      : UpdateHistory
+@CREATED    : fall 1993, Greg Ward
+@MODIFIED   : 
+---------------------------------------------------------------------------- */
 Boolean CopyOthers (int ParentCDF, int ChildCDF, 
 		    int NumExclude, int Exclude[],
 		    char *TimeStamp)
