@@ -94,6 +94,10 @@ V0 = zeros(16384,total_slices);
 delta = zeros(1,total_slices);
 
 img = openimage(filename);
+if (getimageinfo (img, 'time') == 0)
+   error ('Study is non-dynamic');
+end
+
 FrameTimes = getimageinfo (img, 'FrameTimes');
 FrameLengths = getimageinfo (img, 'FrameLengths');
 MidFTimes = FrameTimes + (FrameLengths / 2);
