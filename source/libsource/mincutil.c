@@ -21,6 +21,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <float.h>
+#include <errno.h>
 #include "minc.h"
 #include "emmageneral.h"
 #include "mex.h"
@@ -30,7 +31,7 @@
 
 extern   char *ErrMsg;     /* should be defined in your main program */
 
-char *nc_sys_err_msg = "File or directory not found";
+char *nc_sys_err_msg = "Unspecified system error";
 
 char *nc_err_msg_list [] = 
 {
@@ -88,6 +89,7 @@ char *minc_err_msg_list [] =
 @NAME       : NCErrMsg
 @INPUT      : NCErrCode - a NetCDF error code as defined in netcdf.h, or
                  MINC error code as defined in minc.h
+	      SysErrCode - the system error code, errno
 @OUTPUT     : (none)
 @RETURNS    : pointer to string containing text explaining the error
               NULL if the error code itself is invalid
@@ -97,18 +99,21 @@ char *minc_err_msg_list [] =
 @CALLS      : 
 @CREATED    : 93-6-30, Greg Ward
 @MODIFIED   : 94-2-17, GW: added the *_err_msg_list arrays above, and 
-              eliminated the previous method of one-big-switch in here
+                           eliminated the previous method of one-big-switch
+                            in here
+	      95-4-6,  GW: added the SysErrCode argument and code to use
+                           it if NCErrCode is NC_SYSERR or NC_NOERR
 @COMMENTS   : The nc_err_msg_list and minc_err_msg_list arrays above, 
               as well as the code here, are rather inflexibly defined with
-	      NetCDF 2.3.2 and MINC 1.0; if by chance the error messages
+	      NetCDF 2.3.2 and MINC 0.x; if by chance the error messages
 	      change (or more are added) in future versions, this will
 	      have to be changed!
 ---------------------------------------------------------------------------- */
-char *NCErrMsg (int NCErrCode)
+char *NCErrMsg (int NCErrCode, int SysErrCode)
 {
-   if (NCErrCode == -1) 
+   if (ncerr == NC_NOERR || ncerr == NC_SYSERR)
    {
-      return (nc_sys_err_msg);
+      return (strerror (errno));
    }
    else if ((NCErrCode >= NC_NOERR) && (NCErrCode <= NC_EUNLIMIT))
    {
@@ -119,7 +124,6 @@ char *NCErrMsg (int NCErrCode)
       return (minc_err_msg_list [NCErrCode - MI_ERR_NONNUMERIC]);
    }
    else return (NULL);
-
 }
 
 
@@ -152,12 +156,13 @@ int OpenFile (char *Filename, int *CDF, int Mode)
        * supernatural behaviour -- namely, simply *accessing* the
        * global variable ncerr, which is declared an extern int in
        * netcdf.h, and presumable defined somewhere in the NetCDF
-       * library -- wins a free muffin from the Cafe Neuro.
+       * library -- wins a free muffin from the Cafe Neuro. (-GW 94/8/11)
+       *
+       * I take it back - it seems to work now (-GW 95/4/6)
        */
 
-/*      sprintf (ErrMsg, "Error opening file %s: %s", 
-               Filename, NCErrMsg(ncerr));  */
-      sprintf (ErrMsg, "Error opening file %s", Filename);
+      sprintf (ErrMsg, "Error opening file %s: %s",
+	       Filename, NCErrMsg (ncerr, errno));
       return (ERR_IN_MINC);
    }  
    return (ERR_NONE);
