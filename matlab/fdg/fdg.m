@@ -93,17 +93,24 @@ NumFrames = length(EndFTimes);
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% If not spuulied, get the blood data from the .BNC file
+% If not supplied, get the blood data from the .BNC file
 
 if (length(plasma)==0)
   [plasma, ts_plasma] = getblooddata(handle);
 
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  %Perform units correction on the blood data
+  % Perform units correction on the blood data
 
   plasma = plasma ./ 10.5;
 end;
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Add a (0,0) point to the blood data if there isn't one there already
+
+if (ts_plasma(1) ~= 0)
+  ts_plasma = [0; ts_plasma(:)];
+  plasma = [0; plasma(:)];
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Resample the blood to an even time frame.  Include the
