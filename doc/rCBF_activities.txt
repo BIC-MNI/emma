@@ -96,7 +96,7 @@ The steps for finding the delay constant delta are:
 
    COMPLETED ON: July 16, 1993
 
-   STATUS: July 16,1993: 
+   STATUS: July 16,1993: Finished
            July 9, 1993: Wrote a Matlab script that implements the above
                          three steps and uses getmask.m.
            July 7, 1993: Created getmask.m.  This function handles the second
@@ -108,9 +108,16 @@ The steps for finding the delay constant delta are:
 2) Use A(t) to do a least squares fit to the blood delay and dispersion
    equation.
 
-   COMPLETED ON: 
+   COMPLETED ON: August 1, 1993
 
-   STATUS: July 16,1993: After satisfying ourselves that the stepwise 
+   STATUS: Aug. 1, 1993: Completed.  The dispersion correction problem
+                         was resolved by converting the routine currently
+                         used by the FORTRAN K1 image generation program
+                         to Matlab.  The delay correction was not changed,
+                         except by using a better (trapezoidal) integration
+                         routine.  Unfortunately, the curve fitting procedure
+                         is now very slow, and this must be solved.
+           July 16,1993: After satisfying ourselves that the stepwise 
                          fitting method described below gave reasonable
                          results, we decided to add dispersion
                          correction.  Implementation was quite easy,
@@ -151,9 +158,10 @@ In order to complete two-compartment rCBF analysis, we must:
 2) Perform a full two-compartment analysis that returns K1, k2, and V0
    using the triple-weighted integration method.
 
-   COMPLETED ON: July 21, 1993
+   COMPLETED ON: 
 
-   STATUS: July 21,1993: 
+   STATUS: Aug. 1, 1993: Our implementation is currently undergoing
+                         verification.  See below.
            July 20,1993: Investigated the problems with the first pass
                          attempt.  Since our implementation of the three-
                          weighted method grew out of an implementation of
@@ -176,12 +184,21 @@ In order to complete two-compartment rCBF analysis, we must:
 
    COMPLETED ON: 
 
-   STATUS: 
+   STATUS: Aug. 1, 1993: Underway.
 
 4) Complete documentation of the rCBF analysis package.
 
    COMPLETED ON: 
 
-   STATUS: 
+   STATUS: Aug. 1, 1993: Documentation is started.  Full descriptions have
+                         been added to every Matlab function called, and
+                         a program has been created that formats Matlab
+                         help with LaTeX.  Therefore, documentation of the
+                         individual functions has been completed.  However,
+                         since this package is intended to in part act as
+                         a tutorial on writing large Matlab packages, we
+                         require a full explanation of our methodology.
+                         We must pay particular attention to memory
+                         management.
 
 
