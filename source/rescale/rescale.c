@@ -31,6 +31,7 @@
 /* ...POS macros: 1-based, used to determine if input args are present */
 
 #define OLD_MATRIX         prhs[0]
+#define MULTIPLIER         prhs[1]
 #define CONSTANT           prhs[1]
 
 
@@ -70,7 +71,7 @@ void ErrAbort (char msg[], Boolean PrintUsage, int ExitCode)
 {
    if (PrintUsage)
    {
-      (void) mexPrintf ("Usage: %s ('<matrix>' , scalar)\n", PROGNAME);
+      (void) mexPrintf ("Usage: %s (old_matrix, multiplier)\n", PROGNAME);
    }
    (void) mexErrMsgTxt (msg);
 }
@@ -96,10 +97,13 @@ void mexFunction(int    nlhs,
                  Matrix *prhs[])
 {
 
-    double *base;
-    double constant;
-    long position;
-    long size;
+    double *old_matrix;
+
+    int     old_rows, old_cols;	        /* size of OLD_MATRIX */
+    int     mult_rows, mult_cols;       /* size of MULTIPLIER */
+
+    int     position;
+    int     size;
 
     position = 0;
 
@@ -112,23 +116,54 @@ void mexFunction(int    nlhs,
 	strcpy (ErrMsg, "Incorrect number of arguments.");
 	ErrAbort (ErrMsg, TRUE, -1);
     }
+
+    old_matrix = mxGetPr (OLD_MATRIX);
+
+    /* Get the size of each input matrix */
+
+    old_rows = mxGetM (OLD_MATRIX);
+    old_cols = mxGetN (OLD_MATRIX);
+    mult_rows = mxGetM (MULTIPLIER);
+    mult_cols = mxGetN (MULTIPLIER);
+    size = old_rows * old_cols;
     
-    if ((mxGetM(CONSTANT) != 1) || (mxGetN(CONSTANT) != 1))
+    /* 
+     * Now check if MULTIPLIER is a scalar; if not, check that it's
+     * a matrix of the same size as OLD_MATRIX; else die.
+     */
+
+    if (mult_rows == 1 && mult_cols == 1)
     {
-	strcpy (ErrMsg, "Argument 2 must be a scalar.\n");
-	ErrAbort (ErrMsg, TRUE, -1);
+	/* It's a scalar -- so multiply each element of OLD_MATRIX by it */
+
+	double constant;
+
+	constant = mxGetScalar (MULTIPLIER);
+	for (position = 0; position < size; position++)
+	{
+	    old_matrix[position] *= constant;
+	}
+    } else if (mult_rows == old_rows && mult_cols == old_cols)
+    {
+	/* 
+	 * It's a matrix the same size as OLD_MATRIX - so multiply them
+	 * element-by-element.
+	 */
+
+	double *multiplier;
+
+	multiplier = mxGetPr (MULTIPLIER);
+	for (position = 0; position < size; position++)
+	{
+	    old_matrix[position] *= multiplier[position];
+	}
     }
-
-    constant = mxGetScalar(CONSTANT);
-    
-    size = ((long)mxGetM(OLD_MATRIX)) * ((long)mxGetN(OLD_MATRIX));
-
-    base = mxGetPr(OLD_MATRIX);
-    
-    while (position < size)
+    else
     {
-	*(base+position) = *(base+position) * constant;
-	position++;
+	/* It's neither -- die! */
+
+	strcpy (ErrMsg, "multiplier must be either a scalar or a matrix of the same dimensions as old_matrix.\n");
+	ErrAbort (ErrMsg, TRUE, -1);
     }
 
 }     /* mexFunction */
