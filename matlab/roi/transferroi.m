@@ -51,5 +51,5 @@ for i=1:numROIs
   numVertices = length(Vertices)/2;
   Xi = Vertices(1:numVertices);
   Yi = Vertices((numVertices+1):(length(Vertices)));
-  drawroi (Xi,Yi,line_color,child_fig);
+  drawroi (Xi,Yi,line_color,child_fig,i);
 end

@@ -1,9 +1,9 @@
-function lineHandle = drawroi (Xi,Yi,line_color,fig)
+function lineHandle = drawroi (Xi,Yi,line_color,fig,roiNumber)
 
 % DRAWROI - Draws a given ROI on the given figure
 %
 %
-%      lineHandle = drawroi (Xi,Yi[,line_color[,fig]])
+%      lineHandle = drawroi (Xi,Yi[,line_color[,fig[,roiNumber]]])
 %
 %
 %  This function draws the given ROI on the current figure (or on the
@@ -30,14 +30,17 @@ if (nargin<2)
   help drawroi
   error('Too few arguments.');
 elseif (nargin<3)
+  roiNumber = 0;
   line_color = [1 1 0];
   fig = gcf;
 elseif (nargin<4)
+  roiNumber = 0;
   fig = gcf;
-else
-  figure(fig);
+elseif (nargin<5)
+  roiNumber = 0;
 end
 
+figure(fig);
 
 Xlimits = get (gca,'XLim');
 Ylimits = get (gca,'YLim');
@@ -52,3 +55,13 @@ lz = ones(1,length(ly));
 lineHandle = line (lx,ly,lz,'EraseMode','none', ...
     'Color',line_color);
 
+if (roiNumber ~= 0)
+  centroid = [0 0];
+  centroid(1) = mean(lx);
+  centroid(2) = mean(ly);
+
+  text (centroid(1), centroid(2), 1, ...
+      num2str(roiNumber), ...
+      'EraseMode','none', ...
+      'Color',line_color);
+end
