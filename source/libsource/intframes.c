@@ -10,6 +10,9 @@ typedef int Boolean;
 #define MAX_X_LENGTH 1024       /* maximum number of elements of X that can */
                                 /* be found within each frame */
 
+void TrapInt (int num_bins, double *times, double *values,
+	      double *area);
+
 extern double NaN;
 
 /* ----------------------------- MNI Header -----------------------------------
@@ -192,7 +195,7 @@ Boolean IntOneFrame (double X[], double Y[], int XYLength, int *LowIndex,
 #endif
       
       
-      TrapInt ((numBins-1), (x_values+1), (y_values+1), NULL, Integral);
+      TrapInt ((numBins-1), (x_values+1), (y_values+1), Integral);
 
 #ifdef DEBUG
       printf ("Unnormalised integral = %g\n", *Integral);
@@ -203,7 +206,7 @@ Boolean IntOneFrame (double X[], double Y[], int XYLength, int *LowIndex,
    }
    else 
    {
-      TrapInt ((numBins), x_values, y_values, NULL, Integral);
+      TrapInt ((numBins), x_values, y_values, Integral);
 
 #ifdef DEBUG
       printf ("Unnormalised integral = %g\n", *Integral);
