@@ -186,27 +186,36 @@ if (do_delay)
       % and gamma.  Plot this fit.  (Could get messy, but what the hell)
 
 
+      fprintf ('printed the progress message.\n');
+      
       shifted_g_even = lookup ((ts_even-delta), g_even, ts_even);
+
+      fprintf ('Performed table lookup.\n');
+      
       g_select = find (~isnan (shifted_g_even));
 
+      fprintf ('Did the find.\n');
+      
       % Be really careful with the fitting.  If the algorithm you choose makes
       % args(2) a negative value, there will be infinities in the result
       % of b_curve, which will cause the entire thing to bomb.
 
-%      options(2) = 1;
-%      options(3) = 1;
+      options(2) = 1;
+      options(3) = 1;
 
-%      options(5) = 1;
+      options(5) = 1;
 %      [final,options,f] = leastsq ('fit_b_curve', init, options, [], ...
 %                             shifted_g_even(g_select), ts_even(g_select), ...
 %                             A, FrameTimes, FrameLengths);
 
-%      final = fmins ('fit_b_curve', init, options, [], ...
-%                     shifted_g_even (g_select), ts_even (g_select), ...
-%                     A, FrameTimes, FrameLengths);
+      final = fmins ('fit_b_curve', init, options, [], ...
+                      shifted_g_even (g_select), ts_even (g_select), ...
+                      A, FrameTimes, FrameLengths);
 
-      final = delaycorrect (init, shifted_g_even(g_select), ts_even(g_select), ...
-	                    A, FrameTimes, FrameLengths);
+      fprintf ('Did one fit.\n');
+
+%      final = delaycorrect (init, shifted_g_even(g_select), ts_even(g_select), ...
+%	                    A, FrameTimes, FrameLengths);
 
       params (i,:) = final;
 %     rss (i) = sum (f .^ 2) ;            % if using leastsq
