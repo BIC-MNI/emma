@@ -14,14 +14,19 @@
  * Constants to check for argument number and position
  */
 
-/* mireadimages ('minc_file', slice_vector, frame_vector[, options]) */
+/* mireadimages ('minc_file', slice_vector, frame_vector[, start_line[, num_lines[, options]]]) */
 
 #define MAX_OPTIONS        3        /* # of elements in options vector */
-#define MIN_IN_ARGS        1        /* only filename required */
-#define MAX_IN_ARGS        4
-#define SLICES_POS         2        /* these are 1-based! */
-#define FRAMES_POS         3        /* (used to determine if certain */
-#define OPTIONS_POS        4        /* input args are present) */
+#define MIN_IN_ARGS        1
+#define MAX_IN_ARGS        6
+
+/* ...POS macros: 1-based, used to determine if input args are present */
+
+#define SLICES_POS         2
+#define FRAMES_POS         3
+#define START_ROW_POS      4
+#define NUM_ROWS_POS       5
+#define OPTIONS_POS        6
 
 /*
  * Macros to access the input and output arguments from/to MATLAB
@@ -31,7 +36,9 @@
 #define MINC_FILENAME  prhs[0]
 #define SLICES         prhs[1]       /* slices to read - vector */
 #define FRAMES         prhs[2]       /* ditto for frames */
-#define OPTIONS        prhs[3]
+#define START_ROW      prhs[3]
+#define NUM_ROWS       prhs[4]
+#define OPTIONS        prhs[5]
 #define VECTOR_IMAGES  plhs[0]       /* array of images: one per columns */
 
 #define MAX_READABLE   160           /* max number of slices or frames that
@@ -54,15 +61,16 @@ char       *ErrMsg ;             /* set as close to the occurence of the
 /* ----------------------------- MNI Header -----------------------------------
 @NAME       : ErrAbort
 @INPUT      : msg - character to string to print just before aborting
-              PrintUsage - whether or not to print a usage summary before aborting
+              PrintUsage - whether or not to print a usage summary before
+                aborting
               ExitCode - one of the standard codes from mierrors.h -- NOTE!  
                 this parameter is NOT currently used, but I've included it for
                 consistency with other functions named ErrAbort in other
                 programs
 @OUTPUT     : none - function does not return!!!
 @RETURNS    : 
-@DESCRIPTION: Optionally prints a usage summary, and calls mexErrMsgTxt with the 
-              supplied msg, which ABORTS the mex-file!!!
+@DESCRIPTION: Optionally prints a usage summary, and calls mexErrMsgTxt with
+              the supplied msg, which ABORTS the mex-file!!!
 @METHOD     : 
 @GLOBALS    : requires PROGNAME macro
 @CALLS      : standard mex functions
@@ -82,15 +90,17 @@ void ErrAbort (char msg[], Boolean PrintUsage, int ExitCode)
 
 
 /* ----------------------------- MNI Header -----------------------------------
-@NAME       : VerifyVectors
+@NAME       : CheckBounds
 @INPUT      : Slices[], Frames[] - lists of desired slices/frames
               NumSlices, NumFrames - number of elements used in each array
+	      StartRow - desired starting row number (ie. offset into y-space) 
+	      NumRows - number of rows to read
               Image - pointer to struct describing the image:
                 # of frames/slices, etc.
 @OUTPUT     : 
 @RETURNS    : TRUE if no member of Slices[] or Frames[] is invalid (i.e.
               larger than, respectively, Images->Slices or Images->Frames)
-              FALSE otherwise
+              FALSE otherwise, with ErrMsg set to appropriate chastisement
 @DESCRIPTION: 
 @METHOD     : 
 @GLOBALS    : ErrMsg
@@ -98,9 +108,10 @@ void ErrAbort (char msg[], Boolean PrintUsage, int ExitCode)
 @CREATED    : 
 @MODIFIED   : 
 ---------------------------------------------------------------------------- */
-Boolean VerifyVectors (long Slices[], long Frames[],
-                       int NumSlices, int NumFrames,
-                       ImageInfoRec *Image)
+Boolean CheckBounds (long Slices[], long Frames[],
+		     long NumSlices, long NumFrames,
+		     long StartRow, long NumRows,
+		     ImageInfoRec *Image)
 {
    int   i;
 
@@ -147,8 +158,20 @@ Boolean VerifyVectors (long Slices[], long Frames[],
 
    }     /* for i - loop frames */
 
+   if (StartRow >= Image->Height)
+   {
+      sprintf (ErrMsg, "Starting row too large (max %ld)", Image->Height-1);
+      return (FALSE);
+   }
+
+   if (StartRow + NumRows > Image->Height)
+   {
+      sprintf (ErrMsg, "Trying to read too many rows for starting row %ld (total rows: %ld)", StartRow, Image->Height);
+      return (FALSE);
+   }
+
    return (TRUE);
-}     /* VerifyVectors */
+}     /* CheckBounds */
 
 
 
@@ -191,6 +214,8 @@ int ReadImages (ImageInfoRec *Image,
                 long    Frames [],
                 long    NumSlices,
                 long    NumFrames,
+		long	StartRow,
+		long	NumRows,
                 Matrix  **Mimages)
 {
    long     slice, frame;
@@ -201,13 +226,31 @@ int ReadImages (ImageInfoRec *Image,
                               /* we have a problem!!  Should NOT!!! happen */
 
    /*
-    * First ensure that we will always read an *entire* image, but only
-    * one slice/frame at a time (no matter how many slices/frames we
-    * may be reading)
+    * Setup start/count vectors.  We will always read from one image at
+    * a time, because the user is allowed to specify slices/frames such
+    * that non-contiguous images are read.  However, the image rows read
+    * are always contiguous, so we'll set the Height elements of Start/
+    * Count just once -- right here -- and leave them alone in the loops.
     */
 
-   Start [Image->HeightDim] = 0L;
-   Count [Image->HeightDim] = Image->Height;
+   Start [Image->HeightDim] = StartRow;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   Count [Image->HeightDim] = NumRows;
    Start [Image->WidthDim] = 0L;
    Count [Image->WidthDim] = Image->Width;
    Count [Image->SliceDim] = 1L;
@@ -241,7 +284,7 @@ int ReadImages (ImageInfoRec *Image,
     * VectorImages at the real part of it.
     */
 
-   *Mimages = mxCreateFull(Image->ImageSize, NumSlices*NumFrames, REAL);
+   *Mimages = mxCreateFull(Image->Width*NumRows, NumSlices*NumFrames, REAL);
    VectorImages = mxGetPr (*Mimages);
 
    /*
@@ -259,6 +302,7 @@ int ReadImages (ImageInfoRec *Image,
             Start [Image->FrameDim] = Frames [frame];
          }
 
+#if 0
          if (debug)
          {
             printf ("Reading: user slice %d, study slice%d",
@@ -270,6 +314,7 @@ int ReadImages (ImageInfoRec *Image,
             }
             else printf ("\n");
          }
+#endif
 
          RetVal = miicv_get (Image->ICV, Start, Count, VectorImages);
          if (RetVal == MI_ERROR)
@@ -311,13 +356,15 @@ void mexFunction(int    nlhs,
                  Matrix *prhs[])
 {
    char        *Filename;
-   ImageInfoRec   ImInfo;
-   long        Slice[MAX_READABLE];
-   long        Frame[MAX_READABLE];
-   long        NumSlices;
-   long        NumFrames;
+   ImageInfoRec ImInfo;
+   long         Slice[MAX_READABLE];
+   long         Frame[MAX_READABLE];
+   long         NumSlices;
+   long         NumFrames;
+   long         StartRow;
+   long         NumRows;
    FILE        *InFile;
-   int         Result;
+   int          Result;
 
    debug = FALSE;
    ErrMsg = (char *) mxCalloc (256, sizeof (char));
@@ -326,8 +373,7 @@ void mexFunction(int    nlhs,
 
    if ((nrhs < MIN_IN_ARGS) || (nrhs > MAX_IN_ARGS))
    {
-      sprintf (ErrMsg, "Incorrect number of arguments (%d; min %d, max %d)",
-               nrhs, MIN_IN_ARGS, MAX_IN_ARGS);
+      sprintf (ErrMsg, "Incorrect number of arguments");
       ErrAbort (ErrMsg, TRUE, ERR_ARGS);
    }
 
@@ -344,12 +390,10 @@ void mexFunction(int    nlhs,
    }
 
    /*
-    * Parse the filename option -- this is required by the above check
-    * for number of arguments, so don't need to ensure that MINC_FILENAME
-    * actually exists.
+    * Parse the filename option (N.B. we know it's there because we checked
+    * above that nrhs >= MIN_IN_ARGS
     */
 
-   if (debug) printf ("Parsing filename\n");
    if (ParseStringArg (MINC_FILENAME, &Filename) == NULL)
    {
       ErrAbort ("Error in filename", TRUE, ERR_ARGS);
@@ -357,14 +401,11 @@ void mexFunction(int    nlhs,
 
    /* Open MINC file, get info about image, and setup ICV */
 
-   if (debug) printf ("Opening file\n");
    Result = OpenImage (Filename, &ImInfo, NC_NOWRITE);
    if (Result != ERR_NONE)
    {
       ErrAbort (ErrMsg, TRUE, Result);
    }
-
-   if (debug) printf ("Parsing numerics\n");
 
    /* 
     * If the vector of slices is given, parse it into a vector of longs.
@@ -448,11 +489,38 @@ void mexFunction(int    nlhs,
       }
    }
 
-   /* Make sure the supplied slice and frame numbers are within bounds */
-   if (!VerifyVectors (Slice, Frame, NumSlices, NumFrames, &ImInfo))
+   /* If starting row number supplied, fetch it; likewise for row count */
+
+   if (nrhs >= START_ROW_POS)
+   {
+      StartRow = (long) *(mxGetPr (START_ROW));
+   }
+   else
+   {
+      StartRow = 0;
+   }
+
+   if (nrhs >= NUM_ROWS_POS)
+   {
+      NumRows =  (long) *(mxGetPr (NUM_ROWS));
+   }
+   else   
+   {
+      NumRows = ImInfo.Height;
+   }
+
+   if (debug)
+   {
+      printf ("Starting row: %ld; Number of rows: %ld\n", StartRow, NumRows);
+   }
+
+   /* Make sure the supplied slice, frame, and row numbers are within bounds */
+
+   if (!CheckBounds(Slice,Frame,NumSlices,NumFrames,StartRow,NumRows,&ImInfo))
    {
       CloseImage (&ImInfo);
       ErrAbort (ErrMsg, TRUE, ERR_ARGS);
+
    }
    
 
@@ -461,6 +529,7 @@ void mexFunction(int    nlhs,
    Result = ReadImages (&ImInfo, 
                         Slice, Frame, 
                         NumSlices, NumFrames, 
+			StartRow, NumRows,
                         &VECTOR_IMAGES);
    if (Result != ERR_NONE) 
    {
