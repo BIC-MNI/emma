@@ -6,6 +6,8 @@ function fname = tempfilename
 %
 % Requires that a directory /tmp/ exists on the current machine.
 
+rand ('seed', sum (100*clock));
+
 timestring = sprintf ('%02d', fix (clock));
 filename = sprintf ('/tmp/matimage_%s_%s.dat', ...
    timestring, int2str (rand*1e6));
