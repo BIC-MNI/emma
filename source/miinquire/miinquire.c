@@ -9,7 +9,7 @@
 @GLOBALS    : 
 @CALLS      : standard mex, NetCDF functions
 @CREATED    : 93-6-8, Greg Ward
-@MODIFIED   : 93-7-26 - 93-7-29, greatly expanded to allow for general 
+@MODIFIED   : 93-7-26 to 93-7-29, greatly expanded to allow for general 
               options, and added code for 'dimlength' option.
 ---------------------------------------------------------------------------- */
 
@@ -40,11 +40,14 @@
 #define ITEM      prhs [2]       /* dimension or variable name (not always used) */
 #define ATTNAME   prhs [3]       /* attribute name (only with the att* options) */
 
-/* Output arguments for 'dimlength' option */
+ /* Output arguments for 'dimlength' option */
 #define DIMLENGTH plhs [0]
 
 /* Output arguments for 'dimnames' option */
 #define DIMNAMES  plhs [0]
+
+/* Output arguments for 'imagesize' option */
+#define IMAGESIZE plhs [0]
 
 
 #define NUM_DIMS  plhs [0]       /* output arguments */
@@ -180,6 +183,42 @@ int GetDimLength (int CDF, Matrix *mDimName, Matrix **mDimLength)
       *(mxGetPr(*mDimLength)) = (double) DimLength;
    }
    return (ERR_NONE);
+}     /* GetDimLength */
+
+
+
+int GetImageSize (int CDF, Matrix **Sizes)
+{
+   ImageInfoRec	Image;
+   int		Result;
+   double	*dSizes;                /* pointer to real part of *Sizes */
+
+
+   Result = GetImageInfo (CDF, &Image);
+
+   if (Result != ERR_NONE)
+   {
+      return (Result);
+   }
+
+   /* Count up the number of dimensions that GetImageInfo found in the image */
+
+/*
+   if (Image.FrameDim != -1) NumDims++;
+   if (Image.SliceDim != -1) NumDims++;
+   if (Image.HeightDim!= -1) NumDims++;
+   if (Image.WidthDim != -1) NumDims++;
+*/
+   /* Create the MATLAB Matrix (really a vector) to hold the image sizes */
+
+   *Sizes = mxCreateFull (4, 1, REAL);
+   dSizes = mxGetPr (*Sizes);
+   dSizes [0] = Image.Frames;
+   dSizes [1] = Image.Slices;
+   dSizes [2] = Image.Height;
+   dSizes [3] = Image.Width;
+
+   return (ERR_NONE);
 }
 
 
@@ -216,10 +255,10 @@ void mexFunction (int nlhs, Matrix *plhs [],       /* output args */
    }
    if (debug) printf ("Filename: %s\n", Filename);
 
-   CDF = ncopen (Filename, NC_NOWRITE);
+   OpenFile (Filename, &CDF, NC_NOWRITE);
    if (CDF == MI_ERROR)
    {
-      ErrAbort ("Error opening file", TRUE, ERR_IN_MINC );
+      ErrAbort (ErrMsg, TRUE, ERR_IN_MINC );
    }
    if (debug) printf ("CDF ID for file: %d\n", CDF);
 
@@ -231,19 +270,23 @@ void mexFunction (int nlhs, Matrix *plhs [],       /* output args */
       Result = GeneralInfo (CDF, &NUM_DIMS, &NUM_GATTS, &NUM_VARS);
       if (Result < 0)
       {
+	 ncclose (CDF);
          ErrAbort (ErrMsg, TRUE, Result);
       }
       return;
    }
 
-   /* More than one input argument, so parse the second one (OPTION) */
 
-   if (debug) printf ("More than one input arg - parsing second...");
+   /* More than one input argument, so process the second one (OPTION) */
+
+   if (debug) printf ("More than one input arg - processing second...");
    if (ParseStringArg (OPTION, &Option) == NULL)
    {
+      ncclose (CDF);
       ErrAbort ("Option argument must be a string", TRUE, ERR_ARGS);
    }
    if (debug) printf ("it's %s\n", Option);
+
 
    /* Now take action based on value of string Option */
 
@@ -256,9 +299,16 @@ void mexFunction (int nlhs, Matrix *plhs [],       /* output args */
       }
       Result = GetDimLength (CDF, ITEM, &DIMLENGTH);
    } 
+   else if (strcasecmp (Option, "imagesize") == 0)
+   {
+      if (nrhs > 2)
+      {
+	 ErrAbort ("Cannot supply any other options or items when imagesize is requested", TRUE, ERR_ARGS);
+      }
+      Result = GetImageSize (CDF, &IMAGESIZE);
+   }
    else if ((strcasecmp (Option, "dimnames") == 0)
             ||(strcasecmp (Option, "varnames") == 0)
-/*          ||(strcasecmp (Option, "dimlength") == 0)     */
             ||(strcasecmp (Option, "vartype") == 0)
             ||(strcasecmp (Option, "vardims") == 0)
             ||(strcasecmp (Option, "varatts") == 0)
@@ -273,6 +323,8 @@ void mexFunction (int nlhs, Matrix *plhs [],       /* output args */
       sprintf (ErrMsg, "Unknown option: %s", Option);
       ErrAbort (ErrMsg, TRUE, ERR_ARGS);
    }
+
+   ncclose (CDF);
 
    /* If ANY of the option-based calls above resulted in an error, BOMB! */
    if (Result != ERR_NONE)
