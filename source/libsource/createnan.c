@@ -1,3 +1,14 @@
+/* ----------------------------- MNI Header -----------------------------------
+@NAME       : createnan.c
+@DESCRIPTION: Supplies the CreateNaN() function, an unreliable and non-
+              portable way to get a 'nan' value in a C program (bummer!).
+@CREATED    : Feb 1995, Greg Ward
+@MODIFIED   : 
+@VERSION    : $Id: createnan.c,v 1.2 1997-10-20 17:58:25 greg Exp $
+              $Name:  $
+---------------------------------------------------------------------------- */
+
+
 /* 
  * CreateNaN
  * 
@@ -6,7 +17,6 @@
  * cc or gcc and SGI's running IRIX 4 or IRIX 5, using cc or gcc.
  * It does *NOT* work under Linux - a floating point exception occurs.
  */
-
 double CreateNaN (void)
 {
    double d = 0.0;

@@ -1,3 +1,12 @@
+/* ----------------------------- MNI Header -----------------------------------
+@NAME       : ncblood.h
+@DESCRIPTION: String constants used to access BNC files.
+@CREATED    : 1994(?), Mark Wolforth
+@MODIFIED   : 
+@VERSION    : $Id: ncblood.h,v 1.2 1997-10-20 18:06:53 greg Rel $
+              $Name:  $
+---------------------------------------------------------------------------- */
+
 /****************************/
 /* Blood Data Root Variable */
 

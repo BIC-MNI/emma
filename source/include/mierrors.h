@@ -1,3 +1,11 @@
+/* ----------------------------- MNI Header -----------------------------------
+@NAME       : mierrors.h
+@DESCRIPTION: EMMA error codes.  (Are these actually used anywhere?)
+@CREATED    : June 1993 (?), Greg Ward and Mark Wolforth
+@MODIFIED   : 
+@VERSION    : $Id: mierrors.h,v 1.2 1997-10-20 18:04:36 greg Rel $
+              $Name:  $
+---------------------------------------------------------------------------- */
 
 /* values returned via exit() */
 #define ERR_NONE      0       /* no error at all */
@@ -12,3 +20,4 @@
 #define ERR_BAD_MINC -9       /* detected some error in a MINC file */
 #define ERR_NO_MEM  -10	      /* not enough memory for something */
 #define ERR_OTHER   -11       /* anything else */
+

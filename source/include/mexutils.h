@@ -1,3 +1,13 @@
+/* ----------------------------- MNI Header -----------------------------------
+@NAME       : mexutils.h
+@DESCRIPTION: Prototypes and macros needed to use the functions in
+              mexutils.c (part of the EMMA library).
+@CREATED    : 1993, Mark Wolforth
+@MODIFIED   : 
+@VERSION    : $Id: mexutils.h,v 1.8 1997-10-20 18:03:14 greg Rel $
+              $Name:  $
+---------------------------------------------------------------------------- */
+
 #ifndef _MEX_UTILS_H
 #define _MEX_UTILS_H
 

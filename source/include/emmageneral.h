@@ -1,3 +1,12 @@
+/* ----------------------------- MNI Header -----------------------------------
+@NAME       : emmageneral.h
+@DESCRIPTION: Typedefs and macros needed by all C code in the EMMA package.
+@CREATED    : 1993? Mark Wolforth
+@MODIFIED   : 
+@VERSION    : $Id: emmageneral.h,v 1.3 1997-10-20 18:01:13 greg Rel $
+              $Name:  $
+---------------------------------------------------------------------------- */
+
 #ifndef _EMMAGENERAL
 #define _EMMAGENERAL
 
