@@ -1,16 +1,19 @@
 /* ----------------------------- MNI Header -----------------------------------
-@NAME       : 
-@INPUT      : 
-@OUTPUT     : 
-@RETURNS    : 
-@DESCRIPTION:               
+@NAME       : rescale.c (CMEX)
+@INPUT      : old_matrix
+              multiplier - either a scalar or a matrix of same size 
+                           as old_matrix
+@OUTPUT     : old_matrix - (multiplied in-place by multiplier)
+@DESCRIPTION: Multiplies a MATLAB matrix, either by a constant or another
+              matrix of the same size, in place.
 @METHOD     : 
 @GLOBALS    : 
 @CALLS      : 
-@CREATED    : 
+@CREATED    : Oct 1993, Mark Wolforth
 @MODIFIED   : 
+@VERSION    : $Id: rescale.c,v 1.4 1997-10-20 17:49:34 greg Rel $
+              $Name:  $
 ---------------------------------------------------------------------------- */
-
 
 #include <stdio.h>
 #include <string.h>
@@ -24,11 +27,8 @@
  * Constants to check for argument number and position
  */
 
-
 #define MIN_IN_ARGS        2
 #define MAX_IN_ARGS        2
-
-/* ...POS macros: 1-based, used to determine if input args are present */
 
 #define OLD_MATRIX         prhs[0]
 #define MULTIPLIER         prhs[1]
