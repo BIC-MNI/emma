@@ -287,6 +287,11 @@ Boolean SetTypeAndVR (char *TypeStr, nc_type *TypeEnum, Boolean *Signed,
          DefaultMax = DBL_MAX;
          break;
       }
+      default:
+      {
+	 sprintf (ErrMsg, "An impossible situation has arisen (an unsupported NetCDF type slipped\nthrough) in function SetTypeAndVR, file args.c of micreateimage.\nWe apologise for the inconvenience.");
+	 return (false);
+      }
    }
 
 #ifdef DEBUG
