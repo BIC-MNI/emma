@@ -16,18 +16,30 @@ function out = worldtovoxel (volume, in, options)
 % the points are to be used externally (eg., with a C program such as
 % mincextract), then they should be zero-based.  Using the 'external'
 % option will cause this to be done.  Also, some applications may expect
-% voxel coordinates in (x,y,z) order; use the 'world' option when this
+% voxel coordinates in (x,y,z) order; use the 'xyzorder' option when this
 % is needed.
 % 
 % If the second form is used then the just the world-to-voxel transform
 % (a 4x4 matrix) is returned.  This is simply the inverse of the matrix
 % returned by getvoxeltoworld, modified to convert zero-based to
 % one-based and to reorder world-order to voxel-order (unless overridden
-% by the 'external' or 'world' options).
+% by the 'external' or 'xyzorder' options).
 % 
-% Options are specified as single words, all in the same string.
-% Currently the only options are 'world' and 'external'.
+% Options are specified as single words, all in the same string, and
+% separated by spaces.  The currently-available options are:
 % 
+%    xyzorder    put output voxel coordinates in (x,y,z) order,
+%                i.e. do not permute them to (slice,row,col) order
+%    noflip      make output voxel coordinates refer to unflipped
+%                dimensions (any dimensions with negative step sizes
+%                are flipped when read in by EMMA to ensure
+%                anatomical consistency)
+%    zerobase    make output voxel coordinates zero-based
+%                (coordinates for use within MATLAB are one-based, and
+%                thus must be shifted down before converting to world
+%                coordinates)
+%    external    combines 'noflip' and 'zerobase'
+%
 % The volume argument must be an image handle as returned by openimage
 % or newimage.
 % 
