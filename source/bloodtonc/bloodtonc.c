@@ -33,6 +33,7 @@ typedef struct HEADER
 	int background;
 	int num_samples;
     }   header;
+
 typedef struct BLOOD_DATA
     {
 	double start[MAX_SAMPLES];
@@ -195,8 +196,8 @@ int CreateBloodCDF (char name[], header *cnt_header)
     miattputstr (file_CDF, counts_id, "units", "counts");
     miattputstr (file_CDF, empty_weight_id, "units", "grams");
     miattputstr (file_CDF, full_weight_id, "units", "grams");
-    miattputstr (file_CDF, corrected_activity_id, "units", "          ");
-    miattputstr (file_CDF, activity_id, "units", "             ");
+    miattputstr (file_CDF, corrected_activity_id, "units", "Bq/second");
+    miattputstr (file_CDF, activity_id, "units", "Bq/second");
 
     /* Make a root for the blood analysis info */
 
