@@ -393,6 +393,10 @@ int GetImageInfo (int CDF, ImageInfoRec *Image)
 /* ----------------------------- MNI Header -----------------------------------
 @NAME       : OpenImage
 @INPUT      : Filename - name of the MINC file to open
+              NaN - should be a double-precision representation of
+                    "not-a-number".  Out-of-range values in the MINC
+		    file are mapped to this value, so it could be a 
+		    real IEEE 754 NaN, or whatever you like.
 @OUTPUT     : *Image - struct containing lots of relevant data about the
               MIimage variable and associated dimensions/variables
 @RETURNS    : ERR_NONE if all went well
@@ -407,7 +411,7 @@ int GetImageInfo (int CDF, ImageInfoRec *Image)
 @MODIFIED   : 95-2-1, Mark Wolforth
                       -Added DO_FILLVALUE to the created ICV.
 ---------------------------------------------------------------------------- */
-int OpenImage (char Filename[], ImageInfoRec *Image, int mode)
+int OpenImage (char Filename[], ImageInfoRec *Image, int mode, double NaN)
 {
    int   CDF;
    int   Result;        /* of various function calls */
@@ -432,7 +436,7 @@ int OpenImage (char Filename[], ImageInfoRec *Image, int mode)
    (void) miicv_setint (Image->ICV, MI_ICV_DO_DIM_CONV, TRUE);
    (void) miicv_setint (Image->ICV, MI_ICV_DO_SCALAR, FALSE);
    (void) miicv_setint (Image->ICV, MI_ICV_DO_FILLVALUE, TRUE);
-   (void) miicv_setdbl (Image->ICV, MI_ICV_FILLVALUE, CreateNaN());
+   (void) miicv_setdbl (Image->ICV, MI_ICV_FILLVALUE, NaN);
    (void) miicv_attach (Image->ICV, Image->CDF, Image->ID);
 
    return (ERR_NONE);
