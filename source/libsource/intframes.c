@@ -9,15 +9,16 @@
 @CALLS      : TrapInt(), Lookup1()
 @CREATED    : Sep 1993, Greg Ward
 @MODIFIED   : see RCS log
-@VERSION    : $Id: intframes.c,v 1.6 1997-10-17 18:56:02 greg Exp $
+@VERSION    : $Id: intframes.c,v 1.7 1997-10-17 19:47:38 greg Exp $
 ---------------------------------------------------------------------------- */
+
+#if __sgi
+# define _XOPEN_SOURCE                  /* to get isnan() prototype */
+#endif
 
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
-#if __sgi
-# include <ieeefp.h>            /* for isnan() prototype */
-#endif
 #include "emmageneral.h"
 
 #define MAX_X_LENGTH 1024       /* maximum number of elements of X that can */
