@@ -1,4 +1,4 @@
-function integral = b_curve (args, shifted_g_even, ts_even, A, midftimes)
+function integral = b_curve (args, shifted_g_even, ts_even, A, fstart, flengths)
 
 % global shifted_g_even ts_even A flengths ftimes midftimes
 
@@ -6,13 +6,13 @@ function integral = b_curve (args, shifted_g_even, ts_even, A, midftimes)
 %        beta = args(2)
 %       gamma = args(3)
 
+if (length(args) ~= 3), error ('Wrong number of fit parameters'), end;
+
 % Now calculate exp (-beta * t) in the ts_even time domain, and perform
 % the convolution with the *shifted* activity g(t-delta).
 
-if (length(args) ~= 3), error ('Wrong number of fit parameters'), end;
-
 expthing = exp(-args(2)*ts_even); 	% ts_even for the convolution
-c = conv(shifted_g_even,expthing);
+c = nconv(shifted_g_even,expthing,ts_even(2)-ts_even(1));
 c = c (1:length(ts_even));		% chop off points outside of the time
 					% domain we're interested in
 
@@ -24,17 +24,11 @@ i2 = args(3)*shifted_g_even;		% gamma * g(t - delta)
 
 i = i1+i2;
 
-% Note that we don't have to explicitly integrate here, because we
-% multiply by flengths to integrate, and then divide by flengths to
-% normalise.  Note: the nuking of NaN's is necessary because ts_even 
-% might not span midftimes.  (This would normally happen when ts_even
-% is itself chopped due to NaN's after a lookup; this is the chop
-% done by indexing with the g_select vector in the main loop of
-% correctblood.m.)  Setting the NaN's equal to zero rather than 
-% eliminating them should not change the results, since integral is 
-% normally just used to find a residual sum-of-squares with A (t).
+% Integrate across each frame.
 
-integral = lookup (ts_even,i,midftimes);
+integral = frameint (ts_even, i, fstart, flengths);
+
 nuke = find (isnan (integral));
 integral (nuke) = zeros (size (nuke));
+
 integral = integral (1:length(A));
