@@ -20,12 +20,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include "mex.h"
-
-#define max(a,b)    (((a) > (b)) ? (a) : (b))
-#define min(a,b)    (((a) < (b)) ? (a) : (b))
-
-typedef enum { false=0, true=1 } boolean;
-
+#include "emmageneral.h"
 
 
 char   ErrMsg [256];
@@ -43,7 +38,7 @@ void mexFunction (int nargout, Matrix *pargout [],
 {
    pid_t   kidpid;
    int	   statptr;		/* for wait() */
-   boolean GrabOutput;		/* true if a second output arg is given */
+   Boolean GrabOutput;		/* true if a second output arg is given */
 
 #ifdef DEBUG
    printf ("Number of input arguments: %d\n", nargin);
