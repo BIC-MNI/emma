@@ -3,85 +3,63 @@
 # Assumes the following macros have been defined:
 #   PROG    name of the program to build (no suffixes); eg. PROG=foo
 #           will build foo from foo.c (via foo.o)
-#   HEADERS .h files that PROG (and its various modules) depend on
 #   OBJ     .o files that need to be loaded with PROG.o to build PROG
 #   EMMA_ROOT    the root EMMA directory
 # 
 # The other commonly-needed macros and rules to build $(PROG) are then
-# defined or read in from Makefile.site.  Eg., to build foo using only
-# the source files foo.c and bar.c, each depending on headers a.h,
-# b.h, and c.h, you could could create a simple makefile in the
-# directory where foo.c lives (assuming it is one level below this
+# defined or read in from Makefile.site.  E.g., to build foo using only
+# the files foo.c and bar.c, you could could create a simple makefile in
+# the directory where foo.c lives (assuming it is one level below this
 # file):
-#
+# 
 #  PROG=foo
-#  HEADERS=a.h b.h c.h
 #  OBJS=bar.o
 #  include ../makefile.std
 #
 # or, also from foo's directory, you could directly execute make:
 #
-#  make -f ../makefile.cmex PROG=foo HEADERS=a.h b.h c.h OBJS=bar.o
+#  make -f ../makefile.cmex PROG=foo OBJS=bar.o
 #
-# Note that both HEADERS and OBJS are entirely optional.
+# Note that OBJS is entirely optional.
 #
-# by Greg Ward 94/3/10
+# by Greg Ward 1994/03/10
+#
+# $Id: makefile.std,v 1.3 1997-10-17 20:29:31 greg Rel $
 # ------------------------------------------------------------------
 
 # This makefile gets included from one directory lower, so we must
 # take this into account in the root path.
 
-EMMA_ROOT = ../..
-
-EMMA_BIN = $(EMMA_ROOT)/bin
-
-#EMMAINC  = $(EMMA_ROOT)/include
-#EMMALIB  = $(EMMA_ROOT)/lib
-
-#INCLUDES = -I/usr/local/include \
-#           -I/usr/local/mni/include \
-#           -I/usr/local/matlab/extern/include \
-#          -I$(EMMAINC)
-
-#LIBDIRS  = -L/usr/lib -L/usr/local/lib -L$(EMMALIB)
+EMMA_ROOT = ../../
+EMMA_BIN = $(EMMA_ROOT)bin
 
 #
 # Include the site- and architecture-specific definitions.  ("Architecture"
 # also includes the development options in Makefile.develop.)
 #
 
-include $(EMMA_ROOT)/Makefile.site
+include $(EMMA_ROOT)Makefile.site
 
 LDFLAGS  = $(LIBDIRS) -lemma -lminc -lnetcdf $(XDR_LIB)
 
 
 PROG_SRC = $(PROG).c
 PROG_OBJ = $(PROG).o
-#SPEC_OPT = -ansi -prototypes -fullwarn
-#OPT      = $(SPEC_OPT)
 LINTOPT  = -u
 CC       = cc
 LINT     = lint
 
 
-CFLAGS   = $(STD_OPT) $(INCLUDES)
-LINTFLAGS = $(LINTOPT) $(INCLUDES)
+CFLAGS   = $(CFLAGS_STD) $(DEFINES) $(INCLUDES)
+LINTFLAGS = $(LINTOPT) $(DEFINES) $(INCLUDES)
 
-# the default case: PROG depends on PROG_SRC, OBJS, HEADERS, and this makefile
-$(EMMA_BIN)/$(PROG): $(PROG_OBJ) $(OBJS) $(HEADERS) \
-                     Makefile $(EMMA_ROOT)/source/makefile.std
+# the default case: PROG depends on all the object files
+$(EMMA_BIN)/$(PROG): $(PROG_OBJ) $(OBJS)
 	rm -f $@
 	$(CC) $(PROG_OBJ) $(OBJS) -o $@ $(LDFLAGS)
 
-
-# N.B. The following line is needed for compiling multi-module 
-# stuff.  Alas, for single-file programs, OBJS and HEADERS will
-# most likely be empty, so this line makes make bomb.  Hmmm.
-# $(OBJS): $(HEADERS)
-
 lint:
 	$(LINT) $(LINTFLAGS) $(PROG_SRC)
-
 
 clean:
 	rm -f *.o $(EMMA_BIN)/$(PROG)
