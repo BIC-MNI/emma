@@ -1,20 +1,26 @@
 /* ----------------------------- MNI Header -----------------------------------
 @NAME       : mireadvar.c (CMEX)
 @INPUT      : MATLAB input arguments: MINC filename, variable name, 
-                vector of starting positions and vector of edge lengths
-@OUTPUT     : hyperslab from the specified variable, jammed into a one-
-                dimensional MATLAB matrix with the last dimension of 
-                the variable varying fastest.
-@RETURNS    : (void)
-              ABORTS via mexErrMsgTxt in case of error
+              vector of starting positions and vector of edge lengths
+@OUTPUT     : If the desired variable exists and the given dimensions
+              are valid (ie. not out of range), returns the specified
+              hyperslab from it, jammed into a one-dimensional MATLAB
+              matrix with the last dimension of the variable varying
+              fastest.  If the variable exists but out-of-range
+              dimensions are given, aborts with an error message via
+              mexErrMsgTxt.  If the variable does not exist, returns
+              an empty matrix.
+@RETURNS    : 
 @DESCRIPTION: Read a hyperslab of values from a MINC variable into a 
               one-dimensional MATLAB Matrix.
 @METHOD     : 
 @GLOBALS    : debug, ErrMsg
-@CALLS      : NetCDF, MINC, and mex functions.
+@CALLS      : NetCDF, MINC, MEX functions; mincutil and mexutils.
 @CREATED    : 93/5/31 - 93/6/2, Greg Ward
 @MODIFIED   : 93/6/16, robustified/standardized error and debug handling.
               Added gpw.h and mierrors.h includes, deleted def_mni.h.
+				  93/6/25, changed handling of missing variable case so that
+				  an empty matrix is returned rather than a fatal error.
 @COMMENTS   : 
 ---------------------------------------------------------------------------- */
 
@@ -80,7 +86,6 @@ char     *ErrMsg;
 ---------------------------------------------------------------------------- */
 void ErrAbort (char msg[], Boolean PrintUsage, int ExitCode)
 {
-   (void) mexErrMsgTxt (msg);
    if (PrintUsage)
    {
       (void) mexPrintf ("Usage: %s ('MINC_file', 'var_name', ", PROGNAME);
@@ -88,6 +93,7 @@ void ErrAbort (char msg[], Boolean PrintUsage, int ExitCode)
       (void) mexPrintf ("where start and count are MATLAB vectors containing the starting index and\n");
       (void) mexPrintf ("number of elements to read for each dimension of variable var_name.\n\n");
    }
+   (void) mexErrMsgTxt (msg);
 }
 
 
@@ -100,7 +106,6 @@ void ErrAbort (char msg[], Boolean PrintUsage, int ExitCode)
                 by *vInfo
               StartSize, CountSize - the number of elements of Start[]
                 and Count[] that are actually used
-              debug - same as usual
 @OUTPUT     : (none)
 @RETURNS    : ERR_NONE if no errors in start/count vectors
               ERR_ARGS if Start[] and Count[] do not have the same size
@@ -404,9 +409,12 @@ void mexFunction (int nlhs, Matrix *plhs [],
       ErrAbort (ErrMsg, TRUE, Result);
    }
    Result = GetVarInfo (CDFid, Varname, &VarInfo);
-   if (Result != ERR_NONE)
-   {
-      ErrAbort (ErrMsg, TRUE, Result);
+   if (Result != ERR_NONE)			/* variable does not exist */
+   {										/* so return empty matrix */
+	/*	printf ("GetVarInfo returned %d - variable %s not found (?)\n",
+				  Result, Varname); */
+		RET_VECTOR = mxCreateFull (0, 0, REAL);
+		return;
    }
 
    /*
