@@ -61,7 +61,7 @@ check_sf (handle, slices, frames);
 % it to mireadimages.
 
 % if (nargin == 3)
-	disp (['Reading slice ' int2str(slices) ' frame ' int2str(frames) ' from ' filename]);
+%	disp (['Reading slice ' int2str(slices) ' frame ' int2str(frames) ' from ' filename]);
 	images = mireadimages (filename, slices-1, frames-1);
 %else
 %	disp (['Reading slice ' int2str(slices) ' from ' filename]);
