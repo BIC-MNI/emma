@@ -14,7 +14,7 @@
 #
 # GPW 1998/06/23
 #
-# $Id: gen_html_docs,v 1.1 1998-06-23 21:21:51 greg Exp $
+# $Id: gen_html_docs,v 1.2 1998-10-08 22:24:41 greg Exp $
 # 
 
 use strict;
@@ -25,8 +25,12 @@ my $address = <<'ADDRESS';
 <br>
 <a href="/users/greg/">Greg Ward</a>
 <a href="mailto:greg@bic.mni.mcgill.ca">&lt;greg@bic.mni.mcgill.ca&gt;</a>
+<br>
+<a href="/users/sean/">Sean Marrett</a>
+<a href="mailto:sean@bic.mni.mcgill.ca">&lt;sean@bic.mni.mcgill.ca&gt;</a>
 ADDRESS
 
+$\ = "\n"; $, = ' ';
 foreach my $file ('emma', 'rcbf')
 {
    die "$0: $file.tex not found or not readable\n"
@@ -36,6 +40,7 @@ foreach my $file ('emma', 'rcbf')
    die "$0: $file.tex is younger than $file.aux\n"
       if -M "$file.tex" < -M "$file.aux";
 
+   print 'latex2html', '-address', $address, $file;
    system 'latex2html', '-address', $address, $file;
    die "$0: latex2html failed\n" unless $? == 0;
 }
