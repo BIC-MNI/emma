@@ -35,5 +35,30 @@ hi = max(max(img));
 img = ((img - lo) * ((num_colors-1) / (hi-lo))) + 1;
 
 % Now display it, and fix the y-axis to normal (rather than reverse) dir.
+
+subplot(1,2,1);
 image (img');
-set (gca, 'YDir', 'normal');
+axis('xy','square');
+
+% For some reason, Matlab didn't want to change the position
+% of the figure at this point, so I moved that to the end.....
+
+% Draw a colorbar beside the image
+
+subplot(1,2,2);
+image((1:num_colors)');
+axis('xy');
+set(gca,'Xticklabels', []);
+set(gca,'Ytick',0:8:64);
+lab = linspace(lo, hi, 9);
+for i=1:9, labels = str2mat(labels,num2str(lab(i))); end;
+labels(1,:)=[];
+set(gca,'Yticklabels', labels);
+set(gca,'Position', [.85, .1, .1, .8]);
+
+% Make the main image a reasonable size
+
+subplot(1,2,1);
+set(gca,'Position', [.1, .1, .6, .75]);
+
+
