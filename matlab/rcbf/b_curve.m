@@ -18,7 +18,7 @@ c = c (1:length(ts_even));		% chop off points outside of the time
 
 % Calculate the two main terms of the expression, alpha * (convoluted
 % stuff) and gamma * (shifted activity), and sum them.
-   
+
 i1 = args(1)*c;				% alpha * (convolution)
 i2 = args(3)*shifted_g_even;		% gamma * g(t - delta)
 
@@ -26,7 +26,7 @@ i = i1+i2;
 
 % Integrate across each frame.
 
-integral = frameint (ts_even, i, fstart, flengths);
+integral = nframeint (ts_even, i, fstart, flengths);
 
 nuke = find (isnan (integral));
 integral (nuke) = zeros (size (nuke));
