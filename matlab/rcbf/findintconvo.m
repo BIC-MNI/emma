@@ -112,15 +112,14 @@ for i = 1:TableSize
    % w1 given?
 
    if (nargin >= 6)
-      int1 (i) = ntrapz(midftimes(select), (w1(select) .* integrand(select)));
+      int1 (i) = ntrapz(midftimes(select), integrand(select), w1(select));
    end
    
    % w2 given, and not empty? then calculate the second convolution integral
 
    if (nargin >= 7)
       if (~isempty (w2))
-         int2 (i) = ntrapz(midftimes(select), ...
-                          (w2(select) .* integrand(select)));
+         int2 (i) = ntrapz(midftimes(select), integrand(select), w2(select));
       end
    end
 
@@ -128,8 +127,7 @@ for i = 1:TableSize
    
    if (nargin == 8)
       if (~isempty (w3))
-         int3 (i) = ntrapz(midftimes(select), ...
-                          (w3(select) .* integrand(select)));
+         int3 (i) = ntrapz(midftimes(select), integrand(select), w3(select));
       end
    end
 end
