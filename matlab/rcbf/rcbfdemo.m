@@ -43,16 +43,16 @@ end
 
 disp (['Reading all images for slice ' int2str(slice_number)]);
 pet = getimages (h, slice_number, 1:nf);
-
+set (0, 'DefaultFigurePosition', [100 550 560 420]);
 viewimage (pet (:,frame_number));
 title (['Here is frame ' int2str(frame_number) ' of slice ' int2str(slice_number)]);
-set (gcf, 'Position', [100 550 560 420]);
+
 
 frame_lengths = getimageinfo (h, 'FrameLengths');
 frame_times = getimageinfo (h, 'FrameTimes');
 summed = pet * frame_lengths;
+set (0, 'DefaultFigurePosition', [700 550 560 420]);
 figure (gcf+1);
-set (gcf, 'Position', [700 550 560 420]);
 viewimage (summed);
 title (['Here is the integrated image: all frames of slice ' int2str(slice_number)]);
 drawnow
@@ -61,6 +61,7 @@ drawnow
 disp ('TAC generation: Click in the fruit salad to quit.');
 
 current_figure = gcf;
+set (0, 'DefaultFigurePosition', [750 250 300 200]);
 figure (current_figure+1);
 title ('Time-activity curve');
 x=100;y=100;
@@ -88,8 +89,9 @@ user_elapsed = toc;
 disp (['That took ' int2str(cpu_elapsed) ' seconds of CPU time while ']);
 disp ([int2str(user_elapsed) ' seconds elapsed in "reality".']);
 
+set (0, 'DefaultFigurePosition', [100 50 560 420]);
 figure (gcf+1);
-set (gcf, 'Position', [100 50 560 420]);
+
 viewimage (K1);
 title ('Here is the K1 image as calculated within MATLAB');
 
@@ -99,8 +101,9 @@ disp ('(which, you may recall, takes 5 min/slice to calculate on the VAX)');
 h2 = openimage ('/usr/people/wolforth/matlab/images/arnaud_20547.k1.mnc');
 k12 = getimages (h2, slice_number);
 
+set (0, 'DefaultFigurePosition', [700 50 560 420]);
 figure(gcf+1);
-set (gcf, 'Position', [700 50 560 420]);
+
 viewimage (k12);
 title (['This is the previously calculated K1 for slice ' int2str(slice_number)]);
 
