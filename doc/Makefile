@@ -18,6 +18,7 @@
 .SUFFIXES : .dvi .ps
 
 SHELL = /bin/sh
+EMMA_ROOT = ../
 
 include ../Makefile.site		# for DOC_INSTALL_DIR
 
@@ -83,10 +84,14 @@ simul.dvi: simul.toc simul.aux
 
 # 
 # Installation: we only install emma.ps and rcbf.ps, because the other
-# two documents are short, specialized, and of limited interest.
+# two documents are short, specialized, and of limited interest.  Also,
+# since installation is generally only done from a complete
+# distribution, we assume emma.ps and rcbf.ps exist and are up to date,
+# since that is done when we create the distribution.
 # 
 
-install: emma.ps rcbf.ps
+install:
+	if [ ! -d $(DOC_INSTALL_DIR) ]; then mkdir $(DOC_INSTALL_DIR) ; fi
 	cp emma.ps rcbf.ps $(DOC_INSTALL_DIR)
 
 
