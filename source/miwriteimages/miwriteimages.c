@@ -6,6 +6,7 @@
 #include "minc.h"
 #include "emmageneral.h"
 #include "mincutil.h"
+#include "mexutils.h"
 #include "mierrors.h"
 
 #define NUM_ARGS       4           /* STRICT requirement!! */
@@ -692,7 +693,7 @@ int main (int argc, char *argv [])
                 TRUE, ERR_ARGS);
    }
 
-   Result = OpenImage (MINC_FILE, &ImInfo, NC_WRITE);
+   Result = OpenImage (MINC_FILE, &ImInfo, NC_WRITE, CreateNaN());
    if (Result != ERR_NONE)
    {
       ErrAbort (ErrMsg, TRUE, Result);
