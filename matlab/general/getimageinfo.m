@@ -24,52 +24,52 @@ function info = getimageinfo (handle, whatinfo)
 % The other possibilities for whatinfo, and what they cause
 % getimageinfo to return, are as follows:
 %
-%      Filename       the name of the MINC file (if applicable)
-%                     as supplied to openimage or newimage; will be
-%                     empty if data set has no associated MINC file.
+%     Filename     - the name of the MINC file (if applicable)
+%                    as supplied to openimage or newimage; will be
+%                    empty if data set has no associated MINC file.
 %
-%      NumFrames      number of frames in the study, 0 if non-dynamic
-%                     study (equivalent to 'time')
+%     NumFrames    - number of frames in the study, 0 if non-dynamic
+%                    study (equivalent to 'time')
 %
-%      NumSlices      number of slices in the study (0 if no slice
-%                     dimension)
+%     NumSlices    - number of slices in the study (0 if no slice
+%                    dimension)
 %
-%      ImageHeight    the size of the second-fastest varying spatial 
-%                     dimension in the MINC file.  For transverse
-%                     images, this is just the length of MIyspace.
-%                     Also, when an image is displayed with viewimage,
-%                     the dimension that is "vertical" on your display
-%                     is the image height dimension.  (Assuming
-%                     viewimage is working correctly.)
+%     ImageHeight  - the size of the second-fastest varying spatial 
+%                    dimension in the MINC file.  For transverse
+%                    images, this is just the length of MIyspace.
+%                    Also, when an image is displayed with viewimage,
+%                    the dimension that is "vertical" on your display
+%                    is the image height dimension.  (Assuming
+%                    viewimage is working correctly.)
 %
-%      ImageWidth     the size of the fastest varying spatial
-%                     dimension, which is MIxspace for transverse
-%                     images.  When an image is displayed with
-%                     viewimage, the image width is the horizontal
-%                     dimension on your display.
+%     ImageWidth   - the size of the fastest varying spatial
+%                    dimension, which is MIxspace for transverse
+%                    images.  When an image is displayed with
+%                    viewimage, the image width is the horizontal
+%                    dimension on your display.
 %
-%      ImageSize      a two-element vector containing ImageHeight and
-%                     ImageWidth (in that order).  Useful for viewing 
-%                     non-square images, because viewimage needs to know
-%                     the image size in that case.
+%     ImageSize    - a two-element vector containing ImageHeight and
+%                    ImageWidth (in that order).  Useful for viewing 
+%                    non-square images, because viewimage needs to know
+%                    the image size in that case.
 %
-%      DimSizes       a four-element vector containing NumFrames, NumSlices,
-%                     ImageHeight, and ImageWidth (in that order)
+%     DimSizes     - a four-element vector containing NumFrames, NumSlices,
+%                    ImageHeight, and ImageWidth (in that order)
 %
-%      FrameLengths   vector with NumFrames elements - duration of
-%                     each frame in the study, in seconds.  This is
-%                     simply the contents of the MINC variable
-%                     'time-width'; if this variable does not exist in
-%                     the MINC file, then getimageinfo will return an
-%                     empty matrix.
+%     FrameLengths - vector with NumFrames elements - duration of
+%                    each frame in the study, in seconds.  This is
+%                    simply the contents of the MINC variable
+%                    'time-width'; if this variable does not exist in
+%                    the MINC file, then getimageinfo will return an
+%                    empty matrix.
 %
-%      FrameTimes     vector with NumFrames elements - start time of
-%                     each frame, relative to start of study, in
-%                     seconds.  This comes from the MINC variable
-%                     'time'; again, if this variable is not found,
-%                     then getimageinfo will return an empty matrix.
+%     FrameTimes   - vector with NumFrames elements - start time of
+%                    each frame, relative to start of study, in
+%                    seconds.  This comes from the MINC variable
+%                    'time'; again, if this variable is not found,
+%                    then getimageinfo will return an empty matrix.
 %
-%      MidFrameTimes  time at the middle of each frame (calculated by
+%     MidFrameTimes - time at the middle of each frame (calculated by
 %                     FrameTimes + FrameLengths/2) in seconds
 %      
 % If the requested data item is invalid or the image specified by handle
