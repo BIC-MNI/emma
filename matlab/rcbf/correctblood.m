@@ -174,6 +174,9 @@ if (do_delay)
 %                             shifted_g_even(g_select), ts_even(g_select), ...
 %                             A, FrameTimes, FrameLengths);
 
+      options(2) = 1;
+      options(3) = 1;
+
       final = fmins ('fit_b_curve', init, options, [], ...
                      shifted_g_even (g_select), ts_even (g_select), ...
                      A, FrameTimes, FrameLengths);
