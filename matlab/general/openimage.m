@@ -59,15 +59,16 @@ function ImHandle = openimage (filename)
 %              PETimages#, FrameTimes#, FrameLengths#, AvailFrames#,
 %              AvailSlices#, CurLine#
 %@CALLS      : mireadvar (CMEX)
-%              mincinfo (standalone, via unix function)
+%              miinquire (CMEX)
 %@CREATED    : June 1993, Greg Ward & Mark Wolforth
-%@MODIFIED   : 
+%@MODIFIED   : 93-7-29, Greg Ward: added calls to miinquire, took out
+%              mincinfo and length(various variables) to determine
+%              image sizes.
 %-----------------------------------------------------------------------------
 
 
-global ImageCount MAX_FRAMES     % this does NOT create the variable if it
+global ImageCount                % this does NOT create the variable if it
                                  % doesn't exist yet!
-MAX_FRAMES = 30;                 % Size of the cache expressed in images
 
 if (nargin ~= 1)
    error ('Incorrect number of arguments');
@@ -100,7 +101,15 @@ end
 
 NumFrames = miinquire (filename, 'dimlength', 'time');
 NumSlices = miinquire (filename, 'dimlength', 'zspace');
-ImageSize = miinquire (filename, 'dimlength', 'xspace');
+
+Xsize = miinquire (filename, 'dimlength', 'xspace');
+Ysize = miinquire (filename, 'dimlength', 'yspace');
+
+if (Xsize == Ysize)
+   ImageSize = Xsize;
+else
+   error ('Images are not square.');
+end
 
 if (isempty (NumFrames))
    NumFrames = 0;
