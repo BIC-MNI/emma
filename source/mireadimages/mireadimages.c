@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <float.h>
 #include "mex.h"
 #include "minc.h"
 #include "mierrors.h"         /* mine and Mark's */
@@ -37,6 +38,10 @@
 #define max(A, B) ((A) > (B) ? (A) : (B))
 
 #define PROGNAME "mireadimages"
+
+Matrix  *mNaN;                  /* NaN as a MATLAB Matrix */
+double  NaN;                    /* NaN in native C format */
+
 
 /*
  * Constants to check for argument number and position
@@ -263,6 +268,7 @@ int ReadImages (ImageInfoRec *Image,
    int      RetVal;             /* from miicv_get -- if this is MI_ERROR */
                                 /* we have a problem!!  Should NOT!!! happen */
    int      i;
+   long     j;
 
    /*
     * Setup start/count vectors.  We will always read from one image at
@@ -400,6 +406,19 @@ int ReadImages (ImageInfoRec *Image,
 
    }     /* for slice */
 
+   /*
+    * We want to map -DBL_MAX to a MATLAB NaN
+    */
+
+   for (j=0; j<(Size*NumFrames*NumSlices); j++)
+   {
+       if (VectorImages[j] == -DBL_MAX)
+       {
+	   VectorImages[j] = NaN;
+       }
+   }
+
+
 #ifdef DEBUG
    putchar ('\n');
 #endif
@@ -469,10 +488,19 @@ void mexFunction(int    nlhs,
 
    if (ParseStringArg (MINC_FILENAME, &Filename) == NULL)
    {
-      ErrAbort ("Error in filename", TRUE, ERR_ARGS);
+       ErrAbort ("Error in filename", TRUE, ERR_ARGS);
    }
+   
+   /*
+    * Create the NaN variable
+    */
 
-   /* Open MINC file, get info about image, and setup ICV */
+   mexCallMATLAB (1, &mNaN, 0, NULL, "NaN");
+   NaN = *(mxGetPr(mNaN));
+   
+   /*
+    * Open MINC file, get info about image, and setup ICV
+    */
 
    Result = OpenImage (Filename, &ImInfo, NC_NOWRITE);
    if (Result != ERR_NONE)
