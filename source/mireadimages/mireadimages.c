@@ -93,8 +93,8 @@ void ErrAbort (char msg[], Boolean PrintUsage, int ExitCode)
 @NAME       : CheckBounds
 @INPUT      : Slices[], Frames[] - lists of desired slices/frames
               NumSlices, NumFrames - number of elements used in each array
-	      StartRow - desired starting row number (ie. offset into y-space) 
-	      NumRows - number of rows to read
+              StartRow - desired starting row number (ie. offset into y-space) 
+              NumRows - number of rows to read
               Image - pointer to struct describing the image:
                 # of frames/slices, etc.
 @OUTPUT     : 
@@ -109,9 +109,9 @@ void ErrAbort (char msg[], Boolean PrintUsage, int ExitCode)
 @MODIFIED   : 
 ---------------------------------------------------------------------------- */
 Boolean CheckBounds (long Slices[], long Frames[],
-		     long NumSlices, long NumFrames,
-		     long StartRow, long NumRows,
-		     ImageInfoRec *Image)
+                     long NumSlices, long NumFrames,
+                     long StartRow, long NumRows,
+                     ImageInfoRec *Image)
 {
    int   i;
 
@@ -131,10 +131,6 @@ Boolean CheckBounds (long Slices[], long Frames[],
 
    for (i = 0; i < NumSlices; i++)
    {
-      if (debug)
-      {
-         printf ("User slice %d is study slice %d\n", i, Slices[i]);
-      }
       if ((Slices [i] >= Image->Slices) || (Slices [i] < 0))
       {
          sprintf (ErrMsg, "Bad slice number: %ld (max %ld)", 
@@ -145,10 +141,6 @@ Boolean CheckBounds (long Slices[], long Frames[],
 
    for (i = 0; i < NumFrames; i++)
    {
-      if (debug)
-      {
-         printf ("User frame %d is study frame %d\n", i, Frames[i]);
-      }
       if ((Frames [i] >= Image->Frames) || (Frames [i] < 0))
       {
          sprintf (ErrMsg, "Bad frame number: %ld (max %ld)", 
@@ -200,30 +192,34 @@ Boolean CheckBounds (long Slices[], long Frames[],
               listing the slices and frames to read, reads in a series of
               images from the MINC file.  The Slices and Frames vectors
               should contain valid zero-based slice and frame numbers for
-              the given MINC file.
+              the given MINC file.  If either the slice or frame dimension
+	      is missing from the MINC file, NumSlices or NumFrames
+	      (whichever applies, possibly both) should be zero.  ReadImages
+	      will read the "only" slice/frame in the file then.
 @METHOD     : 
 @GLOBALS    : debug, ErrMsg
 @CALLS      : standard library, MINC functions
 @CREATED    : 93-6-6, Greg Ward
-@MODIFIED   : 
-@COMMENTS   : currently handles the no-time-dimension case, but there is
-              parallel code for the no-z-dimension case.
+@MODIFIED   : 93-8-23, GPW: added support for missing slice dimension 
+                            (NumSlices==0) just like NumFrames==0 case
+@COMMENTS   : 
 ---------------------------------------------------------------------------- */
 int ReadImages (ImageInfoRec *Image,
                 long    Slices [],
                 long    Frames [],
                 long    NumSlices,
                 long    NumFrames,
-		long	StartRow,
-		long	NumRows,
+                long    StartRow,
+                long    NumRows,
                 Matrix  **Mimages)
 {
    long     slice, frame;
    long     Start [MAX_NC_DIMS], Count [MAX_NC_DIMS];
    double   *VectorImages;
-   Boolean  DoFrames;
-   int      RetVal;           /* from miicv_get -- if this is MI_ERROR */
-                              /* we have a problem!!  Should NOT!!! happen */
+   Boolean  DoFrames;		/* false if NumFrames (NumSlices) == 0, so we*/
+   Boolean  DoSlices;		/* to not set a frame (slice) number */
+   int      RetVal;		/* from miicv_get -- if this is MI_ERROR */
+				/* we have a problem!!  Should NOT!!! happen */
 
    /*
     * Setup start/count vectors.  We will always read from one image at
@@ -234,49 +230,46 @@ int ReadImages (ImageInfoRec *Image,
     */
 
    Start [Image->HeightDim] = StartRow;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
    Count [Image->HeightDim] = NumRows;
    Start [Image->WidthDim] = 0L;
    Count [Image->WidthDim] = Image->Width;
-   Count [Image->SliceDim] = 1L;
 
-   /*
-    * Note: the following check for missing time dimension is based on
-    * ImageInfoRec: -1 for a "dimension number" means the dimension
-    * does not exist in the MIimage variable.
+   /* 
+    * If the caller has set NumFrames (NumSlices) to 0, that REALLY means
+    * read one frame (slice) from a file with no frame (slice) dimension.
+    * We need to set NumFrames (NumSlices) to 1 so that we at least get
+    * into the inner (outer) loop below, but DoFrames (DoSlices) to 
+    * FALSE so we know there's really no frame (slice) dimension.
     */
 
-   if ((Image->FrameDim == -1) || (Image->Frames == 0))
+   if (NumFrames == 0)
    {
       DoFrames = FALSE;
       NumFrames = 1;         /* so that we at least get into the frames loop */
    }
    else
    {
-      Count [Image->FrameDim] = 1;
+      Count [Image->FrameDim] = 1L;
       DoFrames = TRUE;
+   }
+
+   if (NumSlices == 0)
+   {
+      DoSlices = FALSE;
+      NumSlices = 1;
+   }
+   else
+   {
+      Count [Image->SliceDim] = 1L;
+      DoSlices = TRUE;
    }
 
    if (debug)
    {
       printf ("Reading %ld slices, %ld frames: %ld total images.",
               NumSlices, NumFrames, NumSlices*NumFrames);
-      printf ("  Any time dimension: %s\n", DoFrames ? "YES" : "NO");
+      printf ("  Any frame dimension: %s\n", DoFrames ? "YES" : "NO");
+      printf ("  Any slice dimension: %s\n", DoSlices ? "YES" : "NO");
    }
 
    /* 
@@ -293,34 +286,29 @@ int ReadImages (ImageInfoRec *Image,
 
    for (slice = 0; slice < NumSlices; slice++)
    {  
-      Start [Image->SliceDim] = Slices [slice];
+      /* Set the slice for all frames read in this slice */
+
+      if (DoSlices)
+      {
+	 Start [Image->SliceDim] = Slices [slice];
+      }
 
       for (frame = 0L; frame < NumFrames; frame++)
       {
+	 /* Set the frame for this one image only */
+
          if (DoFrames)
          {
             Start [Image->FrameDim] = Frames [frame];
          }
 
-#if 0
-         if (debug)
-         {
-            printf ("Reading: user slice %d, study slice%d",
-                    slice, Slices[slice]);
-            if (DoFrames)
-            {
-               printf ("; user frame %d, study frame %d\n",
-                       frame, Frames[frame]);
-            }
-            else printf ("\n");
-         }
-#endif
+	 /* Now read the image */
 
          RetVal = miicv_get (Image->ICV, Start, Count, VectorImages);
          if (RetVal == MI_ERROR)
          {
-            sprintf (ErrMsg, "INTERNAL BUG: error code %d set by miicv_get",
-                     ncerr);
+            sprintf (ErrMsg, "!! BOMB !! error code %d (%s) set by miicv_get",
+                     ncerr, NCErrMsg (ncerr));
             return (ERR_IN_MINC);
          }
 
@@ -489,6 +477,11 @@ void mexFunction(int    nlhs,
       }
    }
 
+   if (debug)
+   {
+      printf ("Will read %d slices, %d frames\n", NumSlices, NumFrames);
+   }
+
    /* If starting row number supplied, fetch it; likewise for row count */
 
    if (nrhs >= START_ROW_POS)
@@ -520,7 +513,6 @@ void mexFunction(int    nlhs,
    {
       CloseImage (&ImInfo);
       ErrAbort (ErrMsg, TRUE, ERR_ARGS);
-
    }
    
 
@@ -529,7 +521,7 @@ void mexFunction(int    nlhs,
    Result = ReadImages (&ImInfo, 
                         Slice, Frame, 
                         NumSlices, NumFrames, 
-			StartRow, NumRows,
+                        StartRow, NumRows,
                         &VECTOR_IMAGES);
    if (Result != ERR_NONE) 
    {
