@@ -93,7 +93,8 @@ error (check_sf (handle, slices, frames));
 [im_len, num_im] = size (images);
 
 if (num_required ~= num_im)
-   errmsg = sprintf ('Expected %d images because of slices/frames arguments; only found %d images in images matrix', num_required, num_im);
+   errmsg = sprintf ('%d slices and %d frames were specified, which means I need to write %d images into the file -- but the image matrix has %d columns',...
+            length(slices), length(frames), num_required, num_im);
    error (errmsg);
 end
 
