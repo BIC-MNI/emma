@@ -12,7 +12,7 @@
 %
 %    time = mireadvars ('foobar.mnc', 'time');
 %
-%  will read the entire contents of the variable 'time' from the file
+%  will read the entire contents of the variable "time" from the file
 %  foobar.mnc.  (If the start and count vectors are not given, they
 %  default to reading the entire variable.  Currently, if start is
 %  given, count must be given, and they must each have exactly one
