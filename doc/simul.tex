@@ -22,13 +22,13 @@
 
 This document is meant to provide a basic guide to performing data
 simulation (and subsequent program verification) using Maple V and
-MATLAB.  It was developed in conjunction with the rCBF analysis package
-and its documentation, and uses the simulation of rCBF data and
-verification of the analysis package as illustrative tools.
-Furthermore, much of the information is specific to the Silicon Graphics
-workstation environment at the PIL, particularly the presence and
-current versions of Maple, MATLAB, and the rCBF analysis programs for
-MATLAB.
+MATLAB.  It was developed in conjunction with the rCBF analysis
+package and its documentation, and uses the simulation of rCBF data
+and verification of the analysis package as illustrative tools.
+Furthermore, much of the information is specific to the Silicon
+Graphics workstation environment at the McConnell Brain Imaging
+Centre, particularly the presence and current versions of Maple,
+MATLAB, and the rCBF analysis programs for MATLAB.
 
 %--------------------------------------------------------------
 % \newpage
@@ -44,31 +44,30 @@ better suited to dealing with scientific data, and Maple is well-adapted
 to dealing with the theoretical functions which presumably model the
 data.
 
-PAMI and rCBF are both sets of tools written at the MNI for MATLAB,
-largely using MATLAB's built-in language.  PAMI (Package for the
-Analysis of Medical Images, {\em totally} lame title eh?) consists of
-functions to read both image and ancillary data from MINC files;
-rCBF uses PAMI to read this data, and MATLAB's collection of
-mathematical tools (with some enhancements) for calculating the kinetic
-parameters of either the one- or two-compartment model of regional
-cerebral blood flow.  See the documents ``PAMI User Manual'' and ``rCBF
-Analysis Using MATLAB'' for more information.
+EMMA and rCBF are both sets of tools written at the MNI for MATLAB,
+largely using MATLAB's built-in language.  EMMA consists of functions
+to read both image and ancillary data from MINC files; rCBF uses EMMA
+to read this data, and MATLAB's collection of mathematical tools (with
+some enhancements) to calculate the kinetic parameters of either
+the one- or two-compartment model of regional cerebral blood flow.
+See the documents ``EMMA User Manual'' and ``rCBF Analysis Using
+MATLAB'' for more information.
 
 \subsection{A Brief Introduction to Maple V}
 
-Since Maple V is not currently a heavily-used tool at PIL, we will first
-present a brief introduction to its capabilities.
+Since Maple V is not currently a heavily-used tool at McBIC, we will
+first present a brief introduction to its capabilities.
 
 \subsubsection{Starting Maple}
 
 There are currently two interfaces to Maple accessible on the SGI
-workstations at PIL.  Typing \code{maple} at the shell prompt starts up
-a {\em very} basic TTY-style interface to Maple.  This interface
-provides minimal command-line editing, no command-line history, and poor
-access to graphics.  (The easiest method is to use \code{xterm(1)} on an
-X Windows display---either an SGI console or Sun X terminal will
-work---and activate the Tektronix window {\em before} issuing the Maple
-plot command.)
+workstations at McBIC.  Typing \code{maple} at the shell prompt starts
+up a {\em very} basic TTY-style interface to Maple.  This interface
+provides minimal command-line editing, no command-line history, and
+poor access to graphics.  (The easiest method is to use
+\code{xterm(1)} on an X Windows display---either an SGI console or Sun
+X terminal will work---and activate the Tektronix window {\em before}
+issuing the Maple plot command.)
 
 Alternatively, you can type \code{xmaple} at the shell prompt, as long
 as you are using an X Windows display.  This opens up a new window for
@@ -247,10 +246,10 @@ numbers in any way, the output file will most likely have to be edited
 to remove the Maple prompts and commands read from \verb|makesin|.
 
 
-%\subsection{A Very Brief Introduction to MATLAB, PAMI, and rCBF}
+%\subsection{A Very Brief Introduction to MATLAB, EMMA, and rCBF}
 
-%Please consult the documents ``PAMI User Manual'' and ``rCBF Analysis
-%Using MATLAB'' if you are not yet conversant with MATLAB and the PAMI
+%Please consult the documents ``EMMA User Manual'' and ``rCBF Analysis
+%Using MATLAB'' if you are not yet conversant with MATLAB and the EMMA
 %and rCBF sets of functions.
 
 
@@ -300,14 +299,26 @@ simulated data.
 
 Most of the Maple commands described in this section are also
 available in various files in the directory
-\verb|/local/mni/src/pami/simulation|.  The commands are stored as text files which are read into
-Maple with the \verb|read| command.  For example, to read the first
-set of commands described, which are stored in the file
-\verb|makeplasma|, type:
+\verb|/local/matlab/toolbox/local/simul|.  In the remainder of this
+document, it will be assumed that you have created a symbolic link to
+this directory using the shell command
 \begin{verbatim}
-     read `/local/src/pami/simulation/makeplasma`;
+     ln -s /local/matlab/toolbox/local/simul simul
 \end{verbatim}
-Note the use of backquotes \verb|`| to denote a string in Maple.
+from one of your own directories.  That way, you can refer to files in
+the simulation directory by ``\verb|simul/filename|'' rather than the
+unwieldy ``\verb|/local/matlab/toolbox/local/simul/filename|''.  Thus,
+any time this document refers to the directory \verb|simul/|, we are
+referring to \verb|/local/matlab/toolbox/local/simul|.
+
+The commands are stored as text files which are read into Maple with
+the \verb|read| command.  For example, to read the file
+\verb|makeplasma| (assuming you are in the directory where you created
+the symbolic link \verb|simul|), enter 
+\begin{verbatim}
+     read `simul/makeplasma`;
+\end{verbatim}
+in Maple.  Note the use of backquotes \verb|`| to denote a string in Maple.
 
 There are a few minor differences between the commands presented here
 and those available on-line; particularly, most commands in the
@@ -369,7 +380,7 @@ create $A(t)$ in the expected units, it would be wise to save
 \verb|Ca| to a file now, while it is in the desired units.  As
 discussed above, however, Maple does {\em not} make this terribly
 easy.  Thus, there is a Maple script in
-\verb|/local/mni/src/pami/simulation| called \verb|makeall| which
+\verb|simul/| called \verb|makeall| which
 automates data generation; this file can be redirected to Maple's
 input, and the resulting output redirected to a file which can then be
 manually edited and split up for converting to MINC files.  This
@@ -537,7 +548,7 @@ To get rid of the unneeded text and split the file into several
 smaller files---one for each of \verb|Ca|, \verb|A|, \verb|FrameTimes|,
 and \verb|FrameLengths|, as well as for the times at which \verb|Ca|
 was sampled---we will use \verb|parse-output.awk| (also in
-\verb|/local/mni/src/pami/simulation|).  The command
+\verb|simul/|).  The command
 \begin{verbatim}
      awk -f parse-output.awk output
 \end{verbatim}
@@ -548,7 +559,7 @@ numeric data (i.e. start with a digit) to the file named on the
 with ``\verb|END|'' is encountered.  This is repeated for as many
 \verb|START-END| pairs are found in \verb|output|.  If you have not
 modified either \verb|makeall| or \verb|output| from the copies in
-\verb|/local/mni/src/pami/simulation|, then \verb|output| will contain
+\verb|simul/|, then \verb|output| will contain
 \verb|START-END| pairs to create the following files:
 \begin{description}
 \item \verb|plasma.txt| - the simulated plasma activity data.
@@ -580,7 +591,7 @@ will be far more convenient to put the data into a MINC file as
 expected by the rCBF programs.
 
 This is done by means of a number of utility programs provided with
-the PAMI package: \verb|micreate|, \verb|micreateimage|,
+the EMMA package: \verb|micreate|, \verb|micreateimage|,
 \verb|micreatedim|, and \verb|micreatevar|.  (Note: in order to
 improve conformance to the MINC standard and simplify certain
 operations within MATLAB, \verb|micreate| and \verb|micreateimage|
@@ -651,12 +662,12 @@ newly-created MINC file.  There is a little conversion utility called
 \verb|atod| (for ASCII to double) which we will run on our .txt files
 as follows:
 \begin{verbatim}
-     /local/mni/src/pami/simulation/atod < plasma.txt > plasma.dat
-     /local/mni/src/pami/simulation/atod < sample-times.txt > sample-times.dat
-     /local/mni/src/pami/simulation/atod < sample-lengths.txt > sample-lengths.dat
-     /local/mni/src/pami/simulation/atod < pet.txt > pet.dat
-     /local/mni/src/pami/simulation/atod < frame-times.txt > frame-lengths.dat
-     /local/mni/src/pami/simulation/atod < frame-lengths.txt > frame-lengths.dat
+     simul/atod < plasma.txt > plasma.dat
+     simul/atod < sample-times.txt > sample-times.dat
+     simul/atod < sample-lengths.txt > sample-lengths.dat
+     simul/atod < pet.txt > pet.dat
+     simul/atod < frame-times.txt > frame-lengths.dat
+     simul/atod < frame-lengths.txt > frame-lengths.dat
 \end{verbatim}
 Again, if you have changed any of the filenames, these commands should
 be adapted appropriately.
