@@ -57,8 +57,10 @@ FrameTimes = getimageinfo (img, 'FrameTimes');
 FrameLengths = getimageinfo (img, 'FrameLengths');
 midftimes = FrameTimes + (FrameLengths / 2);
 [g_even, ts_even] = resampleblood (img, 'even');
+g_even = g_even * 1.05;                 % convert to decay / (mL_blood * sec)
 
 PET = getimages (img, slice, 1:length(FrameTimes));
+PET = PET * 37 / 1.05;                  % convert to decay / (g_tissue * sec)
 
 % Perform dispersion and delay correction.
 PET_int1 = trapz( midftimes, PET')';
@@ -67,8 +69,6 @@ mask = getmask (PET_int1);
 mask = (PET_int1>(1.8*mean(PET_int1)));
 A = (mean (PET (find(mask),:)))' * 37 / 1.05;
 [Ca_even, delta] = correctblood (A, FrameTimes, FrameLengths, g_even, ts_even, progress);
-
-
 
 % Initialise the weighting functions w3 and w2; 
 % w3=sqrt(midftimes) and w2=midftimes. 
@@ -171,17 +171,6 @@ nuke = find (isnan (V0));
 V0 (nuke) = zeros (size (nuke));
 nuke = find (isinf (V0));
 V0 (nuke) = zeros (size (nuke));
-
-% Magic number time: convert the values to the correct units.
-% k2 is currently expressed in units of s^-1 but should be expressed
-% min^-1; K1 is in (nCi * sec * (g blood)) / ((mL tissue) * counts * sec)
-% and should be (mL blood) / ((g tissue) * minute).  Since blood and
-% tissue are both taken to be 1.05 g / mL, and 1 nCi = 37 count/sec, and
-% of course 1 min = 60 sec, the conversion factor is 2013.605442176871
-% NOT SURE ABOUT UNITS OF V0 RIGHT NOW!!!!!
-
-k2 = k2 * 60;
-K1 = K1 * 2013.605442176871;
 
 % Cleanup
 
