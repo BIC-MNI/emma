@@ -6,14 +6,26 @@ function fname = tempfilename
 %
 % Requires that a directory /tmp/ exists on the current machine.
 
-% $Id: tempfilename.m,v 1.6 1997-10-20 18:23:22 greg Rel $
+% $Id: tempfilename.m,v 1.7 1999-10-07 13:01:32 neelin Exp $
 % $Name:  $
 
-rand ('seed', sum (100*clock));
+global TempFileBase;
+global TempFileCount;
 
-timestring = sprintf ('%02d', fix (clock));
+% Initialize TempFileBase on first call as time (HHMMSShh, where hh is 
+% hundredths of seconds)
+% TempFileCount keeps track of calls to this function
+now = clock;
+if (isempty(TempFileBase))
+   now = clock;
+   TempFileBase = sprintf('%02d', fix([now(4:5) 1000*now(6)]));
+   TempFileCount = 1;
+else
+   TempFileCount = TempFileCount + 1;
+end
+
 filename = sprintf ('/tmp/matimage_%s_%s.dat', ...
-   timestring, int2str (rand*1e6));
+   TempFileBase, int2str (TempFileCount));
 file_handle = fopen (filename,'r');
 
 % loop until we fail to open the file, ie.
@@ -26,8 +38,9 @@ while (file_handle ~= -1)
       % we keep going until we find a file that *doesn't* exist
 
       fclose (file_handle);
+      TempFileBase = sprintf('%02d', fix([now(4:5) 1000*now(6)]));
       filename = sprintf ('/tmp/matimage_%s_%s.dat', ...
-         timestring, int2str (rand*1e6));
+         TempFileBase, int2str (TempFileCount));
       file_handle = fopen (filename, 'r');
    end
 end
