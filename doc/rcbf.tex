@@ -2,17 +2,25 @@
 
 \title{rCBF Analysis Using MATLAB}
 \author{Mark Wolforth \and Greg Ward}
-\psdraft
+%\psdraft
 \def\code#1{{\tt #1}}
 
 % ttdescription - a description-like environment where item descriptions are
 % typeset using "\tt", followed by a colon
 
-\def\ttlabel#1{{\tt #1}: }
+\def\ttlabel#1{{\tt #1: }}
 \newenvironment{ttdescription}[1]
-{\begin{list}{}{\labelsep=-0.25in\rightmargin=0.25in\leftmargin=#1\addtolength{\leftmargin}{0.25in}\labelwidth=\leftmargin\let\makelabel\ttlabel}}{\end{list}}
-
-
+{\newbox\holder
+ \setbox\holder=\hbox{\ttlabel#1}
+ \dimen0=\wd\holder
+ \begin{list}{}
+ {\labelsep=-0.25in
+  \rightmargin=0.25in
+  \leftmargin=\dimen0
+  \addtolength{\leftmargin}{0.25in}
+  \labelwidth=\leftmargin
+  \let\makelabel\ttlabel}}%     this commented is needed to hide the newline
+{\end{list}}
 
 \begin{document}
 
@@ -29,7 +37,7 @@ This document is the user manual for the rCBF (regional Cerebral
 Blood Flow) package developed at the Montreal Neurological Institute
 McConnell Brain Imaging Centre during the summer of 1993.  This
 kinetic analysis package runs under MATLAB, in conjunction with EMMA
-(Extensible Matlab Medical Analysis), a package developed at the same
+(Extensible MATLAB Medical Analysis), a package developed at the same
 time.
 
 The rCBF package described in this document performs a full
@@ -295,10 +303,10 @@ implemented numerically in MATLAB.
 \subsection{Program Structure}
 
 \begin{figure}
-\centerline{
-\psfig{figure=flow.ps,angle=90,height=3.0in}}
-\vspace{.25in}
-\centerline{Figure 1: General program flow for rCBF analysis}
+%\psfig{figure=flow.ps,angle=90,height=3.0in}}
+\centerline{\psfig{figure=flow.eps}}
+%\vspace{.25in}
+\caption{General program flow for rCBF analysis}
 \end{figure}
 
 The diagram in figure 1 shows the general flow of performing rCBF
@@ -309,10 +317,10 @@ actual images are generated through table lookup using the lookup
 tables computed in the previous step.
 
 \begin{figure}
-\centerline{
-\psfig{figure=structure.ps,angle=90,height=3.0in}}
-\vspace{.25in}
-\centerline{Figure 2: Structure of rcbf2}
+%\psfig{figure=structure.ps,angle=90,height=3.0in}}
+\centerline{\psfig{figure=structure.eps}}
+%\vspace{.25in}
+\caption{Structure of rcbf2}
 \end{figure}
 
 Of course, the actual program implementation is slightly more complex
@@ -336,7 +344,7 @@ what you will see if you type, for example, \code{type rcbf2.m} in
 MATLAB.  In the interests of concentrating on the numerical analysis,
 we have generally neglected code dealing with processing input
 arguments, reporting progress, and making some operations optional.
-Nevertheless, if you are writing MATLAB programs to perform similiar
+Nevertheless, if you are writing MATLAB programs to perform similar
 analyses, it can be instructional to read this code and its
 accompanying comments.
 
@@ -345,26 +353,17 @@ accompanying comments.
 
 \begin{enumerate}
 
-\item Check the input arguments.  If the number of arguments is
-  incorrect, then print out the help information for the function,
-  followed by an explanatory error message.  Additionally, we want to
-  ensure that the arguments themselves make sense.  Therefore, we
-  check that \code{slice} is a scalar, by checking that its largest
-  dimension has a size of one (i.e. it is a $1 \times 1$ matrix).  If
-  it is not, then we print the help, followed by an error message
-  explaining the problem.
+\item The function declaration line.  The output arguments \code{K1}
+  and \code{k2} are both whole images: that is, for $128 \times 128$
+  PET data, they will be column vectors with 16,384 elements.
+  \code{filename} is the name of the MINC file to process,
+  \code{slice} specifies which slice from the file to process, and
+  \code{progress} indicates whether or not the program should print
+  progress information as it goes.  \code{filename} and \code{slice}
+  are both required; if \code{progress} is not given, it defaults to 1
+  (``true'').  
 \begin{verbatim}
-if (nargin == 2)
-    progress = 0;
-elseif (nargin ~= 3)
-    help rcbf1
-    error('Incorrect number of arguments.');
-end
-
-if (length(slice)~=1)
-    help rcbf1
-    error('<Slice> must be a scalar.');
-end
+function [K1,k2] = rcbf1 (filename, slice, progress)
 \end{verbatim}
 
 \item Get the images and image information.  This includes all of the
@@ -524,10 +523,11 @@ redoing the same work several times in the loop.
 
 \begin{enumerate}
 \item The function declaration line.  The output arguments \code{K1},
-  \code{k2}, and \code{V0} will all be whole images---that is,
-  assuming $128 \times 128$ PET data, they will be column vectors with
-  16,384 elements.  \code{delta} will contain the blood delay term
-  $\delta$ for each specified slice.
+  \code{k2}, and \code{V0} will all be whole images---that is, for
+  $128 \times 128$ PET data, they will be matrices with 16,384
+  elements per column, and one column per slice processed.
+  \code{delta} will contain the blood delay term $\delta$ for each
+  specified slice.
 
   Of the input arguments, only \code{filename} (the name of the MINC
   volume to process) and \code{slices} (the list of slices to process)
@@ -545,29 +545,6 @@ redoing the same work several times in the loop.
 function [K1,k2,V0,delta] = rcbf2_slice ...
          (filename, slices, progress, correction, batch)
   \end{verbatim}
-
-\item Check the input arguments.  We want to make sure that we have at
-  least two input arguments (the filename and the list of slices).
-  Then, we assign default values to \code{progress}, \code{correction}
-  and \code{batch} if they were not supplied by the user.
-\begin{verbatim}
-if (nargin < 2)
-   help rcbf2
-   error ('Not enough input arguments');
-elseif (nargin < 3)
-   progress = 1;
-   correction = 1;
-   batch = 1;   
-elseif (nargin < 4)
-   batch = 1;
-   correction = 1;
-elseif (nargin < 5)
-   batch = 1;
-elseif (nargin > 5)
-   help rcbf2
-   error('Incorrect number of arguments.');
-end
-\end{verbatim}
 
 \item Initialize the matrices that will hold the $K_1$, $k_2$, and
   $V_0$ images, as well as the vector to hold the value of $\delta$
@@ -854,13 +831,7 @@ function [new_ts_even, Ca_even, delta] = correctblood ...
   \end{verbatim}
 The input arguments are:
 %
-% Setup a couple of registers to hold the size of "FrameLengths: " in
-% tt, so we know how much space to allocate in the description list
-\newbox\holder
-\setbox\holder=\hbox{\tt FrameLengths: }
-\dimen0=\wd\holder
-%
-\begin{ttdescription}{\dimen0}
+\begin{ttdescription}{FrameLengths}
   \item[A] PET activity versus time, averaged across grey matter and
     sampled at the mid-frame times
   \item[FrameTimes] the start time for each frame (in seconds,
@@ -870,7 +841,7 @@ The input arguments are:
   \item[ts\_even] the time domain at which \code{g\_even} is sampled
 \end{ttdescription}
 The output arguments are:
-\begin{ttdescription}{\dimen0}
+\begin{ttdescription}{FrameLengths}
 \item[new\_ts\_even] Generally the same as \code{ts\_even}, with some
   elements possibly chopped off from the end due to shifting of the
   time scale.
@@ -1029,14 +1000,60 @@ new_ts_even(nuke) = [];
 
 \subsubsection{FINDINTCONVO}
 \label{sec:findintconvo_listing}
+
+\code{findintconvo} (``find integrals of convolutions'') computes the
+values of
+\begin{equation}
+\label{eq:conv_int}
+  \int_{0}^{T} \frac{\int\limits_{T_1}^{T_2}
+    \left[ C_{a}(u) \otimes e^{-k_{2}u} \right] du}{T_2 - T_1} \, w_i \, dt
+\end{equation}
+at many different values of $k_2$, for up to three weighting functions
+$w_i$.  Here, $T_1$ and $T_2$ represent the start and end time any
+particular frame; in concrete terms, the inner integrand is just the
+average of $C_{a}(u) \otimes e^{-k_{2}u}$ across each frame, and is
+computed once for each frame.  The outer integral then integrates across
+all frames to arrive at a single value for each weighting function
+$w_i$ and each value of $k_2$.
+
 \begin{enumerate}
-\item Check the input arguments.
+%
+\item The function declaration line.
 \begin{verbatim}
-if ((nargin < 6) | (nargin > 8))
-    help findintconvo
-    error ('Incorrect number of input arguments.');
-end
+function [int1, int2, int3] = ...
+   findintconvo (Ca_even, ts_even, k2_lookup,...
+                 midftimes, flengths, w1, w2, w3, progress)
 \end{verbatim}
+The input arguments are:
+\begin{ttdescription}{midftimes}
+\item[Ca\_even]the blood data resampled at an evenly-spaced time
+  domain.  Usually, this is as returned by \code{resampleblood}, and
+  possibly delay- and dispersion-corrected by \code{correctblood}.
+\item[ts\_even]the time domain at which \code{Ca\_even} was resampled.
+\item[k2\_lookup]the list of $k_2$ values at which to evaluate equation
+  \ref{eq:conv_int}.  The output will consist of one value per
+  weighting function per value of $k_2$.
+\item[midftimes]the mid-frame times (used to perform the
+  frame-by-frame integration).
+\item[flengths]the length of each frame (also used in the
+  frame-by-frame integration).
+\item[w1,w2,w3]the three weighting functions $w_i$.  \code{w1} must be
+  supplied, but if it is an empty matrix, then a weighting function of
+  1 is assumed.  \code{w2} and \code{w3} are not required, and if they
+  are not given, then \code{int2} and \code{int3} (respectively) will
+  not be defined in the output.  Generally, the weighting funtions are
+  simple functions of $t$ such as 1, $t$, or $t^2$.
+\item[progress]an optional argument indicating whether progress should
+  be reported (in the form of printing a dot when the weighted
+  integrals for each value of $k_2$ have been computed).  This is
+  quite useful, as \code{findintconvo} is one of the most
+  time-consuming steps of RCBF analysis.
+\end{ttdescription}
+
+The output arguments \code{int1}, \code{int2}, and \code{int3} are
+simply vectors containing the value of equation \ref{eq:conv_int} for
+the three different weighting functions; each element of these vectors
+corresponds to one value of $k_2$ as supplied in \code{k2\_lookup}.
 
 \item Do some initial setup.  We need to get the sizes of various
 vectors, and initialize vectors that we will fill element by element
@@ -1064,72 +1081,138 @@ end
 \item Calculate each element of the integrals, one at a time.
 Unfortunately, there does not seem to be any way to vectorize this
 operation, and it must therefore be performed within an inefficient
-\code{for} loop.  Since this function can take considerable time to
-execute, it prints a period for every iteration of the loop to keep
-the user awake.
+\code{for} loop.
 
 \begin{verbatim}
 for i = 1:TableSize
+\end{verbatim}
 
-   fprintf('.')
-
+\item First calculate the innermost terms of equation
+  \ref{eq:conv_int}.  \code{exp\_fun} is $e^{-k_2 t}$, and \code{convo}
+  is $C_a (t) \otimes e^{-k_2 t}$.  We then perform the inner
+  integration, i.e. average across all frames.  This is performed by
+  \code{nframeint}, a special CMEX routine that has been carefully
+  optimised for this very common operation in RCBF analysis.  Type
+  \code{help nframeints} in MATLAB for more information.
+\begin{verbatim}
    exp_fun = exp(-k2_lookup(i) * ts_even);
    convo = nconv(Ca_even, exp_fun, ts_even(2) - ts_even(1));
 
    integrand = nframeint (ts_even, convo(1:length(ts_even)),...
                           fstart, flengths);
+\end{verbatim}
 
-   % w1 given?
+\item Find any frames that are not completely covered by the
+  \code{ts\_even} time domain.  \code{nframeint} actually does this
+  for us, returning NaN (not-a-number) in any such element of its
+  output vector.  Thus, we only use data from frames that are {\em
+  not} equal to NaN, selected using the built-in \code{isnan}
+  function.
+\begin{verbatim}
+   select = ~isnan(integrand);
+\end{verbatim}
 
-   if (nargin >= 6)
-      int1 (i) = ntrapz(midftimes, (w1 .* integrand));
-   end
-   
-   % w2 given?
+\item Now we calculate the outer integral (the weighted integral
+  across all frames) for each weighting function with the current
+  value of $k_2$.  Again, we use a CMEX routine to enhance
+  performance; \code{ntrapz} is a replacement for MATLAB's
+  \code{trapz} function that is much faster, as well as having an
+  optional argument to allow weighting of the integrand.  Note the use
+  of \code{select} to make sure that we only use frames actually
+  spanned by the blood data.
+\begin{verbatim}
+  int1 (i) = ntrapz(midftimes(select), integrand(select), w1(select));
+  int2 (i) = ntrapz(midftimes(select), integrand(select), w2(select));
+  int3 (i) = ntrapz(midftimes(select), integrand(select), w3(select));
+\end{verbatim}
+(We have omitted the code that makes \code{w2} and \code{w3}
+optional in favour of concentrating on the numerical analysis.)
 
-   if (nargin >= 7)
-      int2 (i) = ntrapz(midftimes, (w2 .* integrand));
-   end
-
-   % w3 given?
-   
-   if (nargin == 8)
-       int3 (i) = ntrapz(midftimes, (w3 .* integrand));
-   end
+\item End the \code{for} loop.
+\begin{verbatim}
 end
 \end{verbatim}
+
 \end{enumerate}
 
 
 \subsubsection{B\_CURVE}
+
+\code{bcurve} computes the right-hand-side of equation
+\ref{eq:delay_correct}, that is,
+\begin{equation}
+\frac{\int\limits_{T_1}^{T_2} 
+  \left( \alpha 
+    \left[ C_a(t) \otimes  e^{-\beta t} \right] 
+  + \gamma C_a(t) \right) dt} {T_2 - T_1}
+\label{eq:b_curve}
+\end{equation}
+In the early stages of the development of RCBF, \code{b\_curve} was
+used in the non-linear fitting required for delay correction.  Now,
+the entire fitting procedure for delay correction is encapsulated in
+the CMEX routine \code{delaycorrect}.  However, \code{delaycorrect}
+simply performs one fit (optimising $\alpha$, $\beta$, and $\gamma$
+for a single value of $\delta$); it is called multiple times, and
+\code{b\_curve} is used to pick which value of $\delta$ resulted in
+the best fit (in the least squares sense).  In particular, we wish to
+satisfy equation \ref{eq:delay_correct}; therefore, the sum of the
+squares of the differences between its two sides ($A^{*} (t)$ and
+equation \ref{eq:b_curve}) for a particular value of $\delta$ is
+computed, and the value of $\delta$ that results in the smallest
+residual is picked as the delay factor.  The finding of the residual
+is actually done in \code{fit\_b\_curve}, which due to its simplicity
+(it has only two line of interesting code, one of which is a call to
+\code{b\_curve}) is not shown here.
+
 \begin{enumerate}
 
-\item Check for the correct number of fitting parameters.  We don't
-want to be very strict about checking input arguments here since this
-function gets called many times during curve fitting.
+\item Input and output arguments:
 \begin{verbatim}
-if (length(args) ~= 3), error ('Wrong number of fit parameters'), end;
+function integral = b_curve ...
+    (args, shifted_g_even, ts_even, A, fstart, flengths)
+\end{verbatim}
+  The output argument \code{integral} is just the values of equation
+  \ref{eq:b_curve} after frame-by-frame integration, i.e. there is one
+  number for each frame.
+
+  The input arguments are
+  \begin{ttdescription}{flengths}
+  \item[args]a three element vector containing $\alpha$, $\beta$, and
+    $\gamma$ from equation \ref{eq:b_curve}.  Keep in mind in the
+    following code that \code{args(1)} is $\alpha$, \code{args(1)} is
+    $\beta$, and \code{args(1)} is $\gamma$.
+  \item[g\_even]the blood data resampled at an evenly-spaced time
+    domain, and possibly shifted by some delay factor $\delta$.  We
+    are not interested here in what that value of $\delta$ is,
+    however.
+  \item[ts\_even]the evenly-spaced time domain at which \code{g\_even}
+    is sampled.
+  \item[A]the PET activity, averaged over gray matter, for the current
+    slice.  (This isn't actually used in \code{b\_curve}, but the
+    argument is still here for historical reasons and to make calls
+    to \code{b\_curve} and \code{fit\_b\_curve} look the same.)
+  \item[fstart]the frame start times.
+  \item[flengths]the frame lengths.
+  \end{ttdescription}
+
+\item Evaluate the first term of the integrand in equation \ref{eq:b_curve}.
+\begin{verbatim}
+expthing = exp(-args(2)*ts_even);
+c = nconv(shifted_g_even,expthing,ts_even(2)-ts_even(1));
+c = c (1:length(ts_even));
+i1 = args(1)*c;			  % alpha * (convolution)
 \end{verbatim}
 
-\item Do a straightforward evaluation of the function.  
+\item Evaluate the second term of the integrand, and the two terms
+  together to get the integrand, \code{i}.
 \begin{verbatim}
-% N.B.: alpha = args(1)
-%        beta = args(2)
-%       gamma = args(3)
-
-expthing = exp(-args(2)*ts_even); 	% ts_even for the convolution
-c = nconv(shifted_g_even,expthing,ts_even(2)-ts_even(1));
-c = c (1:length(ts_even));		% chop off points outside of the time
-					% domain we're interested in
-
-% Calculate the two main terms of the expression, alpha * (convoluted
-% stuff) and gamma * (shifted activity), and sum them.
-
-i1 = args(1)*c;				% alpha * (convolution)
 i2 = args(3)*shifted_g_even;		% gamma * g(t - delta)
 
 i = i1+i2;
+\end{verbatim}
 
+\item Perform the frame-by-frame integration.
+\begin{verbatim}
 integral = nframeint (ts_even, i, fstart, flengths);
 \end{verbatim}
 
@@ -1143,12 +1226,6 @@ integral = integral (1:length(A));
 \end{verbatim}
 \end{enumerate}
 
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%    TEMPORARILY END THE DOCUMENT HERE    %%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\end{document}
 
 %--------------------------------------------------------------
 \newpage
@@ -1186,21 +1263,19 @@ the same directory before performing the analysis using rCBF.
 
 Once the blood and image files are prepared, the analysis can be
 performed.  Start MATLAB by typing \code{matlab} at the shell prompt.
-Starting the analysis is very straight forward.  You may type
+Starting the analysis is very straightforward.  You may type
 \code{help rcbf2} to get information on running the rCBF package.
 Basically, \code{rcbf2} is a MATLAB function that returns a $K_1$,
 $k_2$, and $V_0$ image, as well as the delay found during blood delay
 correction.  It requires the name of the MINC file that contains the
 images, and the number of the slice to analyze.  Therefore, if we
-wished to analyze slice 12 of \code{arnaud\_20547}, we would call
+wished to analyze slice 12 of \code{arnaud\_20547.mnc}, we would call
 \code{rcbf2} as:
-
+%
 \begin{verbatim}
-
-     [K1, k2, V0, delay] = rcbf2('arnaud_20547', 12);
-
+     [K1, k2, V0, delay] = rcbf2('arnaud_20547.mnc', 12);
 \end{verbatim}
-
+%
 In this case, the semi-colon at the end is {\em very} important since
 \code{rcbf2} will return the entire images.  If the semi-colon is
 omitted, the $K_1$, $k_2$, and $V_0$ values for every pixel will be
@@ -1210,6 +1285,12 @@ Once the images have been generated, they may be manipulated using
 any of the normal EMMA tools (viewed with \code{viewimage}, saved
 with \code{putimages}, etc.).
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%    TEMPORARILY END THE DOCUMENT HERE    %%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\end{document}
 
 %--------------------------------------------------------------
 \newpage
