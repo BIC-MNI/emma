@@ -1,4 +1,4 @@
-function [Ca_even, delta] = correctblood (A, FrameTimes, FrameLengths, g_even, ts_even, progress)
+function [Ca_even, delta] = correctblood (A, FrameTimes, FrameLengths, g_even, ts_even, options)
 
 % CORRECTBLOOD  perform delay and dispersion corrections on blood curve
 %
@@ -39,29 +39,60 @@ function [Ca_even, delta] = correctblood (A, FrameTimes, FrameLengths, g_even, t
 %  of delta values (currently -5 to +10 sec), and performs a three-
 %  parameter fit with respect to alpha, beta, and gamma; the value of
 %  delta that results in the best fit is chosen as the delay time.
+%
+%  options is an entirely optional vector meant for debugging purposes.
+%  If options(1) is non-zero, then correctblood will show its progress,
+%  by printing out the results of progressive delay-correction fits.  If 
+%  it is at least 2, then correctblood will also show progress graphically,
+%  by displaying a graph of A(t) and the fits corresponding to every
+%  value of delta tried.  If options(2) is zero, then no delay correction
+%  will be performed; if options(3) is supplied, then it will be
+%  used as delta to do delay correction without the time-consuming
+%  fitting.
 
 if ((nargin < 5) | (nargin > 6))
    help correctblood
    error ('Incorrect number of input arguments.')
 end
+
+progress = 0;                   % defaults in case of no options vector - 
+do_delay = 1;                   % may be overridden below
    
-if (nargin < 6), progress = 0; end
+if (nargin == 6)                % options vector
 
-if (progress) disp ('Showing progress'), end
+   if (length(options)>=1)      % options vector given; if it has an element
+      progress = options(1);    % 1, that will be progress
+   end
 
-MidFTimes = FrameTimes + FrameLengths/2;
-first60 = find (FrameTimes < 60);	      % all frames in first minute only
-numframes = length(FrameTimes);
+   if (length(options)>=2)      % delay correction toggle supplied
+      do_delay = options(2);
+   end
 
-tau = 4;                                      % assumed dispersion time constant
+   if (length(options)>=3)      % value to use for delta supplied
+      delta = options(3);
+   else                         % no delta value given, so use 0
+      delta = 0;                
+   end
 
-if (progress)
-   plot (ts_even, g_even, ':');
-   drawnow
-   hold on
 end
 
-if (progress)
+if (progress) 
+   disp ('Showing progress');
+end
+
+if (~do_delay) 
+   disp (['No delay-fitting will be performed; will use delta = ' ...
+           int2str(delta)]);
+end
+
+MidFTimes = FrameTimes + FrameLengths/2;
+first60 = find (FrameTimes < 60);           % all frames in first minute only
+numframes = length(FrameTimes);
+
+tau = 4;                                    % assumed dispersion time constant
+
+if (progress >= 2)
+   figure;
    plot (ts_even, g_even, 'y:');
    title ('Blood activity: dotted=g(t), solid=g(t) + tau*dg/dt');
    drawnow
@@ -71,19 +102,20 @@ end
 % g(t) by using the method of Sayers described in "Inferring
 % Significance from Biological Signals."
 
-[smooth_g_even, deriv_g] = deriv (3, length(ts_even), g_even, (ts_even(2)-ts_even(1)));
+[smooth_g_even, deriv_g] = ...
+     deriv (3, length(ts_even), g_even, (ts_even(2)-ts_even(1)));
 g_even = smooth_g_even + tau*deriv_g;
 
-if (progress)
+if (progress >= 2)
    plot (ts_even, g_even, 'r');
    drawnow
-   figure;
 end
 
-A = A (first60); 			% chop off stuff after 60 seconds
-MidFTimes = MidFTimes (first60);	% first minute again
+A = A (first60);                        % chop off stuff after 60 seconds
+MidFTimes = MidFTimes (first60);        % first minute again
 
-if (progress)
+if (progress >= 2)
+   figure;
    plot (MidFTimes, A, 'or');
    hold on
    title ('Average activity across gray matter');
@@ -103,55 +135,71 @@ end
 
 init = [.0001 .000125 .03];
 
-if (progress), fprintf ('Performing fits...\n'), end
-deltas = -5:1:10;
-rss = zeros (length(deltas), 1);	% residual sum-of-squares
-params = zeros (length(deltas), 3);	% 3 parameters per fit
-options = [0 0.1];
 
-for i = 1:length(deltas)
-   delta = deltas (i);
-   if (progress), fprintf ('delta = %.1f', delta), end
-   
-   % Get the shifted activity function, g(t - delta), by shifting g(t)
-   % to the right (ie. subtract delta from its actual times, ts_even)
-   % and resample at the "correct" times ts_even).  Then do the 
-   % three-parameter fit to optimise the function wrt. alpha, beta,
-   % and gamma.  Plot this fit.  (Could get messy, but what the hell)
+if (do_delay)
 
-   
-   shifted_g_even = lookup ((ts_even-delta), g_even, ts_even);
-   g_select = find (~isnan (shifted_g_even));
+   if (progress), fprintf ('Performing fits...\n'), end
+   deltas = -5:1:10;
+   rss = zeros (length(deltas), 1);     % residual sum-of-squares
+   params = zeros (length(deltas), 3);  % 3 parameters per fit
+   options = [0 0.1];
 
-% Be really careful with the fitting.  If the algorithm you choose makes
-% args(2) a negative value, there will be infinities in the result
-% of b_curve, which will cause the entire thing to bomb.
+   for i = 1:length(deltas)
+      delta = deltas (i);
+      if (progress), fprintf ('delta = %.1f', delta), end
 
-%   options(5) = 1;
-%   [final,options,f] = leastsq ('fit_b_curve', init, options, [], ...
-%                       shifted_g_even(g_select), ts_even(g_select), A, FrameTimes, FrameLengths);
-   final = fmins ('fit_b_curve', init, options, [], ...
-                   shifted_g_even (g_select), ts_even (g_select), A, FrameTimes, FrameLengths);
-
-   params (i,:) = final;
-%   rss (i) = sum (f .^ 2) ;            % if using leastsq
-   rss(i) = fit_b_curve (final, shifted_g_even(g_select), ts_even(g_select), ...
-                         A, FrameTimes, FrameLengths);
-
-   init = final;
-   if (progress)
-      fprintf ('; final = [%g %g %g]; error = %g\n', ...
-	    final, rss (i));
-      plot (MidFTimes, ...
-            b_curve(final, shifted_g_even(g_select), ts_even(g_select), ...
-		A, FrameTimes, FrameLengths));
-      drawnow
-   end
-end
+      % Get the shifted activity function, g(t - delta), by shifting g(t)
+      % to the right (ie. subtract delta from its actual times, ts_even)
+      % and resample at the "correct" times ts_even).  Then do the 
+      % three-parameter fit to optimise the function wrt. alpha, beta,
+      % and gamma.  Plot this fit.  (Could get messy, but what the hell)
 
 
-[err, where] = min (rss);		% find smallest residual
-delta = deltas (where);			% delta for best fit
+      shifted_g_even = lookup ((ts_even-delta), g_even, ts_even);
+      g_select = find (~isnan (shifted_g_even));
+
+      % Be really careful with the fitting.  If the algorithm you choose makes
+      % args(2) a negative value, there will be infinities in the result
+      % of b_curve, which will cause the entire thing to bomb.
+
+%      options(5) = 1;
+%      [final,options,f] = leastsq ('fit_b_curve', init, options, [], ...
+%                             shifted_g_even(g_select), ts_even(g_select), ...
+%                             A, FrameTimes, FrameLengths);
+
+      final = fmins ('fit_b_curve', init, options, [], ...
+                     shifted_g_even (g_select), ts_even (g_select), ...
+                     A, FrameTimes, FrameLengths);
+
+      params (i,:) = final;
+%     rss (i) = sum (f .^ 2) ;            % if using leastsq
+      rss(i) = fit_b_curve (final, ...
+                            shifted_g_even(g_select), ts_even(g_select), ...
+                            A, FrameTimes, FrameLengths);
+
+      init = final;
+      if (progress)
+         fprintf ('; final = [%g %g %g]; residual = %g\n', final, rss (i));
+
+         if (progress >= 2)
+            plot (MidFTimes, ...
+                b_curve(final, shifted_g_even(g_select), ts_even(g_select), ...
+                A, FrameTimes, FrameLengths));
+            drawnow;
+         end      % if graphical progress
+      end      % if any progress
+   end      % for delta
+
+   [err, where] = min (rss);            % find smallest residual
+   delta = deltas (where);                      % delta for best fit
+
+end      % if do_delay
+
+% At this point either we have performed the delay-correction fitting to 
+% get delta, or the caller set options(2) to zero so that delay-correction
+% was not explicitly done.  In this case, delta will have been set either
+% to zero or to options(3).
+
 Ca_even = lookup ((ts_even-delta), g_even, ts_even);
 
 nuke = find(isnan(Ca_even));
