@@ -26,7 +26,15 @@ i = i1+i2;
 
 % Note that we don't have to explicitly integrate here, because we
 % multiply by flengths to integrate, and then divide by flengths to
-% normalise.
+% normalise.  Note: the nuking of NaN's is necessary because ts_even 
+% might not span midftimes.  (This would normally happen when ts_even
+% is itself chopped due to NaN's after a lookup; this is the chop
+% done by indexing with the g_select vector in the main loop of
+% correctblood.m.)  Setting the NaN's equal to zero rather than 
+% eliminating them should not change the results, since integral is 
+% normally just used to find a residual sum-of-squares with A (t).
 
 integral = lookup (ts_even,i,midftimes);
+nuke = find (isnan (integral));
+integral (nuke) = zeros (size (nuke));
 integral = integral (1:length(A));
