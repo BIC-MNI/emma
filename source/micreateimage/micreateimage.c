@@ -57,8 +57,8 @@ void GetImageSize (char num_frames[], long *frames,
                    char num_slices[], long *slices,
                    char im_height[],  long *height,
                    char im_width[],   long *width);
-void CreateDims (int CDF, long Frames, long Slices, long Height, long Width,
-                 char *DimOrder, int *NumDims, int DimIDs[]);
+Boolean CreateDims (int CDF, long Frames, long Slices, long Height, long Width,
+		    char *DimOrder, int *NumDims, int DimIDs[]);
 
 
 
