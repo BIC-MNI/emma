@@ -17,7 +17,7 @@
 %   mireadvar     - Read a hyperslab from any NetCDF variable.
 %   micreate      - Create a new MINC file from scratch.
 %   miwriteimages - Write images to a MINC file (used by putimages).
-%   miinquire     - Get NetCDF variable, dimension, or attribute information.
+%   miinquire     - Get netCDF variable, dimension, or attribute information.
 %
 %     Note: these seven functions should not generally be called by 
 %     general purpose image analysis applications.  Use the high-
@@ -33,7 +33,6 @@
 %   rescale       - Multiply a matrix by a scalar.
 %   
 % General utility functions (image processing)
-%   pixelindex    - Generate a vector index for a point in an image vector.
 %   getmask       - Returns a mask that is the same size as the passed image.
 %   getpixel      - Use this instead of ginput.
 %   gettaggedhist - Get a histogram of tagged points within a volume.
@@ -43,12 +42,14 @@
 %   smooth        - Perform a simple spatial smoothing on an image.
 %   spectral      - Generate the RGB numbers for a spectral colourmap.
 %   
-% General utility (coordinate transforms, tag and transform files)
+% General utility (image volume geometry, tag and transform files)
 %   loadtagfile   - Load coordinates from an MNI tag file.
 %   viewimage     - View an image.
-%   getvoxeltoworld - Compute the voxel-to-world transform for a volume.
+%   getvoxeltoworld - Compute the raw voxel-to-world transform for a volume.
 %   worldtovoxel  - Convert world coordinates to voxel coordinates.
 %   voxeltoworld  - Convert voxel coordinates to world coordinates.
+%   pixelindex    - Generate a vector index for a point in an image vector.
+%   gettaggedregion - Read all voxel values in a labelled volume.
 %
 % rCBF analysis functions
 %   rcbfanalysis  - Perform two compartment rCBF analysis, and write out
