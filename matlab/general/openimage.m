@@ -84,7 +84,7 @@ function ImHandle = openimage (filename, mode)
 %              97-5-27 Mark Wolforth: Minor modification to work with
 %                                     Matlab 5, which handles global
 %                                     variables differently from Matlab 4.x
-%@VERSION    : $Id: openimage.m,v 1.24 1997-10-20 18:23:23 greg Rel $
+%@VERSION    : $Id: openimage.m,v 1.25 1999-10-07 13:02:04 neelin Exp $
 %              $Name:  $
 %-----------------------------------------------------------------------------
 
@@ -156,19 +156,9 @@ if (strcmp (filename(len-2:len), '.gz') | ...
       lastslash = slashes (length (slashes));
    end
    
-   % Create a (hopefully) unique temporary directory -- only way
-   % there'll be a clash is if another MATLAB does an openimage
-   % on a compressed file within the same second as this one.
-   % Note that checking the directory with fopen might not be
-   % portable!  Works on IRIX and SunOS, at least.
+   % Create a (hopefully) unique temporary directory.
    
-   timestring = sprintf ('%02d', fix (clock));
-   tdir = [tempdir 'emma' timestring];
-   id = fopen (tdir, 'r');		% try to open the temp dir
-   if (id ~= -1)			% if it succeeded, that's bad! means
-      fclose (id);			% the dir already exists
-      error (['Temporary directory ' tdir ' already exists']);
-   end
+   tdir = tempfilename;
    status = unix (['mkdir ' tdir]);
    if (status ~= 0)                     % mkdir failed
       error (['Unable to create temporary directory ' tdir]);
