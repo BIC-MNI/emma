@@ -5,7 +5,7 @@
 # The only change you should make to this file is EMMA_ROOT; other
 # site-specific options are in Makefile.site.
 #
-# $Id: Makefile,v 1.4 1997-10-21 16:08:21 greg Rel $
+# $Id: Makefile,v 1.5 2004-03-11 15:45:17 bert Exp $
 #
 
 
@@ -78,7 +78,7 @@ install:
 	cd doc ; $(MAKE) install
 
 clean:
-	rm -f `find . \( -name \*.o -o -name \*.$(MEX_EXT) -o -name lib\*.a \) -print` bin/*
+	rm -f `find . \( -name \*.o -o -name \*.$(MEX_EXT) -o -name lib\*.a \) -print` bin/* doc/*.dvi doc/*.toc doc/*.ps doc/*.aux doc/*.log
 
 
 # Prepare for and build a distribution.
@@ -116,9 +116,9 @@ rcsname:
 dist: distprep
 	mkdir $(RELEASE)
 #	tar -cf - -T MANIFEST | (cd $(RELEASE) ; tar -xf -)
-	perl5 -MExtUtils::Manifest=maniread,manicopy \
+	perl -MExtUtils::Manifest=maniread,manicopy \
 	  -e '$$mani = maniread;' \
-	  -e 'manicopy ($$mani, "$(RELEASE)", "best");
+	  -e 'manicopy ($$mani, "$(RELEASE)", "best");'
 	rm -f $(RELEASE)/Makefile $(RELEASE)/Makefile.site
 	cp -p Makefile Makefile.site $(RELEASE)
 	chmod u+w $(RELEASE)/Makefile $(RELEASE)/Makefile.site
