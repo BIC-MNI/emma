@@ -227,35 +227,34 @@ end
 % set.  So let's create the new MINC file, copying the patient, study
 % and acquisition variables if possible.
 
-disp (['New file: ' NewFile]);
-disp (['Old file: ' ParentFile]);    % will be set to '' if none given by caller
-disp ('DimSizes: ');
-disp (DimSizes);
-disp (['Image type: ' ImageType]);
-disp ('Valid range:');
-disp (ValidRange);
-disp (['Orientation: ', Orientation]);
+%disp (['New file: ' NewFile]);
+%disp (['Old file: ' ParentFile]);    % will be set to '' if none given by caller
+%disp ('DimSizes: ');
+%disp (DimSizes);
+%disp (['Image type: ' ImageType]);
+%disp ('Valid range:');
+%disp (ValidRange);
+%disp (['Orientation: ', Orientation]);
 
-execstr = sprintf ('micreate %s %s patient study acquisition', ...
-                   ParentFile, NewFile);
+
+
+if (Parent == -1)
+   execstr = sprintf ('micreateimage %s -size %d %d %d %d -type %s -valid_range %f %f -orientation %s', ...
+		      NewFile, DimSizes, ImageType, ValidRange, Orientation);
+else
+   execstr = sprintf ('micreateimage %s -parent %s -size %d %d %d %d -type %s -valid_range %f %f -orientation %s', ...
+		      NewFile, ParentFile, DimSizes, ...
+		      ImageType, ValidRange, Orientation);
+end
+
+%disp (execstr);
+
 [result,output] = unix (execstr);
 if (result ~= 0)
    error (['Error running ' execstr ' to create file ' NewFile]);
 end
 
-% Now create the image variable in the new MINC file, using the current
-% values of DimSizes and Orientation.  Note that the sprintf implicitly
-% assumes that DimSizes has exactly four elements!
-
-execstr = sprintf ('micreateimage %s %d %d %d %d %s', ...
-                   NewFile, DimSizes, Orientation);
-[result,output] = unix (execstr);
-if (result ~= 0)
-   error (['Error running ' execstr ' to create image in file ' NewFile]);
-end
-
 closeimage (Parent);
-
 
 % Figure out what the handle to return should be
 
