@@ -33,8 +33,6 @@ num_colors = length (colormap);
 lo = min(min(img));
 hi = max(max(img));
 img = ((img - lo) * ((num_colors-1) / (hi-lo))) + 1;
-disp (['Img min is ' int2str(min(min(img)))]);
-disp (['Img max is ' int2str(max(max(img)))]);
 
 % Now display it, and fix the y-axis to normal (rather than reverse) dir.
 image (img');
