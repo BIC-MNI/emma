@@ -1,5 +1,5 @@
 # Manifest file for EMMA
-# $Id: MANIFEST,v 1.4 2004-03-11 15:44:12 bert Exp $
+# $Id: MANIFEST,v 1.5 2004-10-06 15:05:41 bert Exp $
 # $Name:  $
 README
 CHANGES
@@ -42,6 +42,9 @@ source/miwriteimages/00Description
 source/miwritevar/Makefile
 source/miwritevar/miwritevar.c
 source/miwritevar/00Description
+source/miwriteatt/Makefile
+source/miwriteatt/miwriteatt.c
+source/miwriteatt/00Description
 source/rescale/Makefile
 source/rescale/rescale.c
 source/rescale/00Description
@@ -136,6 +139,7 @@ matlab/general/worldtovoxel.m
 matlab/general/loadxfmfile.m
 matlab/general/pixelindex.m
 matlab/general/gettaggedregion.m
+matlab/general/miwriteatt.m
 matlab/rcbf/b_curve.m
 matlab/rcbf/correctblood.m
 matlab/rcbf/rcbf2.m
