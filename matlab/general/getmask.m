@@ -1,14 +1,15 @@
 function mask = getmask (image)
 % GETMASK returns a mask that is the same size as the passed image.
-%         The mask consists of 0's and 1's, and is created interactively
-%         by the user.  Currently, a threshold algorithm is used, 
-%         based on the input argument image: the user selects a 
-%         threshold using a slider (the default starting value is 
-%         1.8), and getmask selects all points in image greater than
-%         the mean value of the entire image multiplied by threshold 
-%         the threshold.  It then displays image as masked by
-%         that threshold value, so the user can refine the threshold
-%         to his/her satisfaction.
+%
+%     mask = getmask (image)
+%
+% The mask consists of 0's and 1's, and is created interactively by
+% the user.  Currently, a threshold algorithm is used, based on the input
+% argument image: the user selects a threshold using a slider (the default
+% starting value is 1.8), and getmask selects all points in image greater
+% than the mean value of the entire image multiplied by threshold the
+% threshold.  It then displays image as masked by that threshold value, so
+% the user can refine the threshold to his/her satisfaction.
 
 if (nargin ~= 1)
    help getmask;

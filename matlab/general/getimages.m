@@ -1,6 +1,9 @@
 function images = getimages (handle, slices, frames)
 %GETIMAGES  Retrieve whole images from an open MINC file.
-%  images = getimages (handle, slices[, frames]) reads the slices or frames
+%
+%  images = getimages (handle, slices[, frames])
+%
+%  reads the slices or frames
 %  listed in the vectors slices and frames from the MINC file specfied by
 %  handle.  
 %
