@@ -66,29 +66,29 @@ end
 
 for i = 1:TableSize
 
-fprintf('.')
+   fprintf('.')
 
    exp_fun = exp(-k2_lookup(i) * ts_even);
    convo = nconv(Ca_even, exp_fun, ts_even(2) - ts_even(1));
 
-   integrand = frameint (ts_even, convo(1:length(ts_even)), fstart, flengths);
+   integrand = nframeint (ts_even, convo(1:length(ts_even)), fstart, flengths);
 
    % w1 given?
 
    if (nargin >= 6)
-      int1 (i) = trapz(midftimes, (w1 .* integrand));
+      int1 (i) = C_trapz(midftimes, (w1 .* integrand));
    end
    
    % w2 given?
 
    if (nargin >= 7)
-      int2 (i) = trapz(midftimes, (w2 .* integrand));
+      int2 (i) = C_trapz(midftimes, (w2 .* integrand));
    end
 
    % w3 given?
    
    if (nargin == 8)
-       int3 (i) = trapz(midftimes, (w3 .* integrand));
+       int3 (i) = C_trapz(midftimes, (w3 .* integrand));
    end
 end
 
