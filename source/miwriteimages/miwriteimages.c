@@ -16,14 +16,15 @@
 #define PROGNAME       "miwriteimages"
 
 
+
 /*
  * Global variables (with apologies)
  */
 
-Boolean    debug;
-char       ErrMsg [256];         /* set as close to the occurence of the
-                                    error as possible; displayed by whatever
-                                    code exits */
+Boolean    debug = FALSE;       /* for mincutil.c only */
+char       ErrMsg [256];        /* set as close to the occurence of the */
+                                /* error as possible; displayed by whatever */
+                                /* code exits */
 
 
 /* ----------------------------- MNI Header -----------------------------------
@@ -49,7 +50,10 @@ void ErrAbort (char msg[], Boolean PrintUsage, int ExitCode)
    {
       (void) fprintf (stderr, "Usage: \n");
       (void) fprintf (stderr, "%s <file name> ",PROGNAME);
-      (void) fprintf (stderr, "<slices> <frames> <temp file name>\n\n");
+      (void) fprintf (stderr, "<slices> <frames> <raw file>\n\n");
+
+      (void) fprintf (stderr, "where the raw file consists of doubles, with height*width values per image\n");
+      (void) fprintf (stderr, "(height and width are determined from the MINC file).\n\n");
    }
    exit (ExitCode);
 }
@@ -123,7 +127,7 @@ int GetVector (char vector_string[], long vector[], int max_elements)
 
 
 /* ----------------------------- MNI Header -----------------------------------
-@NAME       : VerifyVectors
+@NAME       : CheckBounds
 @INPUT      : Slices[], Frames[] - lists of desired slices/frames
               NumSlices, NumFrames - number of elements used in each array
               Image - pointer to struct describing the image:
@@ -139,25 +143,23 @@ int GetVector (char vector_string[], long vector[], int max_elements)
 @CREATED    : 
 @MODIFIED   : 
 ---------------------------------------------------------------------------- */
-Boolean VerifyVectors (long Slices[], long Frames[],
+Boolean CheckBounds (long Slices[], long Frames[],
                        int NumSlices, int NumFrames,
                        ImageInfoRec *Image)
 {
    int   i;
 
-   if (debug)
-   { 
-      printf ("Checking slices (%d of 'em) and frames (%d of 'em) for validity...\n", NumSlices, NumFrames);
-      printf ("No slice >= %ld or frame >= %ld allowed\n",
-              Image->Slices, Image->Frames);
-   }
+#ifdef DEBUG
+   printf ("Checking slices (%d of them) and frames (%d of them) for validity...\n", NumSlices, NumFrames);
+   printf ("No slice >= %ld or frame >= %ld allowed\n",
+           Image->Slices, Image->Frames);
+#endif
 
    for (i = 0; i < NumSlices; i++)
    {
-      if (debug)
-      {
-         printf ("User slice %d is study slice %d\n", i, Slices[i]);
-      }
+#ifdef DEBUG
+      printf ("User slice %d is study slice %d\n", i, Slices[i]);
+#endif
       if ((Slices [i] >= Image->Slices) || (Slices [i] < 0))
       {
          sprintf (ErrMsg, "Bad slice number: %ld (must be < %ld)", 
@@ -168,10 +170,9 @@ Boolean VerifyVectors (long Slices[], long Frames[],
 
    for (i = 0; i < NumFrames; i++)
    {
-      if (debug)
-      {
-         printf ("User frame %d is study frame %d\n", i, Frames[i]);
-      }
+#ifdef DEBUG
+      printf ("User frame %d is study frame %d\n", i, Frames[i]);
+#endif
       if ((Frames [i] >= Image->Frames) || (Frames [i] < 0))
       {
          sprintf (ErrMsg, "Bad frame number: %ld (must be < %ld)", 
@@ -182,7 +183,7 @@ Boolean VerifyVectors (long Slices[], long Frames[],
    }     /* for i - loop frames */
 
    return (TRUE);
-}     /* VerifyVectors */
+}     /* CheckBounds */
 
 
 
@@ -208,6 +209,10 @@ FILE *OpenTempFile (char Filename [])
       sprintf (ErrMsg, "Error opening input file %s", Filename);
       return (NULL);
    }
+
+#ifdef DEBUG
+   printf ("Temp file %s succesfully opened\n", Filename);
+#endif
    
    return (Newfile);
 }     /* OpenTempFile */
@@ -224,7 +229,7 @@ FILE *OpenTempFile (char Filename [])
               FALSE if not all elements were read
 @DESCRIPTION: 
 @METHOD     : 
-@GLOBALS    : debug
+@GLOBALS    : 
 @CALLS      : 
 @CREATED    : 93-6-3, Greg Ward
 @MODIFIED   : 
@@ -235,16 +240,18 @@ Boolean ReadNextImage (double *Buffer, long ImageSize, FILE *InFile)
    int   i;
 
    AmtRead = fread (Buffer, sizeof (double), (size_t) ImageSize, InFile);
-   if (debug)
-   {
-      printf ("Read an image from temp file; pointer now at byte %d\n", 
-              ftell(InFile));
-      printf ("%d values read; wanted %ld\n", AmtRead, ImageSize);
-   }
-   if ((debug) && (feof (InFile)))
+
+#ifdef DEBUG
+   printf ("Read an image from temp file; file position now at byte %d\n", 
+           ftell(InFile));
+   printf ("%d doubles read; wanted %ld\n", AmtRead, ImageSize);
+
+   if (feof (InFile))
    {
       printf ("At end of file\n");
    }
+#endif
+
    if ((long) AmtRead != ImageSize)
    {
       return (FALSE);
@@ -268,21 +275,48 @@ Boolean ReadNextImage (double *Buffer, long ImageSize, FILE *InFile)
 @RETURNS    : (void)
 @DESCRIPTION: Finds the max and min values of an image, and puts them
               into the MIimagemax and MIimagemin variables associated
-              with the specified image variable.
+              with the specified image variable.  Note: the caller must
+              make sure that MIimagemax and MIimagemin exist in the
+              file, and ensure that ImInfo->MaxID and ImInfo->MinID contain
+              their variable ID's.
 @METHOD     : 
-@GLOBALS    : debug
+@GLOBALS    : 
 @CALLS      : 
 @CREATED    : 93-6-3, Greg Ward
 @MODIFIED   : 
 ---------------------------------------------------------------------------- */
 void PutMaxMin (ImageInfoRec *ImInfo, double *ImVals, 
                 long SliceNum, long FrameNum, 
-                Boolean DoFrames)
+                Boolean DoSlices, Boolean DoFrames)
 {
    int      i;
    double   Max, Min;
-   long     Coord [2];
-   
+   long     Coord [2];          /* might use 0, 1 or 2 elements */
+
+#ifdef DEBUG
+   int      NumDims;            /* number of dimensions in imagemax/imagemin */
+   int      Dims [4];           /* dimension ID's of imagemax/imagemin */
+
+   printf ("Slice dimension is %d\n", ImInfo->SliceDim);
+   printf ("Frame dimension is %d\n", ImInfo->FrameDim);
+
+   ncvarinq (ImInfo->CDF, ImInfo->MaxID, NULL, NULL, &NumDims, Dims, NULL);
+   printf ("MIimagemax has %d dimensions: ", NumDims);
+   for (i = 0; i < NumDims; i++)
+   {
+      printf ("%5d", Dims [i]);
+   }
+   putchar ('\n');
+
+   ncvarinq (ImInfo->CDF, ImInfo->MinID, NULL, NULL, &NumDims, Dims, NULL);
+   printf ("MIimagemin has %d dimensions: ", NumDims);
+   for (i = 0; i < NumDims; i++)
+   {
+      printf ("%5d", Dims [i]);
+   }
+   putchar ('\n');
+#endif
+
    Max = - DBL_MAX;
    Min = DBL_MAX;
 
@@ -312,14 +346,21 @@ void PutMaxMin (ImageInfoRec *ImInfo, double *ImVals,
    { 
       Coord [ImInfo->FrameDim] = FrameNum;
    }
-   Coord [ImInfo->SliceDim] = SliceNum;
 
-   if (debug)
+   if (DoSlices)
    {
-      printf ("Slice %ld, frame %ld: max is %lg, min is %lg\n", 
-              SliceNum, FrameNum, Max, Min);
-      printf ("Coord vector is: %ld %ld\n", Coord [0], Coord [1]);
+      Coord [ImInfo->SliceDim] = SliceNum;
    }
+
+#ifdef DEBUG
+   printf ("Slice %ld, frame %ld: max is %lg, min is %lg\n", 
+           (DoSlices) ? (SliceNum) : -1,
+           (DoFrames) ? (FrameNum) : -1,
+           Max, Min);
+   if (DoSlices && DoFrames)
+      printf ("Coord vector is: %ld %ld\n", Coord [0], Coord [1]);
+   
+#endif
 
    mivarput1 (ImInfo->CDF, ImInfo->MaxID, Coord, NC_DOUBLE, MI_SIGNED, &Max);
    mivarput1 (ImInfo->CDF, ImInfo->MinID, Coord, NC_DOUBLE, MI_SIGNED, &Min);
@@ -364,6 +405,7 @@ int WriteImages (FILE *TempFile,
    long     Start [MAX_NC_DIMS], Count [MAX_NC_DIMS];
    double   *Buffer;
    Boolean  DoFrames;
+   Boolean  DoSlices;
    Boolean  Success;
    int      RetVal;
 
@@ -377,7 +419,12 @@ int WriteImages (FILE *TempFile,
 
    Start [Image->HeightDim] = 0; Count [Image->HeightDim] = Image->Height;
    Start [Image->WidthDim] = 0;  Count [Image->WidthDim] = Image->Width;
-   Count [Image->SliceDim] = 1;
+
+   /*
+    * Handle files with missing frames or slices.  See the function
+    * ReadImages in the file mireadimages.c for a detailed explanation.
+    */
+
    if (NumFrames > 0)
    {
       Count [Image->FrameDim] = 1;
@@ -388,10 +435,33 @@ int WriteImages (FILE *TempFile,
       DoFrames = FALSE;
       NumFrames = 1;
    }
+
+   /* Exact same code as for frames, but changed to slices */
+
+   if (NumSlices > 0)
+   {
+      Count [Image->SliceDim] = 1;
+      DoSlices = TRUE;
+   }
+   else
+   {
+      DoSlices = FALSE;
+      NumSlices = 1;
+   }
+
+#ifdef DEBUG
+   printf ("Ready to start writing.\n");
+   printf ("NumFrames = %ld, DoFrames = %d\n", NumFrames, (int) DoFrames);
+   printf ("NumSlices = %ld, DoSlices = %d\n", NumSlices, (int) DoSlices);
+#endif
+
   
    for (slice = 0; slice < NumSlices; slice++)
    {
-      Start [Image->SliceDim] = Slices [slice];
+      if (DoSlices)
+      {
+         Start [Image->SliceDim] = Slices [slice];
+      }
 
       /* 
        * Loop through all frames, reading/writing one image each time.
@@ -412,9 +482,9 @@ int WriteImages (FILE *TempFile,
             return (ERR_IN_TEMP);
          }
 
-         PutMaxMin (Image, Buffer, 
-                    Slices [slice], Frames [frame], 
-                    DoFrames);
+         PutMaxMin (Image, Buffer,
+                    Slices [slice], Frames [frame],
+                    DoSlices, DoFrames);
 
          if (DoFrames)
          {
@@ -451,9 +521,13 @@ int main (int argc, char *argv [])
    long        NumFrames;
    FILE        *InFile;
    int         Result;
-   int         i;                   /* debug only */
+#ifdef DEBUG
+   int         i;               /* loop to print out all slices and */
+                                /* frames selected */
+   ncopts = 0;
+#endif
 
-   debug = FALSE;
+
    if (argc != NUM_ARGS + 1)        /* +1 because argv[0] counts! */
    {
       ErrAbort ("Incorrect number of arguments", TRUE, ERR_ARGS);
@@ -470,45 +544,45 @@ int main (int argc, char *argv [])
       ErrAbort ("Error specifying slices and/or frames vector", 
                 TRUE, ERR_ARGS);
    }
+
+#ifdef DEBUG
+   printf ("Slices specified: ");
+   for (i = 0; i < NumSlices; i++)
+   {
+      printf ("%8d", Slice[i]);
+   }
+   printf ("\n");
+   
+   printf ("Frames specified: ");
+   for (i = 0; i < NumFrames; i++)
+   {
+      printf ("%8d", Frame[i]);
+   }
+   printf ("\n");
+#endif
+
    if ((NumSlices > 1) && (NumFrames > 1))
    {
       ErrAbort ("Cannot specify both multiple frames and multiple slices", 
                 TRUE, ERR_ARGS);
    }
 
-   if (debug)
-   { 
-      printf ("Slices specified: ");
-      for (i = 0; i < NumSlices; i++)
-      {
-         printf ("%8d", Slice[i]);
-      }
-      printf ("\n");
-
-      printf ("Frames specified: ");
-      if (NumFrames == 0)
-      {
-         printf ("(None)\n");
-      }
-      else
-      {
-         for (i = 0; i < NumFrames; i++)
-         {
-            printf ("%8d", Frame[i]);
-         }
-         printf ("\n");
-      }
-   }
-
-	Result = OpenImage (MINC_FILE, &ImInfo, NC_WRITE);
+   Result = OpenImage (MINC_FILE, &ImInfo, NC_WRITE);
    if (Result != ERR_NONE)
    {
       ErrAbort (ErrMsg, TRUE, Result);
    }
 
-   if (!VerifyVectors (Slice, Frame, NumSlices, NumFrames, &ImInfo))
+   if (!CheckBounds (Slice, Frame, NumSlices, NumFrames, &ImInfo))
    {
       ErrAbort (ErrMsg, TRUE, ERR_ARGS);
+   }
+
+   if ((ImInfo.MaxID == MI_ERROR) || (ImInfo.MinID == MI_ERROR))
+   {
+      sprintf (ErrMsg, "Missing image-max or image-min variable in file %s", 
+               MINC_FILE);
+      ErrAbort (ErrMsg, TRUE, ERR_IN_MINC);
    }
 
    InFile = OpenTempFile (TEMP_FILE);
