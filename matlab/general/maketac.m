@@ -1,10 +1,9 @@
 function tac = maketac (x,y,pet)
 % MAKETAC
 %
-%     Generate a time-activity curve from a set of data.
-%
 %     tac = maketac(x,y,pet)
 %
+%     Generate a time-activity curve from a set of data.
 
 if (nargin ~= 3)
   help maketac
@@ -12,9 +11,15 @@ if (nargin ~= 3)
 end
 
 center_pixel = calpix(floor(x), floor(y));
-tac_roi_loc = [center_pixel-258:center_pixel-254 ...
-               center_pixel-130:center_pixel-126 ...
+line_length  = length(pet) ^ .5;
+if (line_length ~= floor(line_length))
+   error ('Image must be square.');
+end
+
+
+tac_roi_loc = [center_pixel-(2*line_length+2):center_pixel-(2*line_length-2) ...
+               center_pixel-(line_length+2):center_pixel-(line_length-2) ...
                center_pixel-2  :center_pixel+2   ...
-               center_pixel+126:center_pixel+130 ...
-               center_pixel+254:center_pixel+258];
+               center_pixel+(line_length-2):center_pixel+(line_length+2) ...
+               center_pixel+(2*line_length-2):center_pixel+(2*line_length+2)];
 tac = mean(pet(tac_roi_loc,:));
