@@ -5,6 +5,8 @@
  * as a global variable NaN is defined).
  */
 
+extern double NaN;
+
 
 /* ----------------------------- MNI Header -----------------------------------
 @NAME       : Lookup1
@@ -46,8 +48,6 @@ void Lookup1 (double *oldX, double *oldY,
               int TableRows,
               int OutputRows)
 {
-    extern double NaN;
-
     int      i, j;
     double   slope;
 
@@ -106,7 +106,6 @@ void Lookup2 (double *oldX, double *oldY,
               int TableRows,
               int OutputRows)
 {
-    extern double NaN;
     int      i, j;
     double   slope;
 
