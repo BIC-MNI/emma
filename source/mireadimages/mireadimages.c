@@ -180,9 +180,21 @@ Boolean CheckBounds (long Slices[], long Frames[],
       return (FALSE);
    }
 
+   if (StartRow < 0)
+   {
+      sprintf (ErrMsg, "Starting row too small (must be greater than zero)");
+      return (FALSE);
+   }
+
    if (StartRow + NumRows > Image->Height)
    {
       sprintf (ErrMsg, "Trying to read too many rows for starting row %ld (total rows: %ld)", StartRow, Image->Height);
+      return (FALSE);
+   }
+
+   if (NumRows <= 0)
+   {
+      sprintf (ErrMsg, "Must read at least one row");
       return (FALSE);
    }
 
