@@ -1,5 +1,5 @@
-function [K1_image, K_image, CMRglc_image] = solveFDG(PET,ts_Ca,Ca,eft,...
-    c_Time,glucose,v0,wtf,MMC)
+function [K1_image, K_image, CMRglc_image] = solveFDG(handle,slices,ts_Ca,Ca,...
+    eft,c_Time,glucose,v0,wtf,MMC,progress)
 
 % solveFDG - perform FDG analysis using weighted integration
 %
@@ -8,7 +8,8 @@ function [K1_image, K_image, CMRglc_image] = solveFDG(PET,ts_Ca,Ca,eft,...
 %                                             c_Time,glucose,v0,wtf,MMC)
 %
 %
-%  PET     =  image matrix [image column vectors vs. frames]
+%  handle  =  handle for the study.  Returned by openimage.
+%  slices  =  A vector of slice numbers to analyze
 %  ts_Ca   =  The times used for expressing the blood data.  The times
 %             should include the end-frame times.  This can be done using
 %             the getFDGplasma function.  Units are minutes.
@@ -51,7 +52,9 @@ function [K1_image, K_image, CMRglc_image] = solveFDG(PET,ts_Ca,Ca,eft,...
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Check the input arguments
 
-if nargin~=9
+if nargin==10
+  progress=0;
+elseif nargin~=11
   help solveFDG
   error('Incorrect number of input arguments.');
 end;
@@ -193,9 +196,11 @@ Q22b=(sq2(Wt(3:4))*p2)';
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Get the number of lines, assuming a square image
+% stored in transverse orientation
 
-s=size(PET(:,1));
-lines=sqrt(s(1)); 
+lines = getimageinfo(handle,'ImageWidth');
+ImageSize = getimageinfo(handle, 'ImageSize');
+pixels = ImageSize(1)*ImageSize(2);
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -207,12 +212,12 @@ K=Kd;
 K1=Kd;
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% I'm not entirely sure if this is necessary, since the
-% variables are initialized to zero in the calling
-% function, but it doesn't seem to hurt any.....
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Initialize the images to zero
 
-K_image=zeros(s(1),1);
+total_slices = length(slices);
+    
+K_image=zeros(pixels, total_slices);
 K1_image=K_image;
 CMRglc_image=K_image;
 
@@ -221,22 +226,38 @@ CMRglc_image=K_image;
 % Calculation was divided into line elements.
 % This is faster and uses less memory space.
 
-for i=1:lines
-  is=(i-1)*lines+1;
-  ie=is+lines-1;
-  wima(:,:)=PET(is:ie,1:NumFrames)*(X.*(dt*ones(1,wNo)));              % in nCi/ml
-  Kd(:,:)=(ones(Lb,1)*(wima(:,Wt(1:2))*p1-v0*(sq1(Wt(1:2))*p1))')./ ...
-      (Q13b*ones(1,lines));
-  K(:,:)=(wima(:,Wt(3:4))*p2)'./(Q22b*ones(1,lines));
-  K1=Kd+K; 
-  [mb,ib]=min(abs((K1./Kd).*(K1+glucose*tau*K./(phi+(tau-phi)*(K./K1))/Kt)/Vd ...
-      -b*ones(1,lines)));
-  K_image(is:ie)=sum(triu(tril(K(ib',[1:lines]'))))';
-  K1_image(is:ie)=sum(triu(tril(K1(ib',[1:lines]'))))';
+for current_slice = 1:total_slices
+
+  if (progress)
+    disp (['Doing slice ', int2str(slices(current_slice))]);
+  end
+  
+  PET = getimages(handle, slices(current_slice), 1:NumFrames, PET);
+
+  for i=1:lines
+
+    if (progress)
+      fprintf('.');
+    end;
+    
+    is=(i-1)*lines+1;
+    ie=is+lines-1;
+    wima(:,:)=PET(is:ie,1:NumFrames)*(X.*(dt*ones(1,wNo))); % in nCi/ml
+    Kd(:,:)=(ones(Lb,1)*(wima(:,Wt(1:2))*p1-v0*(sq1(Wt(1:2))*p1))')./ ...
+	(Q13b*ones(1,lines));
+    K(:,:)=(wima(:,Wt(3:4))*p2)'./(Q22b*ones(1,lines));
+    K1=Kd+K; 
+    [mb,ib]=min(abs((K1./Kd).*(K1+glucose*tau*K./(phi+(tau-phi)*(K./K1))/Kt)/Vd ...
+	-b*ones(1,lines)));
+    K_image(is:ie,current_slice)=sum(triu(tril(K(ib',[1:lines]'))))';
+    K1_image(is:ie,current_slice)=sum(triu(tril(K1(ib',[1:lines]'))))';
+  end;
+
+
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  %Calculate the CMRglc image from the K and K1 images
+  
+  CMRglc_image(:,current_slice)=glucose*100./(phi./K_image(:,current_slice)...
+      +(tau-phi)./K1_image(:,current_slice));
+  
 end;
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Calculate the CMRglc image from the K and K1 images
-
-CMRglc_image=glucose*100./(phi./K_image+(tau-phi)./K1_image);

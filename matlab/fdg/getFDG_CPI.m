@@ -1,4 +1,4 @@
-function cpi = getFDG_CPI(ts_plasma, plasma, eft)
+function [ts_new, plasma_new] = getFDG_CPI(ts_plasma, plasma, eft)
 
 % To interpolate Ca(t), integrate, and mark for end-frame times.
 %
@@ -7,6 +7,15 @@ function cpi = getFDG_CPI(ts_plasma, plasma, eft)
 %
 %
 % eft  =  a column vecter of end-frame time. 
+
+%  Copyright 1994 Mark Wolforth and Hiroto Kuwabara, McConnell Brain Imaging
+%  Centre, Montreal Neurological Institute, McGill University.
+%  Permission to use, copy, modify, and distribute this software and its
+%  documentation for any purpose and without fee is hereby granted, provided
+%  that the above copyright notice appear in all copies.  The authors and
+%  McGill University make no representations about the suitability of this
+%  software for any purpose.  It is provided "as is" without express or
+%  implied warranty.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -18,25 +27,26 @@ if nargin~=3
 end;
 
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Make eft a column vector, and use only the frames spanned
+% by the plasma data
+
 eft=eft(:);
 eft=eft(find(eft<=max(ts_plasma) & eft>=min(ts_plasma))); 
 
-aT=[ts_plasma; eft];
 
-saT=sort(aT);
-ssaT=saT(find((saT-shift_1(saT))~=0));
-ssaT=ssaT(find(ssaT<=max(eft)));
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Our new time scale includes the plasma sample times
+% and the end-frame times
 
-cpi=[ssaT, lookup(ts_plasma,plasma,ssaT), ones(size(ssaT))];
+aT=sort([ts_plasma; eft]);
+
+ts_new=aT(find((aT-shift_1(aT))~=0));
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Mark the end frame times by placing a 0 in the last column
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Clip off any times that are beyond the end of
+% the last frame
 
-[cpind, cpinc]=size(cpi);
-
-for i=1:1:length(eft);
-  if find(ssaT==eft(i))~=[]
-    cpi(find(ssaT==eft(i)),cpinc)=0;
-  end;
-end;
+ts_new=ts_new(find(ts_new<=max(eft)));
+plasma_new = lookup(ts_plasma,plasma,ts_new);

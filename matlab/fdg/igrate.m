@@ -1,27 +1,22 @@
-function y = igrate(t,x)
+function yi = igrate(t,y)
 
 % IGRATE performs a piecewise linear integration
 %
 %
-%         y = igrate (t,x) 
+%         yi = igrate (t,y) 
 %
 %
-% integration of each of the columns of X along the
-% vector T.  If X is M-by-N then T must be M. IGRATE
-% returns a vector Y containing cumulative integrals
+% integration of each of the columns of Y along the
+% vector T.  If Y is M-by-N then T must be M. IGRATE
+% returns a vector Yi containing cumulative integrals
 % at each element of T.
 %
 % The time spacing must be even.
 
-if length(t) ~= length(x)
-  error('t and x must have the save length.');
-end
+if length(t) ~= length(y)
+  error('t and y must have the same length.');
+end;
 
-
-dt = t(2) - t(1);
-bins = x .* dt;
-
-y(1) = bins(1);
-for i=2:length(t)
-  y(i) = y(i-1) + bins(i);
-end
+s=size(y);
+dt=(t-shift_1(t))/2; 
+yi=tril(ones(length(t)))*((y+shift_1(y)).*(dt*ones(1,s(2))));

@@ -90,7 +90,6 @@ EndFTimes = (getimageinfo(handle, 'FrameTimes') + ...
     getimageinfo(handle, 'FrameLengths')) / 60;
 
 NumFrames = length(EndFTimes);
-ImageSize = getimageinfo(handle, 'ImageSize');
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -133,44 +132,15 @@ if (length(glucose) == 0)
 end;
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Initialize the images to zero
-
-if (progress)
-  disp ('Initializing the images...');
-end;
-
-pixels = ImageSize(1)*ImageSize(2);
-
-total_slices = length(slices);
-K1_image = zeros(pixels,total_slices);
-K_image = zeros(pixels,total_slices);
-CMRglc_image = zeros(pixels,total_slices);
-
-
 %%%%%%%%%%%%%%%%%%%%%%%
 % Solve the FDG problem
 
-for current_slice=1:total_slices
-
-  if (progress)
-    disp (['Doing slice ', int2str(slices(current_slice))]);
-  end
-
-  if (progress)
-    disp ('Reading image information.');
-  end
-  
-  PET = getimages(handle, slices(current_slice), 1:NumFrames, PET);
-
-  if (progress)
-    disp ('Calling solveFDG...');
-  end
-  
-  [K1_image(:,current_slice), K_image(:,current_slice), ...
-	  CMRglc_image(:,current_slice)] = ...
-      solveFDG (PET, ts_new, plasma_new, EndFTimes, c_time, glucose, ...
-      v0, [1 3 1 10]', [tau phi Kt Vd]);
+if (progress)
+  disp ('Calling solveFDG...');
 end;
+
+[K1_image, K_image, CMRglc_image] = solveFDG ...
+    (handle, slices, ts_new, plasma_new, EndFTimes, c_time, ...
+    glucose, v0, [1 3 1 10]', [tau phi Kt Vd], progress);
 
 closeimage(handle);
