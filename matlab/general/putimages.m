@@ -62,8 +62,14 @@ if ((nargin < 2) | (nargin >4))
     help putimages
     error ('Incorrect number of arguments.');
 end
+ 
+eval(['global Flags' int2str(handle)]);
+eval(['Flags = Flags' int2str(handle) ';']);
+if (~ Flags(1))
+   error ('Cannot write to a read-only file');
+end
 
-% if frames not supplied; make it empty
+% if frames not supplied, make it empty
 
 if (nargin < 3)
    slices = [];
