@@ -1,5 +1,9 @@
 function fname = tempfilename
-%  fname = tempfilename  Generate a unique, temporary filename.  
+
+% TEMPFILENAME generate a unique temporary filename
+%  
+%         fname = tempfilename
+%
 % Requires that a directory /tmp/ exists on the current machine.
 
 now = clock;

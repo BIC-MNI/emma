@@ -1,14 +1,17 @@
 function s = spectral(m)
 %SPECTRAL Black-purple-blue-green-yellow-red-white color map.
-%         SPECTRAL(M) returns an M-by-3 matrix containing a "spectral" colormap.
-%         SPECTRAL, by itself, is the same length as the current colormap.
 %
-%         For example, to reset the colormap of the current figure:
+%         map = spectral(num_colors)
 %
-%                 colormap(spectral)
+% SPECTRAL(M) returns an M-by-3 matrix containing a "spectral" colormap.
+% SPECTRAL, by itself, is the same length as the current colormap.
 %
-%         See also HSV, GRAY, PINK, HOT, COOL, BONE, COPPER, FLAG,
-%         COLORMAP, RGBPLOT.
+% For example, to reset the colormap of the current figure:
+%
+%           colormap(spectral)
+%
+% See also HSV, GRAY, PINK, HOT, COOL, BONE, COPPER, FLAG,
+%          COLORMAP, RGBPLOT.
 
 %         Copyright (c) 1984-92 by The MathWorks, Inc.
 %         Spectral version made by Gabriel Leger, MBIC, MNI (c) 1993

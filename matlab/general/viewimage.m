@@ -1,20 +1,20 @@
 function [fig_handle, image_handle, bar_handle] = viewimage (img, colourbar)
 % VIEWIMAGE  displays a PET image from a vector or square matrix.
+%
+%    [fig_handle, image_handle, bar_handle] = viewimage (img, colourbar_flag)
+%
 %  viewimage (img) sets the colourmap to spectral (the standard PET
 %  colourmap) and uses MATLAB's image function to display the image.
 %  Works on either SGI's or Xterminals, with colours dithered
 %  to black and white on the Xterms.
 %
-%  Note that the colour scaling is currently a little overenthusiastic:
-%  any image, regardless of the magnitude of activity in it, will
-%  be scaled so its high points are white and its low points black.
+%  Images are scaled so its high points are white and its low points black.
 %
-%  viewimage (img, colourbar flag) turns the colourbar on or off.
+%  viewimage (img, colourbar_flag) turns the colourbar on or off.
 %  The default is on, but by specifying colourbar flag = 0, the
 %  colourbar will be turned off.
 %
-%  [fig_handle, image_handle, bar_handle] = viewimage (img, colourbar)
-%
+
 
 [x,y] = size (img);
 
