@@ -12,11 +12,11 @@
 @CREATED    : June 1993, Greg Ward.
 @MODIFIED   : 25 August, 1993, GPW: changed if (debug) to #ifdef DEBUG,
                  and added this header.
-	      06 October, 1993, MW: Got around some MATLAB memory use
-	         problems by subterfuge.  This function now allows you to
-	         pass old memory.  If this old memory is the same size as
-	         the memory needed for the image(s), it is reused.  This
-	         reduces the risk of memory fragmentation.
+              06 October, 1993, MW: Got around some MATLAB memory use
+                 problems by subterfuge.  This function now allows you to
+                 pass old memory.  If this old memory is the same size as
+                 the memory needed for the image(s), it is reused.  This
+                 reduces the risk of memory fragmentation.
 ---------------------------------------------------------------------------- */
 
 
@@ -409,13 +409,13 @@ int ReadImages (ImageInfoRec *Image,
 @CREATED    : 
 @MODIFIED   : 06 October, 1993 by MW: Fixed bug with the setting of the
                  error message.  Previously, the global pointer ErrMsg
-		 was pointed at some allocated memory, and then
-		 redefined later by setting it equal to some string.
-		 Now, the string is copied into the memory allocated
-		 for ErrMsg.
+                 was pointed at some allocated memory, and then
+                 redefined later by setting it equal to some string.
+                 Now, the string is copied into the memory allocated
+                 for ErrMsg.
               06 October, 1993 by MW: Now catches an empty slice or
                  frame vector.
-	      06 October, 1993 by MW: Solved some memory fragmentation
+              06 October, 1993 by MW: Solved some memory fragmentation
                  problems by forcing MATLAB to reuse old memory.
 ---------------------------------------------------------------------------- */
 void mexFunction(int    nlhs,
@@ -502,7 +502,8 @@ void mexFunction(int    nlhs,
        }
        else
        {
-	   ErrAbort("File contains slices:\nSlice information must be provided.\n", FALSE, -1);
+           ErrAbort("File contains slices; slice information must be provided."
+		    , FALSE, -1);
        }
    }
 
@@ -540,7 +541,8 @@ void mexFunction(int    nlhs,
        }
        else
        {
-	   ErrAbort("File contains frames:\nFrame information must be provided.\n", FALSE, -1);
+           ErrAbort("File contains frames; frame information must be provided."
+		    , FALSE, -1);
        }
    }
    
@@ -569,10 +571,10 @@ void mexFunction(int    nlhs,
            (mxGetN(OLD_MEMORY) != (NumSlices+NumFrames-1)))
        {
 
-	   /*
-	    * Make sure that we aren't dealing with an
-	    * empty Matrix.
-	    */
+           /*
+            * Make sure that we aren't dealing with an
+            * empty Matrix.
+            */
 
            if ((mxGetM(OLD_MEMORY)>0) && (mxGetN(OLD_MEMORY)>0))
            {
@@ -582,13 +584,13 @@ void mexFunction(int    nlhs,
 #endif
 
                /*
-		* We want to free the real part of the old memory
-		* Matrix, so that we can re-use it.  Then, we
-		* want to re-link the real part of the old memory
-		* Matrix to point at some smaller chunk of memory.
-		* This way, MATLAB still has something to free at the
-		* end of the function, and will be nice and happy.
-		*/
+                * We want to free the real part of the old memory
+                * Matrix, so that we can re-use it.  Then, we
+                * want to re-link the real part of the old memory
+                * Matrix to point at some smaller chunk of memory.
+                * This way, MATLAB still has something to free at the
+                * end of the function, and will be nice and happy.
+                */
 
                junk_data = (double *)malloc(sizeof(double));
                if (junk_data == NULL)
@@ -599,36 +601,36 @@ void mexFunction(int    nlhs,
                mxSetPr(OLD_MEMORY, junk_data);
            }
 
-	   /*
-	    * We're going to want to allocate some new memory, so set
-	    * the left hand side argument to NULL, just to be explicit.
-	    */
+           /*
+            * We're going to want to allocate some new memory, so set
+            * the left hand side argument to NULL, just to be explicit.
+            */
            
            VECTOR_IMAGES = NULL;
            
-	   /*
+           /*
             * New memory will be allocated by ReadImages, so we
             * don't need to do it here.
-	    */
+            */
 
        }
        else 
        {
            /*
-	    * At this point, we know that we have a chunk of memory
-	    * already allocated that is the same size as the chunk of
-	    * memory that we need.  So, let's use it!
-	    */
+            * At this point, we know that we have a chunk of memory
+            * already allocated that is the same size as the chunk of
+            * memory that we need.  So, let's use it!
+            */
            
 #ifdef DEBUG
            printf("Using already allocated memory structure.\n");
 #endif
 
-	   /*
-	    * First, we create a new dummy matrix for the left hand
-	    * side argument.  We create it 1x1, but will then redefine
-	    * the size later.
-	    */
+           /*
+            * First, we create a new dummy matrix for the left hand
+            * side argument.  We create it 1x1, but will then redefine
+            * the size later.
+            */
 
            VECTOR_IMAGES = mxCreateFull(1,1,REAL);
            if (VECTOR_IMAGES == NULL)
@@ -636,35 +638,35 @@ void mexFunction(int    nlhs,
                ErrAbort("Could not allocate memory!\n", FALSE, -1);
            }
 
-	   /*
-	    * Now that we have created a left hand side argument, we
-	    * can free the memory that is used by it to store its real
-	    * part, since we won't be needing this memory.
-	    */
+           /*
+            * Now that we have created a left hand side argument, we
+            * can free the memory that is used by it to store its real
+            * part, since we won't be needing this memory.
+            */
 
            mxFree(mxGetPr(VECTOR_IMAGES));
 
-	   /*
-	    * Now, we redefine the size of the left hand side argument
-	    * to be the same as the memory that we already have.
-	    */
+           /*
+            * Now, we redefine the size of the left hand side argument
+            * to be the same as the memory that we already have.
+            */
 
            mxSetM(VECTOR_IMAGES, mxGetM(OLD_MEMORY));
            mxSetN(VECTOR_IMAGES, mxGetN(OLD_MEMORY));
 
-	   /*
-	    * And now, we can point the real part of the Matrix at the
-	    * memory that we already have.  This is the final task
-	    * necessary for creating the left hand side argument.
-	    */
+           /*
+            * And now, we can point the real part of the Matrix at the
+            * memory that we already have.  This is the final task
+            * necessary for creating the left hand side argument.
+            */
 
            mxSetPr(VECTOR_IMAGES, mxGetPr(OLD_MEMORY));
 
-	   /*
-	    * Finally, we set the real part pointer of the old Matrix
-	    * at NULL, so that MATLAB won't free anything when we
-	    * return.
-	    */
+           /*
+            * Finally, we set the real part pointer of the old Matrix
+            * at NULL, so that MATLAB won't free anything when we
+            * return.
+            */
 
            mxSetPr(OLD_MEMORY, NULL);
        }
@@ -672,10 +674,10 @@ void mexFunction(int    nlhs,
    else 
    {
        /*
-	* No old memory argument was passed, so we will have to
-	* allocate new memory.  Let's be explicit, and set the left
-	* hand side value to NULL.
-	*/
+        * No old memory argument was passed, so we will have to
+        * allocate new memory.  Let's be explicit, and set the left
+        * hand side value to NULL.
+        */
 
        VECTOR_IMAGES = NULL;
    }
