@@ -505,7 +505,7 @@ void mexFunction(int    nlhs,
     * Open MINC file, get info about image, and setup ICV
     */
 
-   Result = OpenImage (Filename, &ImInfo, NC_NOWRITE);
+   Result = OpenImage (Filename, &ImInfo, NC_NOWRITE, NaN);
    if (Result != ERR_NONE)
    {
       ErrAbort (ErrMsg, TRUE, Result);
