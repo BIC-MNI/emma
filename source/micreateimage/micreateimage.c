@@ -284,6 +284,8 @@ void FinishExclusionLists (int ParentCDF,
    int	DimMatch;
 
 #ifdef DEBUG
+   int  i;
+
    printf ("FinishExclusionLists\n");
    printf (" Initial list of variables to exclude from copying:\n");
    for (i = 0; i < *NumExclude; i++)
@@ -544,8 +546,8 @@ void UpdateHistory (int ChildCDF, char *TimeStamp)
 #ifdef DEBUG
       printf (" adding to history attribute\n");
 #endif
-      OldHist = (char *) malloc ((size_t) (HistLen*sizeof(char)));
-      ncattget (ChildCDF, NC_GLOBAL, MIhistory, (char *)OldHist);
+      OldHist = (char *) malloc ((size_t) (HistLen*sizeof(char) + 1));
+      ncattget (ChildCDF, NC_GLOBAL, MIhistory, OldHist);
       NewHist = (char *) malloc 
          ((size_t) (HistLen*sizeof(char) + strlen(TimeStamp) + 1));
       strcpy (NewHist, TimeStamp);
