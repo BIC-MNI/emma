@@ -1,4 +1,17 @@
                     ------------------------------
+                              EMMA 0.9.6
+
+                            11 March 2004
+                    ------------------------------
+
+This version is a maintenance release which deals with some of the
+issues arising from changes in Matlab's programming interface for MEX
+files.  There should be no user-visible changes in EMMA 0.9.6 relative
+to EMMA 0.9.5
+
+The maintainer of this release is Bert Vincent, bert@bic.mni.mcgill.ca
+
+                    ------------------------------
                               EMMA 0.9.4
 
                            20 October, 1997
