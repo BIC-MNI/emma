@@ -2,7 +2,6 @@
 #include <string.h>
 #include <stdlib.h>
 #include <float.h>
-#include "gpw.h"
 #include "minc.h"
 #include "mincutil.h"
 #include "mierrors.h"
@@ -15,13 +14,24 @@
 #define TEMP_FILE      argv[4]
 #define PROGNAME       "miwriteimages"
 
+#define MAX_WRITEABLE 160	/* maximum number of images we can write */
+				/* in one go (this is the same as  */
+				/* MAXREADABLE in mireadimages.c */
+#define DEBUG
 
+/* Error codes returned by GetVector: */
+
+#define VECTOR_BAD -1
+#define VECTOR_LONG -2
+#define VECTOR_EMPTY -3
+
+typedef enum { false=0, true=1 } Boolean;
 
 /*
  * Global variables (with apologies)
  */
 
-Boolean    debug = FALSE;       /* for mincutil.c only */
+Boolean    debug = false;       /* for mincutil.c only */
 char       ErrMsg [256];        /* set as close to the occurence of the */
                                 /* error as possible; displayed by whatever */
                                 /* code exits */
@@ -127,15 +137,62 @@ int GetVector (char vector_string[], long vector[], int max_elements)
 
 
 /* ----------------------------- MNI Header -----------------------------------
+@NAME       : GVErrMsg
+@INPUT      : Descr - description of what the list of things being
+              parsed by GetVector was that resulted in error (eg.,
+	      "slices" or "frames")
+	      GVReturn - the return value from GetVector
+@OUTPUT     : Buffer - a nice descriptive error message based on GVReturn
+@RETURNS    : (void)
+@DESCRIPTION: Generates human-readable error messages for the three
+              possible errors returned by GetVector.  Since GetVector
+	      can process a list of any type of integer, the Descr
+	      argument is required to give the user some idea of what
+	      list was being processed (eg., slices or frames) when
+	      GetVector bombed.
+@METHOD     : 
+@GLOBALS    : 
+@CALLS      : 
+@CREATED    : 93-12-1, Greg Ward
+@MODIFIED   : 
+---------------------------------------------------------------------------- */
+void GVErrMsg (char *Buffer, char *Descr, int GVReturn)
+{
+   switch (GVReturn)
+   {
+      case VECTOR_BAD: 
+      {
+	 sprintf (Buffer, "List of %s must be all numbers, "
+		  "separated by commas (no spaces)", Descr);
+	 break;
+      }
+      case VECTOR_LONG:
+      {
+	 sprintf (Buffer, "Too many %s specified (max %d)", 
+		  Descr, MAX_WRITEABLE);
+	 break;
+      }
+      case VECTOR_EMPTY:
+      {
+	 sprintf (Buffer, "List of %s not found", Descr);
+	 break;
+      }
+   }
+}     /* GVErrMsg () */
+
+
+
+
+/* ----------------------------- MNI Header -----------------------------------
 @NAME       : CheckBounds
 @INPUT      : Slices[], Frames[] - lists of desired slices/frames
               NumSlices, NumFrames - number of elements used in each array
               Image - pointer to struct describing the image:
                 # of frames/slices, etc.
 @OUTPUT     : 
-@RETURNS    : TRUE if no member of Slices[] or Frames[] is invalid (i.e.
+@RETURNS    : true if no member of Slices[] or Frames[] is invalid (i.e.
               larger than, respectively, Images->Slices or Images->Frames)
-              FALSE otherwise
+              false otherwise
 @DESCRIPTION: 
 @METHOD     : 
 @GLOBALS    : ErrMsg
@@ -164,7 +221,7 @@ Boolean CheckBounds (long Slices[], long Frames[],
       {
          sprintf (ErrMsg, "Bad slice number: %ld (must be < %ld)", 
                   Slices[i], Image->Slices);
-         return (FALSE);
+         return (false);
       }
    }     /* for i - loop slices */
 
@@ -177,12 +234,12 @@ Boolean CheckBounds (long Slices[], long Frames[],
       {
          sprintf (ErrMsg, "Bad frame number: %ld (must be < %ld)", 
                   Frames[i], Image->Frames);
-         return (FALSE);
+         return (false);
       }
 
    }     /* for i - loop frames */
 
-   return (TRUE);
+   return (true);
 }     /* CheckBounds */
 
 
@@ -225,8 +282,8 @@ FILE *OpenTempFile (char Filename [])
               ImageSize - number of doubles to read fromthe file
               InFile - the file to read from
 @OUTPUT     : fills in Buffer
-@RETURNS    : TRUE if image was read successfully
-              FALSE if not all elements were read
+@RETURNS    : true if image was read successfully
+              false if not all elements were read
 @DESCRIPTION: 
 @METHOD     : 
 @GLOBALS    : 
@@ -253,11 +310,11 @@ Boolean ReadNextImage (double *Buffer, long ImageSize, FILE *InFile)
 
    if ((long) AmtRead != ImageSize)
    {
-      return (FALSE);
+      return (false);
    }
    else
    {
-      return (TRUE);
+      return (true);
    }
 }     /* ReadNextImage */
 
@@ -427,11 +484,11 @@ int WriteImages (FILE *TempFile,
    if (NumFrames > 0)
    {
       Count [Image->FrameDim] = 1;
-      DoFrames = TRUE;
+      DoFrames = true;
    }
    else
    {
-      DoFrames = FALSE;
+      DoFrames = false;
       NumFrames = 1;
    }
 
@@ -440,11 +497,11 @@ int WriteImages (FILE *TempFile,
    if (NumSlices > 0)
    {
       Count [Image->SliceDim] = 1;
-      DoSlices = TRUE;
+      DoSlices = true;
    }
    else
    {
-      DoSlices = FALSE;
+      DoSlices = false;
       NumSlices = 1;
    }
 
@@ -525,8 +582,8 @@ int WriteImages (FILE *TempFile,
 int main (int argc, char *argv [])
 {
    ImageInfoRec   ImInfo;
-   long        Slice[MAX_NC_DIMS];
-   long        Frame[MAX_NC_DIMS];
+   long        Slice[MAX_WRITEABLE];
+   long        Frame[MAX_WRITEABLE];
    long        NumSlices;
    long        NumFrames;
    FILE        *InFile;
@@ -540,19 +597,30 @@ int main (int argc, char *argv [])
 
    if (argc != NUM_ARGS + 1)        /* +1 because argv[0] counts! */
    {
-      ErrAbort ("Incorrect number of arguments", TRUE, ERR_ARGS);
+      ErrAbort ("Incorrect number of arguments", true, ERR_ARGS);
    }
+
+#ifdef DEBUG
+   printf ("Passing slice list %s to GetVector\n", SLICE_VECTOR);
+   printf ("Passing frame list %s to GetVector\n", FRAME_VECTOR);
+#endif
 
    /*
     * Parse the two lists of numbers first off
     */
-   NumSlices = GetVector (SLICE_VECTOR, Slice, MAX_NC_DIMS);
-   NumFrames = GetVector (FRAME_VECTOR, Frame, MAX_NC_DIMS);
 
-   if ((NumSlices < 0) || (NumFrames < 0))
+   NumSlices = GetVector (SLICE_VECTOR, Slice, MAX_WRITEABLE);
+   if (NumSlices < 0)
    {
-      ErrAbort ("Error specifying slices and/or frames vector", 
-                TRUE, ERR_ARGS);
+      GVErrMsg (ErrMsg, "slices", NumSlices);
+      ErrAbort (ErrMsg, true, ERR_ARGS);
+   }
+
+   NumFrames = GetVector (FRAME_VECTOR, Frame, MAX_WRITEABLE);
+   if (NumFrames < 0)
+   {
+      GVErrMsg (ErrMsg, "frames", NumFrames);
+      ErrAbort (ErrMsg, true, ERR_ARGS);
    }
 
 #ifdef DEBUG
@@ -566,7 +634,9 @@ int main (int argc, char *argv [])
    printf ("Frames specified: ");
    for (i = 0; i < NumFrames; i++)
    {
-      printf ("%8d", Frame[i]);
+/*      printf ("i = %d, &(Frame) = %p, &(Frame[d]) = %p\n",
+	      i, &Frame, &(Frame[i]));  */
+      printf ("%8d", Frame[i]); 
    }
    printf ("\n");
 #endif
@@ -574,37 +644,41 @@ int main (int argc, char *argv [])
    if ((NumSlices > 1) && (NumFrames > 1))
    {
       ErrAbort ("Cannot specify both multiple frames and multiple slices", 
-                TRUE, ERR_ARGS);
+                true, ERR_ARGS);
    }
 
+puts("Opening");
    Result = OpenImage (MINC_FILE, &ImInfo, NC_WRITE);
    if (Result != ERR_NONE)
    {
-      ErrAbort (ErrMsg, TRUE, Result);
+      ErrAbort (ErrMsg, true, Result);
    }
 
+puts("Checking bounds");
    if (!CheckBounds (Slice, Frame, NumSlices, NumFrames, &ImInfo))
    {
-      ErrAbort (ErrMsg, TRUE, ERR_ARGS);
+      ErrAbort (ErrMsg, true, ERR_ARGS);
    }
 
+puts("CHecking for max/min variables");
    if ((ImInfo.MaxID == MI_ERROR) || (ImInfo.MinID == MI_ERROR))
    {
       sprintf (ErrMsg, "Missing image-max or image-min variable in file %s", 
                MINC_FILE);
-      ErrAbort (ErrMsg, TRUE, ERR_IN_MINC);
+      ErrAbort (ErrMsg, true, ERR_IN_MINC);
    }
 
+puts("Opening temp file");
    InFile = OpenTempFile (TEMP_FILE);
    if (InFile == NULL)
    {
-      ErrAbort (ErrMsg, TRUE, ERR_IN_TEMP);
+      ErrAbort (ErrMsg, true, ERR_IN_TEMP);
    }
 
    Result = WriteImages (InFile, &ImInfo, Slice, Frame, NumSlices, NumFrames);
    if (Result != ERR_NONE)
    {
-      ErrAbort (ErrMsg, TRUE, Result);
+      ErrAbort (ErrMsg, true, Result);
    }
 
    fclose (InFile);
