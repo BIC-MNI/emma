@@ -304,9 +304,7 @@ implemented numerically in MATLAB.
 \subsection{Program Structure}
 
 \begin{figure}
-%\psfig{figure=flow.ps,angle=90,height=3.0in}}
-\centerline{\psfig{figure=flow.eps}}
-%\vspace{.25in}
+\centerline{\psfig{figure=flow.ps,height=3.0in}}
 \caption{General program flow for rCBF analysis}
 \end{figure}
 
@@ -318,9 +316,7 @@ actual images are generated through table lookup using the lookup
 tables computed in the previous step.
 
 \begin{figure}
-%\psfig{figure=structure.ps,angle=90,height=3.0in}}
-\centerline{\psfig{figure=structure.eps}}
-%\vspace{.25in}
+\centerline{\psfig{figure=structure.ps,height=2.0in}}
 \caption{Structure of rcbf2}
 \end{figure}
 
@@ -1201,13 +1197,13 @@ function integral = b_curve ...
 expthing = exp(-args(2)*ts_even);
 c = nconv(shifted_g_even,expthing,ts_even(2)-ts_even(1));
 c = c (1:length(ts_even));
-i1 = args(1)*c;			  % alpha * (convolution)
+i1 = args(1)*c;                   % alpha * (convolution)
 \end{verbatim}
 
 \item Evaluate the second term of the integrand, and the two terms
   together to get the integrand, \code{i}.
 \begin{verbatim}
-i2 = args(3)*shifted_g_even;		% gamma * g(t - delta)
+i2 = args(3)*shifted_g_even;            % gamma * g(t - delta)
 
 i = i1+i2;
 \end{verbatim}
