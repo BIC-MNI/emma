@@ -6,25 +6,25 @@
 % argument is always the name of the MINC file.  Following the
 % filename can come any number of "option sequences", which consist of
 % the option (a string) followed by zero or more items (more strings).
-% Generally speaking, the option tells miinquire the general class of
+% Generally speaking, the "option" tells miinquire the general class of
 % information you're looking for (such as an attribute value or a
 % dimension length), and the item or items that follow it give
-% miinquire more details, such as the dimension name or
-% variable/attribute name.
+% miinquire more details, such as the name of a dimension, variable,
+% or attribute.
 % 
 % Any number of option sequences can be included in a single call to
 % miinquire, as long as enough output arguments are provided (this is
 % checked mainly as a debugging aid to the user).  Generally, each
-% option results in a single output argument.
+% option sequence results in a single output argument.
 %
 % The currently available options are:
 %
-%     dimlength  (dimension length)
+%     dimlength  (length of a given dimension)
 %     imagesize  (sizes of the four image dimensions)
 %     vartype    (variable type, as a string)
 %     attvalue   (attribute value, either scalar, vector, or string)
-%     orientation(image orientation, as a string: either transverse, 
-%                 coronal, or sagittal)
+%     orientation(image orientation, as a string: either 'transverse',
+%                 'coronal', or 'sagittal')
 %
 % dimlength requires one item, the dimension name.  imagesize requires 
 % no items.  vartype requires the variable name.  attvalue requires
@@ -42,27 +42,28 @@
 % One inconsistency with the standalone utility mincinfo (after which 
 % miinquire is modelled) is the absence of the option "varvalues".  
 % The functionality of this available in a superior way via the CMEX
-% mireadvar.
-%
+% mireadvar (or mireadimages, to specifically read the 'image' 
+% variable).
+% 
 % Minor errors such as a dimension, variable, or attribute not found
 % in the MINC file will result in an empty matrix being returned.
-% miinquire will abort if there is not exactly one output argument
-% for every option sequence; if any option does not have all the 
-% required items supplied; or if the MINC file is not found or is 
-% invalid (eg. missing image variable).
-%
+% miinquire will abort with an error message if there is not exactly
+% one output argument for every option sequence; if any option does
+% not have all the required items supplied; or if the MINC file is not
+% found or is invalid (eg. missing image variable).
+% 
 % EXAMPLES
 %
 %  NumFrames = miinquire ('foobar.mnc', 'dimlength', 'time');
 %
-%    retrieves the length of the dimension names 'time', and stores it in
+%    retrieves the length of the dimension named "time", and stores it in
 %    MATLAB as the variable NumFrames (a scalar).  Here 'dimlength' is
 %    the option, and 'time' is the item associated with that option.
 %
 %  ImageSize = miinquire ('foobar.mnc', 'imagesize');
 %
 %    gets the sizes of the four image dimensions and puts them into a 
-%    column vector in the order [#frames, #slices, height, width].  If
+%    column vector in the order [num_frames, num_slices, height, width].  If
 %    either the frame or slice dimension is missing, that element of
 %    the vector is set to zero.  If either the height or width dimension
 %    is missing, the MINC file is invalid.  Here, 'imagesize' is the
@@ -80,5 +81,10 @@
 %  as in the following:
 %
 %  [NumFrames, ImageSize, ValidRange] = miinquire ('foobar.mnc', ...
-%      'dimlength', 'time', 'imagesize', 'attvalue', 'valid_range');
-%
+%      'dimlength', 'time', 'imagesize', 'attvalue', 'image', 'valid_range');
+% 
+% Note that miinquire would have complained if the number of output
+% arguments were not exactly equal to three here, because the
+% existence three option sequences ('dimlength', 'imagesize', and
+% 'attvalue') implies that there should be three MATLAB variables
+% to put the information in.
