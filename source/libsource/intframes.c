@@ -9,7 +9,8 @@
 @CALLS      : TrapInt(), Lookup1()
 @CREATED    : Sep 1993, Greg Ward
 @MODIFIED   : see RCS log
-@VERSION    : $Id: intframes.c,v 1.7 1997-10-17 19:47:38 greg Exp $
+@VERSION    : $Id: intframes.c,v 1.8 1997-10-21 15:32:32 greg Rel $
+              $Name:  $
 ---------------------------------------------------------------------------- */
 
 #if __sgi
