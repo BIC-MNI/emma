@@ -93,6 +93,7 @@ function handle = newimage (NewFile, DimSizes, ParentFile, ...
 %              30-31 Sep 1993- uses new miinquire options to inherit
 %                              image type/valid range/orientation;
 %                              a few more fixes to the argument handling code
+%              27 May 1997   - Modified to work with Matlab 5 (MW)
 %-----------------------------------------------------------------------------
 
 
@@ -209,7 +210,6 @@ if (isempty (ValidRange))
       else
          error (['Invalid image type: ' ImageType]);
       end
-   end
 end
 
 if (isempty (Orientation))
@@ -277,7 +277,7 @@ end
 
 global ImageCount
 
-if exist ('ImageCount') == 1
+if ~isempty (ImageCount)
    ImageCount = ImageCount + 1;
 else
    ImageCount = 1;
