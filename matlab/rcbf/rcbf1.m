@@ -1,9 +1,10 @@
 function [K1,k2] = rcbf1 (filename, slice, progress)
 % RCBF1  
-%        a first try at a two-compartment rCBF model (without V0
-%        or shifting) implemented as a MATLAB function.
 %
 %        [K1,k2] = rcbf1 (filename, slice)
+%
+%  a first try at a two-compartment rCBF model (without V0
+%  or shifting) implemented as a MATLAB function.
 
 % Input argument checking
 
@@ -31,16 +32,6 @@ PET = PET .* (PET > 0);			% set all negative values to zero
 
 if (progress); disp ('Calculating rL image'); end
 rL = findrl (PET, midftimes, flengths);
-
-% Find the minimum/maximum of "reasonable" points in rL (i.e. those within
-% one standard deviation of the mean -- this may seem overly picky, but
-% typical values of rL appear to all be quite close to the mean with the
-% few outliers VERY obvious).
-
-%mu = mean (rL); sigma = std (rL);
-%ok_points = find ( (abs(rL-mu) <= sigma) & (rL > 0));
-%rLmin = min (rL (ok_points));
-%rLmax = max (rL (ok_points));
 
 if (progress); disp ('Calculating k2/rR lookup table'); end
 [Ca_even, ts_even] = resampleblood (img, 'even');
