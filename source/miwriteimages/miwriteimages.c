@@ -17,7 +17,6 @@
 #define MAX_WRITEABLE 160	/* maximum number of images we can write */
 				/* in one go (this is the same as  */
 				/* MAXREADABLE in mireadimages.c */
-#define DEBUG
 
 /* Error codes returned by GetVector: */
 
