@@ -71,6 +71,24 @@ function info = getimageinfo (handle, whatinfo)
 %
 %     MidFrameTimes - time at the middle of each frame (calculated by
 %                     FrameTimes + FrameLengths/2) in seconds
+% 
+%     MinMax        - returns the minimum and maximum value for the
+%                     whole volume (as a two-element vector)
+% 
+%     AllMin        - returns the minimum value for each image in the
+%                     volume (where an "image" is one slice of one frame),
+%                     as a vector with (numframes)*(numslices) elements.
+%                     The order of elements in this vector depends on
+%                     the order of dimensions in the file; in the usual
+%                     case, the slice dimension varies fastest, so the
+%                     first chunk of values in the vector of image
+%                     minima will be for all slices in the first frame,
+%                     the next chunk will be for all slices in the
+%                     second frame, and so on.
+%
+%     AllMax        - returns the maximum value for each image in the
+%                     volume (where an "image" is one slice of one
+%                     frame).  The ordering is the same as for AllMin.
 %
 % You can also use miinquire to get the value of any MINC attribute,
 % such as the patient name, scanning date, etc.
@@ -102,6 +120,7 @@ function info = getimageinfo (handle, whatinfo)
 %              95-7-11, Greg Ward: fixed so it doesn't blindly make
 %              `whatinfo' global, and treats standard globals like any
 %              other info item -- so they too are now case insensitive!
+%              95-9-21, Greg Ward: added MinMax, AllMin, and AllMax
 %-----------------------------------------------------------------------------
 
 if nargin ~= 2
@@ -127,6 +146,10 @@ eval(['global FrameLengths' int2str(handle)]);
 
 eval(['filename = Filename' int2str(handle) ';']);
 eval(['dimsizes = DimSizes' int2str(handle) ';']);
+
+if (size(filename) == [0 0] | size(dimsizes) == [0 0])
+   error ('handle does not specify an open image volume');
+end
 
 % If "whatinfo" is one of the MINC image dimension names, just do 
 % an miinquire on the MINC file for the length of that dimension.
@@ -165,12 +188,19 @@ elseif (strcmp (lwhatinfo, 'imagesize'))
 elseif (strcmp (lwhatinfo, 'dimsizes'))
    info = dimsizes;
 
-% Now check if it's an option calculated from other options (currently
-% this is only MidFrameTimes).
+% Now check if it's an option calculated from other options
 
 elseif (strcmp (lwhatinfo, 'midframetimes'))
    info = eval(['FrameTimes' int2str(handle) ' + FrameLengths' int2str(handle) ' / 2']);
-   
+elseif (strcmp (lwhatinfo, 'minmax'))
+   allmin = sort (mireadvar (filename, 'image-min'));
+   allmax = sort (mireadvar (filename, 'image-max'));
+   info = [allmin(1) allmax(length(allmax))];
+elseif (strcmp (lwhatinfo, 'allmin'))
+   info = mireadvar (filename, 'image-min');
+elseif (strcmp (lwhatinfo, 'allmax'))
+   info = mireadvar (filename, 'image-max');
+
 % Finally check for one of the default global variables for this volume
 
 elseif (strcmp (lwhatinfo, 'filename'))
