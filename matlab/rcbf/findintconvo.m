@@ -31,6 +31,10 @@ function [int1, int2, int3] = findintconvo (Ca_even, ts_even, k2_lookup,...
 % mid-frame times (passed as midftimes) and integrated across frames
 % using flengths as dt.
 
+if ((nargin < 6) | (nargin > 8))
+    help findintconvo
+    error ('Incorrect number of input arguments.');
+end
 
 error (nargchk (6, 8, nargin));
 
