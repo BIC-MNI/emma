@@ -43,6 +43,6 @@ base = [
 
 n = length(base);
 
-X0 = (1:n/m:n);
+X0 = linspace (1, n, m);
 
 s = table(base,X0)';
