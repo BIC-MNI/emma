@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include "minc.h"
 #include "emmageneral.h"
 
@@ -42,7 +43,7 @@ void usage (void)
 @INPUT      : type_name -> A character string containing a description of the
                            netCDF data type.
 @OUTPUT     : nc_type   -> The data type that the character string describes.
-@RETURNS    : MI_ERROR if the data type is not recognized.  !MI_ERROR otherwise.
+@RETURNS    : FALSE if the data type is not recognized, TRUE otherwise.
 @DESCRIPTION: Takes a character string describing a netCDF data type, and
               returns the data type in a nc_type variable.
 @METHOD     : none
@@ -80,9 +81,9 @@ Boolean GetDatatype (char type_name[], nc_type *datatype)
     }
     else 
     {
-	return (MI_ERROR);
+	return (FALSE);		/* error - invalid type */
     }
-    return (!MI_ERROR);
+    return (TRUE);
 }
 
 
@@ -125,7 +126,7 @@ void main (int argc, char *argv[])
 	exit (-1);
     }
     
-    if (GetDatatype (DATATYPE, &datatype) == MI_ERROR)
+    if (!GetDatatype (DATATYPE, &datatype))
     {
 	fprintf (stderr, "Unrecognized data type : %s\n", DATATYPE);
 	exit (-1);
@@ -175,7 +176,3 @@ void main (int argc, char *argv[])
     ncclose (file_CDF);
     exit (0);
 }
-
-	
-
-    
