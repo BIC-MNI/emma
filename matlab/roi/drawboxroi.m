@@ -1,6 +1,6 @@
-function [roiHandle,Xi,Yi,lineHandle] = box (line_color, fig)
+function [roiHandle,Xi,Yi,lineHandle] = drawboxroi (line_color, fig)
 
-% BOX  draw a simple rectangular ROI
+% DRAWBOXROI  draw a simple rectangular ROI
 %
 %
 %     [roiHandle,Xi,Yi,lineHandle] = box ([line_color [,fig]])
