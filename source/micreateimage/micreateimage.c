@@ -5,7 +5,6 @@
 #include "mincutil.h"              /* for NCErrMsg () */
 
 #define PROGNAME      "micreateimage"
-#define DEBUG
 
 #define MINC_FILE     argv[1]
 #define NUM_FRAMES    argv[2]      /* the image size parameters as strings */
