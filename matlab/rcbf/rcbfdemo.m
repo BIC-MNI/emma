@@ -1,5 +1,5 @@
 function rcbfdemo(slice_number, frame_number)
-% RCBFDEMO Demonstrate the EMMA blood analysis package.
+% RCBFDEMO Demonstrate the RCBF blood analysis package.
 %
 %   rcbfdemo(slice_number, frame_number)
 %
