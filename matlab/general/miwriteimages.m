@@ -80,4 +80,4 @@ unix(['miwriteimages ' filename ' ' slicelist ' ' framelist ' ' tempfile]);
 
 % Get rid of the temporary file.
 
-delete tempfile;
+eval (['delete ' tempfile]);
