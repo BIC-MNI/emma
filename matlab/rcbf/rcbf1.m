@@ -23,8 +23,8 @@ end
 
 if (progress); disp ('Reading image information'); end
 img = openimage(filename);
-fstarts = getimageinfo (img, 'fstarts');
-flengths = getimageinfo (img, 'flengths');
+fstarts = getimageinfo (img, 'FrameTimes');
+flengths = getimageinfo (img, 'FrameLengths');
 midftimes = fstarts + (flengths / 2);
 PET = getimages (img, slice, 1:length(fstarts));
 PET = PET .* (PET > 0);			% set all negative values to zero
@@ -60,7 +60,7 @@ int_activity = PET * flengths;
 k2_conv_ints = lookup (k2_lookup, conv_int1, k2);
 K1 = int_activity ./ k2_conv_ints;
 
-nuke = find (isnan (K1) | isinf K1));
+nuke = find (isnan (K1) | isinf (K1));
 K1 (nuke) = zeros (size (nuke));
 
 % Magic number time: convert the values to the correct units.
