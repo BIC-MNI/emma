@@ -10,10 +10,11 @@
 @DESCRIPTION: Read a hyperslab of values from a MINC variable into a 
               one-dimensional MATLAB Matrix.
 @METHOD     : 
-@GLOBALS    : 
+@GLOBALS    : debug, ErrMsg
 @CALLS      : NetCDF, MINC, and mex functions.
 @CREATED    : 93/5/31 - 93/6/2, Greg Ward
 @MODIFIED   : 
+@COMMENTS   : need to robustify error checking in mexFunction.
 ---------------------------------------------------------------------------- */
 
 
@@ -22,8 +23,10 @@
 #include <string.h>
 #include <stdlib.h>
 #include "def_mni.h"
-#include "minc.h"
 #include "mex.h"
+#include "mexutils.h"			/* be sure to link in mexutils.o */
+#include "minc.h"
+#include "mincutil.h"			/* and mincutil.o */
 
 #define calloc mxCalloc
 #define PROGNAME "mireadvars"
@@ -50,27 +53,14 @@
 
 #define MAX_OPTIONS     1
 
-typedef int Boolean;
 
-typedef struct
-{
-   int      CDF;                 /* ID for the CDF file of the variable */
-   int      ID;                  /* for the dimension itself */
-   char     Name[MAX_NC_NAME];   /* name of the dimension */
-   long     Size;                /* number of data values in the dimension */
-} DimInfoRec;
+/*
+ *  Global variables: debug and ErrMsg
+ */
 
-typedef struct
-{
-   int         CDF;           /* ID for the CDF file of the variable */
-   int         ID;            /* ID for the variable itself */
-   char        *Name;         /* the variable's name */
-   nc_type     DataType;
-   int         NumDims;       /* number of dimensions */
-   DimInfoRec  *Dims;         /* info about every dimension associated */
-                              /* with the variable */
-   int         NumAtts;       /* number of attributes */ 
-} VarInfoRec;
+Boolean	debug;
+char		*ErrMsg;
+
 
 
 /* ----------------------------- MNI Header -----------------------------------
@@ -97,258 +87,6 @@ void ErrAbort (char *msg)
 
 
 
-/* ----------------------------- MNI Header -----------------------------------
-@NAME       : ParseOptions
-@INPUT      : OptVector (a MATLAB Matrix)
-@OUTPUT     : debug (and any other options I might want in future...)
-@RETURNS    : 
-@DESCRIPTION: Parses a "boolean vector" from MATLAB, assuming a correspondence
-              between the elements of the vector and the Boolean arguments
-              to this function.  Prints an error message and terminates 
-              via ErrAbort if the options vector is incorrectly specified.
-@METHOD     : 
-@GLOBALS    : none
-@CALLS      : standard mex functions
-@CREATED    : 93-5-26, Greg Ward
-@MODIFIED   : 
----------------------------------------------------------------------------- */
-void ParseOptions (Matrix *OptVector, Boolean *debug)
-{
-   int    m, n;                        /* dimensions of options vector */
-   char   MsgBuffer [80];
-
-/* N.B. m = # rows, n = # cols; we want a row vector so require that m == 1 */
-
-   m = mxGetM (OptVector);
-   n = mxGetN (OptVector);
-
-   if ((m != 1) || (n > MAX_OPTIONS) ||
-       (!mxIsNumeric (OptVector)) || (mxIsComplex (OptVector)) ||
-       (!mxIsFull (OptVector)))
-   {
-      sprintf (MsgBuffer,
-        "Options must be a scalar or row vector with no more than %d element(s)",
-               MAX_OPTIONS);
-      ErrAbort (MsgBuffer);
-   }
-
-/*
- * OptVector is valid, so now we parse it -- right now, all we're 
- * interested in is seeing if the first element is 1, i.e. debug 
- * is true. 
- */
-
-   *debug = *(mxGetPr (OptVector)) != 0;
-}     /* ParseOptions () */
-
-
-
-/* ----------------------------- MNI Header -----------------------------------
-@NAME       : ParseStringArg
-@INPUT      : Mstr - pointer to MATLAB Matrix; must be a string row vector
-              debug - Boolean to print debug info
-@OUTPUT     : *Cstr - pointer to newly allocated char array
-              containing the string from Mstr
-@RETURNS    : nothing, but aborts via ErrAbort in case of error!
-@DESCRIPTION: Turn a valid MATLAB string into a C string
-@METHOD     : Checks Mstr validity, allocates space for *Cstr, and copies
-@GLOBALS    : 
-@CALLS      : standard mex functions
-@CREATED    : 93-5-31, Greg Ward
-@MODIFIED   : 
----------------------------------------------------------------------------- */
-void ParseStringArg (Matrix *Mstr, char *Cstr [], Boolean debug)
-{
-   int   m, n;                /* require m == 1, so n will be length of str */
-
-   m = mxGetM (Mstr);    n = mxGetN (Mstr);
-
-   if (debug)
-   {
-      mexPrintf ("Mstr is length %d\n", n);
-   }
-
-/* Require that Mstr is a "row strings" */
-   if (!mxIsString (Mstr) || (m != 1))
-      ErrAbort ("Invalid string argument supplied.");
-
-/* All is well, so allocate space for the strings and copy them */
-   *Cstr = (char *) mxCalloc (n+1, sizeof (char));
-   m = mxGetString (Mstr, *Cstr, n+1);
-
-   if (debug)
-   {
-      mexPrintf ("mxGetString (Mstr) returned %d\n", m);
-      mexPrintf ("parsed string \`%s\'\n", *Cstr);
-   }
-}     /* ParseStringArg */
-
-
-
-/* ----------------------------- MNI Header -----------------------------------
-@NAME       : OpenFile
-@INPUT      : Filename - name of the NetCDF/MINC file to open
-              debug - as usual
-@OUTPUT     : *CDF - handle of the opened file
-@RETURNS    : (void)
-              ABORTS via ErrAbort on error
-@DESCRIPTION: Opens a NetCDF/MINC file using ncopen.
-@METHOD     : 
-@GLOBALS    : none
-@CALLS      : standard NetCDF, mex functions.
-@CREATED    : 93-5-31, adapted from code in micopyvardefs.c, Greg Ward
-@MODIFIED   : 
----------------------------------------------------------------------------- */
-void OpenFile (char *Filename, int *CDF, Boolean debug)
-{
-   char   MsgBuffer [256];
-
-   ncopts = 0;         /* don't abort or print messages */
-
-   if (debug)
-   {
-      (void) mexPrintf ("Opening %s for reading\n", Filename);
-   }
-
-   *CDF = ncopen (Filename, NC_NOWRITE);
-   if (debug)
-   {
-      mexPrintf ("Immediately after ncopen, CDF = %d\n", *CDF);
-   }     /* if debug */
-
-   if (*CDF == MI_ERROR)
-   {
-      sprintf (MsgBuffer, "Error opening input file %s", Filename);
-      ErrAbort (MsgBuffer);
-   }
-}     /* OpenFile */
-
-
-/* ----------------------------- MNI Header -----------------------------------
-@NAME       : GetVarInfo
-@INPUT      : CDF - handle for a NetCDF file
-              vName - string containing the name of the variable in question
-              debug - as usual
-@OUTPUT     : *vInfo - a struct which contains the CDF and variable id's,
-                number of dimensions and attributes, and an array of 
-                DimInfoRec's which tells everything about the various
-                dimensions associated with the variable.         
-@RETURNS    : (void)
-              ABORTS via ErrAbort on error
-@DESCRIPTION: Gets gobs of information about a NetCDF variable and its 
-                associate dimensions.
-@METHOD     : 
-@GLOBALS    : 
-@CALLS      : standard NetCDF, mex functions
-@CREATED    : 93-5-31, Greg Ward
-@MODIFIED   : 
----------------------------------------------------------------------------- */
-void GetVarInfo (int CDF, char vName[], VarInfoRec *vInfo, Boolean debug)
-{
-   char        MsgBuff [256];
-   int         DimIDs [MAX_NC_DIMS];
-   int         dim;
-   DimInfoRec  *Dims;      /* purely for convenience! */
-
-   vInfo->CDF = CDF;
-   vInfo->Name = vName;
-   vInfo->ID = ncvarid (CDF, vName);
-
-   /* 
-    * Abort if there was an error finding the variable
-    */
-       
-   if (vInfo->ID == MI_ERROR)
-   {
-      sprintf (MsgBuff, "Unknown variable: %s", vName);
-      ErrAbort (MsgBuff);
-   }     /* if ID == MI_ERROR */
-
-   /*
-    * Get most of the info about the variable...
-    */
-
-   ncvarinq (CDF, vInfo->ID, NULL, &vInfo->DataType, 
-             &vInfo->NumDims, DimIDs, &vInfo->NumAtts);
-
-   if (debug)
-   {
-      mexPrintf ("Variable %s has %d dimensions, %d attributes\n",
-                 vInfo->Name, vInfo->NumDims, vInfo->NumAtts);
-   }
-
-   /*
-    * Now loop through all the dimensions, getting info about them
-    */
-
-   Dims = (DimInfoRec *) mxCalloc (vInfo->NumDims, sizeof (DimInfoRec));
-   for (dim = 0; dim < vInfo->NumDims; dim++)
-   {
-      ncdiminq (CDF, DimIDs [dim], Dims [dim].Name, &(Dims [dim].Size));
-      if (debug)
-      {
-         mexPrintf ("  Dim %d: %s, size %d\n", 
-                    dim, Dims[dim].Name, Dims [dim].Size);
-      }
-   }     /* for dim */  
-   vInfo->Dims = Dims;
-}     /* GetVarInfo */
-
-
-
-/* ----------------------------- MNI Header -----------------------------------
-@NAME       : ParseIntArg
-@INPUT      : Mvector - pointer to a MATLAB matrix (of doubles)
-              debug - as usual
-@OUTPUT     : Cvector - 1-d array of longs, copied and converted from Mvector
-                (N.B. must be allocated by caller!)
-              VecSize - number of elements of Cvector used
-@RETURNS    : (void)
-              ABORTS via ErrAbort on error
-@DESCRIPTION: Given a MATLAB vector (i.e. a Matrix where either m or n is 1)
-                fills in a one-dimensional C array with long int's corres-
-                ponding to the elements of the MATLAB vector.               
-@METHOD     : Ensures that Mvector is a valid MATLAB object (one-dimensional,
-                numeric, and real).  Gets the length of it.  Copies each
-                element to Cvector, casting to long as it goes.
-@GLOBALS    : 
-@CALLS      : standard mex functions
-@CREATED    : 93-6-1, Greg Ward
-@MODIFIED   : 
----------------------------------------------------------------------------- */
-void ParseIntArg (Matrix *Mvector, long Cvector[], int *VecSize, Boolean debug)
-{
-   int      m, n, i;
-   double   *TmpVector;
-
-   m = mxGetM (Mvector);   n = mxGetN (Mvector);
-   if (((m != 1) && (n != 1)) || 
-      (!mxIsNumeric (Mvector)) || 
-      (mxIsComplex (Mvector)))
-   {
-      ErrAbort ("Invalid vector argument");
-   }
-
-   *VecSize = MAX (m, n);
-   if (debug)
-   {
-      mexPrintf ("Input vector has %d elements\n", *VecSize);
-   }
-
-   TmpVector = mxGetPr (Mvector);
-
-   for (i = 0; i < *VecSize; i++)
-   {
-      Cvector [i] = (long) TmpVector [i];
-
-      if (debug)
-      {
-         mexPrintf ("  Tmpvector[i] = %g\t", TmpVector [i]);
-         mexPrintf ("    Cvector[i] = %d\n", (int) Cvector [i]);
-      }
-   }     /* for i */
-
-}     /* ParseIntArg */
 
 
 
@@ -622,22 +360,22 @@ void mexFunction (int nlhs, Matrix *plhs [],
     */
    if (nrhs >= OPTIONS_POS)         /* options given? then parse them */
    {
-      ParseOptions (OPTIONS, &debug);
+      ParseOptions (OPTIONS, 1, &debug);
    }
 
    /*
     * Parse the two string options -- these are required
     */
 
-   ParseStringArg (FILENAME, &Filename, debug);
-   ParseStringArg (VARNAME, &Varname, debug);
+   ParseStringArg (FILENAME, &Filename);
+   ParseStringArg (VARNAME, &Varname);
 
    /*
     * Open the file and get info about the variable and its dimensions
     */
 
    OpenFile (Filename, &CDFid, debug); 
-   GetVarInfo (CDFid, Varname, &VarInfo, debug);
+   GetVarInfo (CDFid, Varname, &VarInfo);
 
    /*
     * If the start and count vectors are given (and they must BOTH be
@@ -654,8 +392,8 @@ void mexFunction (int nlhs, Matrix *plhs [],
       }
       memset (Start, 0, MAX_NC_DIMS * sizeof (*Start));
       memset (Count, 0, MAX_NC_DIMS * sizeof (*Count));
-      ParseIntArg (START, Start, &NumStart, debug);
-      ParseIntArg (COUNT, Count, &NumCount, debug);
+      NumStart = ParseIntArg (START, MAX_NC_DIMS, Start);
+      NumCount = ParseIntArg (COUNT, MAX_NC_DIMS, Count);
 
       VerifyVectors (&VarInfo, Start, Count, NumStart, NumCount, debug);
 

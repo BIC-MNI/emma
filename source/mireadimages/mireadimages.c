@@ -1,54 +1,27 @@
-/* mincread.c -- MATLAB interface to read a MINC file.  
-
-   Originally by Gabe Leger
-
-   modified 93/5/21 GPW to return frame length as well as mid-frame times.
-   modified 93/5/25 GPW to return time data just as it is stored in
-      the MINC file: frame start time, and frame length.  Idea being
-      that it's fairly trivial to get MATLAB to calculate the mid-frame
-      times if they're needed.  Also took out the conversion from seconds
-      to minutes on the same grounds.
-   modified 93/5/31 GPW to not return frame times at all.  This will now
-      be done by the more general purpose routine mireadvar, which should
-      be used to get a hyperslab from ANY non-image variable.
-*/
-
-
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include "minc.h"
+#include "gpw.h"
 #include "mex.h"
+#include "minc.h"
+#include "mierrors.h"         /* mine and Mark's */
+#include "mexutils.h"			/* N.B. must link in mexutils.o */
+#include "mincutil.h"
 
-/*
- * define a few useful constants and macros
- */
-
-typedef int Boolean;
-#ifndef TRUE
-#define TRUE 1
-#define FALSE 0
-#endif
-
-#ifndef NULL
-#define NULL 0
-#endif
-
-#define NORMAL_STATUS 0
-#define ERROR_STATUS 1
-
-#define min(A, B) ((A) < (B) ? (A) : (B))
-#define max(A, B) ((A) > (B) ? (A) : (B))
+#define PROGNAME "mireadimages"
 
 /*
  * Constants to check for argument number and position
  */
 
-#define MAX_OPTIONS          3
-#define MIN_INPUT_ARGUMENTS  2
-#define MAX_INPUT_ARGUMENTS  4
-#define SLICES_POSITION      3			/* these are 1-based! */
-#define FRAMES_POSITION      4
+/* mireadimages ('minc_file', slice_vector, frame_vector[, options]) */
+
+#define MAX_OPTIONS        3        /* # of elements in options vector */
+#define MIN_IN_ARGS        1        /* only filename required */
+#define MAX_IN_ARGS        4
+#define SLICES_POS         2        /* these are 1-based! */
+#define FRAMES_POS         3        /* (used to determine if certain */
+#define OPTIONS_POS        4        /* input args are present) */
 
 /*
  * Macros to access the input and output arguments from/to MATLAB
@@ -56,712 +29,385 @@ typedef int Boolean;
  */
 
 #define MINC_FILENAME  prhs[0]
-#define OPTIONS        prhs[1]
-#define SLICES         prhs[2]       /* slices to read - vector */
-#define FRAMES         prhs[3]       /* ditto for frames */
+#define SLICES         prhs[1]       /* slices to read - vector */
+#define FRAMES         prhs[2]       /* ditto for frames */
+#define OPTIONS        prhs[3]
 #define VECTOR_IMAGES  plhs[0]       /* array of images: one per columns */
 
-#if 0
-#define TIME_VECTOR    plhs[1]       /* frame start times */
-#define TIME_WIDTH     plhs[2]       /* time widths = length of each frame */
-#endif
 
 /*
- * define MINC specific stuff
+ * Global variables (with apologies).  Interesting note:  when ErrMsg is
+ * declared as char [256] here, MATLAB freezes (infinite, CPU-hogging
+ * loop the first time any routine tries to sprintf to it).  Dynamically
+ * allocating it seems to work fine, though... go figure.
  */
 
-typedef struct {
-   char *Name;
-   int CdfId;
-   int ImgId;
-   int TimeId;
-   int TimeWidthId;
-   int Icv;
-   int Slices;
-   int Frames;
-   int Height;
-   int Width;
-   int ImageSize;
-   int nDim;
-   int WidthImageDim;
-   int HeightImageDim;
-   int SliceDim;
-   int TimeDim;
-} MincInfo;
-
+Boolean    debug;
+char       *ErrMsg ;		         /* set as close to the occurence of the
+                                    error as possible; displayed by whatever
+                                    code exits */
 
 
 
 /* ----------------------------- MNI Header -----------------------------------
-@NAME       : 
-@INPUT      : 
-@OUTPUT     : 
+@NAME       : ErrAbort
+@INPUT      : msg - character to string to print just before aborting
+              PrintUsage - whether or not to print a usage summary before aborting
+              ExitCode - one of the standard codes from mierrors.h -- NOTE!  
+                this parameter is NOT currently used, but I've included it for
+                consistency with other functions named ErrAbort in other
+                programs
+@OUTPUT     : none - function does not return!!!
 @RETURNS    : 
-@DESCRIPTION: 
+@DESCRIPTION: Optionally prints a usage summary, and calls mexErrMsgTxt with the 
+              supplied msg, which ABORTS the mex-file!!!
 @METHOD     : 
-@GLOBALS    : 
-@CALLS      : 
-@CREATED    : 
+@GLOBALS    : requires PROGNAME macro
+@CALLS      : standard mex functions
+@CREATED    : 93-6-6, Greg Ward
 @MODIFIED   : 
 ---------------------------------------------------------------------------- */
-MincInfo *open_minc_file(char *minc_filename, Boolean progress, Boolean debug)
+void ErrAbort (char msg[], Boolean PrintUsage, int ExitCode)
 {
-
-   int
-      dimension,
-      dim_ids[MAX_VAR_DIMS],
-      attribute,
-      natts;
-   
-   long dim_length[MAX_VAR_DIMS];
-
-   char
-      image_name[256],
-      dim_names[MAX_VAR_DIMS][256],
-      attname[256];
-
-   nc_type datatype;
-   MincInfo *MincFile;
-   Boolean
-      frames_present = FALSE,
-      slices_present = FALSE;
-
-   if (progress && !debug){
-      mexPrintf("Getting image information ... ");
-      (void) fflush(stdout);
+   if (PrintUsage)
+   {
+      (void) mexPrintf ("Usage: %s ('MINC_file'[, slices", PROGNAME);
+      (void) mexPrintf ("[, frames[, options]]])\n");
    }
-
-   /* 
-    * Open the file. On error, return without printing diagnostic messages 
-    */
-
-   MincFile = (MincInfo *)mxCalloc(1,sizeof(MincInfo));
-   MincFile->Name = minc_filename;
-
-   if (debug) {
-      (void) mexPrintf("MincFile info:\n");
-      (void) mexPrintf(" Minc filename: %s\n", MincFile->Name);
-   }
-
-   ncopts = 0;
-   MincFile->CdfId = ncopen(MincFile->Name, NC_NOWRITE);
-   if (MincFile->CdfId == MI_ERROR){
-      printf("\nCould not open file %s.\n", MincFile->Name);
-      return(NULL);
-   }
-   
-   /* 
-    * Get id for image variable 
-    */
-   
-   MincFile->ImgId = ncvarid(MincFile->CdfId, MIimage);
-   
-   /* 
-    * Get info about variable 
-    */
-
-   (void) ncvarinq(MincFile->CdfId, 
-                   MincFile->ImgId, 
-                   image_name, 
-                   &datatype, 
-                   &MincFile->nDim, 
-                   dim_ids, 
-                   &natts);
-   
-
-   if (debug){
-      (void) mexPrintf(" Image variable name: %s, attributes: %d, dimensions: %d\n", 
-                       image_name, natts, MincFile->nDim);
-      (void) mexPrintf(" Attributes:\n");
-      for (attribute = 0; attribute < natts; attribute++){
-         (void) ncattname(MincFile->CdfId, MincFile->ImgId, attribute, attname);
-         (void) mexPrintf("  %s\n", attname);
-      }
-      (void) mexPrintf(" Dimension variables:\n");
-   }
-      
-   /*
-    * For each dimension, inquire about name and get dimension length
-    */
-
-   for (dimension = 0; dimension < MincFile->nDim; dimension++){
-      
-      (void) ncdiminq(MincFile->CdfId,
-                      dim_ids[dimension],
-                      dim_names[dimension],
-                      &dim_length[dimension]);
-
-      if (debug){
-         (void) mexPrintf("  %d\t%d\t%s\t%ld\n", 
-                          dimension,
-                          dim_ids[dimension],
-                          dim_names[dimension],
-                          dim_length[dimension]); 
-      }
-      
-      if (strcmp(MItime,dim_names[dimension]) == 0){
-         MincFile->TimeDim = dimension;
-         MincFile->Frames = dim_length[dimension];
-         frames_present = TRUE;
-         if (dimension > MincFile->nDim-3){
-            mexPrintf("Found time as an image dimension ... cannot continue\n");
-            return(NULL);
-         }
-
-      }else if (dimension == MincFile->nDim-3 || dimension == MincFile->nDim-4){
-         MincFile->SliceDim = dimension;
-         MincFile->Slices = dim_length[dimension];
-         slices_present = TRUE;
-
-      }else if (dimension == MincFile->nDim-2){
-         MincFile->HeightImageDim = dimension;
-         MincFile->Height = dim_length[dimension];
-
-      }else if (dimension == MincFile->nDim-1){
-         MincFile->WidthImageDim = dimension;
-         MincFile->Width = dim_length[dimension];
-
-      }else{
-         (void) mexPrintf("  Too many dimensions, skipping dimension <%s>\n",
-                          dim_names[dimension]);
-
-      }
-
-   }
-
-   MincFile->ImageSize = MincFile->Width * MincFile->Height;
-
-   /*
-    * Create the image icv 
-    */
-
-   MincFile->Icv = miicv_create();
-   (void) miicv_setint(MincFile->Icv, MI_ICV_TYPE, NC_DOUBLE);
-   (void) miicv_setint(MincFile->Icv, MI_ICV_DO_NORM, TRUE);
-   (void) miicv_setint(MincFile->Icv, MI_ICV_USER_NORM, TRUE);
-   
-   /* 
-    * Attach icv to image variable 
-    */
-
-   (void) miicv_attach(MincFile->Icv, MincFile->CdfId, MincFile->ImgId);
-
-   /*
-    * If frames are present, then get variable id for time
-    */
-   if (frames_present) {
-      MincFile->TimeId = ncvarid(MincFile->CdfId, dim_names[MincFile->TimeDim]); 
-      MincFile->TimeWidthId = ncvarid(MincFile->CdfId, MItime_width);  
-   }else{
-      MincFile->Frames = 0;
-   }
-
-   if (!slices_present) MincFile->Slices = 0;
-   
-   if (progress && !debug) mexPrintf("done\n");
-   
-   return(MincFile);
-
+   (void) mexErrMsgTxt (msg);
 }
+
+
 
 /* ----------------------------- MNI Header -----------------------------------
-@NAME       : 
-@INPUT      : 
+@NAME       : VerifyVectors
+@INPUT      : Slices[], Frames[] - lists of desired slices/frames
+              NumSlices, NumFrames - number of elements used in each array
+              Image - pointer to struct describing the image:
+                # of frames/slices, etc.
 @OUTPUT     : 
-@RETURNS    : 
+@RETURNS    : TRUE if no member of Slices[] or Frames[] is invalid (i.e.
+              larger than, respectively, Images->Slices or Images->Frames)
+              FALSE otherwise
 @DESCRIPTION: 
 @METHOD     : 
-@GLOBALS    : 
+@GLOBALS    : ErrMsg
 @CALLS      : 
 @CREATED    : 
 @MODIFIED   : 
 ---------------------------------------------------------------------------- */
-int read_minc_file(MincInfo *MincFile,
-                   int      *slices,
-                   int      slice_count,
-                   int      *frames,
-                   int      frame_count,
-                   int      images_to_get,
-                   Boolean  frames_specified,
-/*                 double   *Time,
-                   double   *TimeWidth,     */
-                   double   *VectorImages,
-                   Boolean  progress,
-                   Boolean  debug)
+Boolean VerifyVectors (long Slices[], long Frames[],
+                       int NumSlices, int NumFrames,
+                       ImageInfoRec *Image)
 {
-   int
-      frame,               /* just loop counters */
-      slice;
+   int   i;
 
-#if 0
-	double
-      *frame_time,         /* data from the MINC file -- frame_time is just */
-      *frame_length;       /* start of frame, frame_length is length */
-#endif
-                 
-   long 
-      coord[MAX_VAR_DIMS],
-      count[MAX_VAR_DIMS];
-   
-   int notice_every;
-   int image_no;
-
-   progress = progress && !debug;
-   
-   /* 
-    * Modify count and coord 
-    */
-
-   (void) miset_coords(MincFile->nDim, (long) 0, coord);
-   (void) miset_coords(MincFile->nDim, (long) 1, count);
-   count[MincFile->nDim-1] = MincFile->Width;
-   count[MincFile->nDim-2] = MincFile->Height;
-   coord[MincFile->nDim-1] = 0;
-   coord[MincFile->nDim-2] = 0;
-   
-   if (progress){
-      (void) mexPrintf("Reading minc data ");
-      notice_every = images_to_get/50;
-      if (notice_every == 0) notice_every = 1;
-      image_no = 0;
+   if (debug)
+   { 
+      printf ("Checking %d slices and %d frames for validity...\n",
+              NumSlices, NumFrames);
+      printf ("No slice >= %ld or frame >= %ld allowed\n",
+              Image->Slices, Image->Frames);
    }
-   
-   /* 
-    * Get the data 
-    */
-   
-   for (slice = 0; slice < slice_count; slice++){
 
-      if (MincFile->Slices > 0)
-         coord[MincFile->SliceDim] = slices[slice]-1;
-      
-      for (frame = 0; frame < frame_count; frame++){
+   if ((NumSlices > 1) && (NumFrames > 1))
+   {
+      sprintf (ErrMsg, "Cannot read both multiple slices and multiple frames");
+      return (FALSE);
+   }
 
-         if (MincFile->Frames > 0)
-            coord[MincFile->TimeDim] = frames[frame]-1;
-         
-         (void) miicv_get(MincFile->Icv, coord, count, (void *) VectorImages);
-         VectorImages += MincFile->ImageSize;
-         
-         if (debug){
-            (void) mexPrintf(" Slice: %d, Frame: %d\n",
-                             MincFile->Slices > 0 ? coord[MincFile->SliceDim]+1 : 1,
-                             MincFile->Frames > 0 ? coord[MincFile->TimeDim]+1 : 1);
-         }
-         
-         if (progress){
-            if (image_no++ % notice_every == 0){
-               (void) mexPrintf(".");
-            }
-         }
-         
-      } /* for frame */
-      
-   } /* for slice */
-
-   if (progress) (void) mexPrintf(" done\n");
-   
-   /* 
-    * If user requested frames
-    */
-#if 0
-   if (frames_specified){
-
-      /*
-       * Allocate space for time calculations
-       */
-      
-      frame_time = (double *)mxCalloc(MincFile->Frames, sizeof(double));
-      frame_length = (double *)mxCalloc(MincFile->Frames, sizeof(double));
-   
-      /* 
-       * Get time domain 
-       */
-
-      count[0] = MincFile->Frames;
-      coord[0] = 0;
-      
-      (void) mivarget(MincFile->CdfId,
-                      MincFile->TimeId,
-                      coord,
-                      count,
-                      NC_DOUBLE,
-                      MI_SIGNED,
-                      frame_time);
-
-      (void) mivarget(MincFile->CdfId,
-                      MincFile->TimeWidthId,
-                      coord,
-                      count,
-                      NC_DOUBLE,
-                      MI_SIGNED,
-                      frame_length);
-
-      /*
-       * Calculate midframe time using frame_time and frame_length (seconds)
-       */
-/*      
-      for (frame = 0; frame < MincFile->Frames; frame++){
-         frame_time[frame] = (frame_time[frame] + frame_length[frame]/2);
-         if (debug) {
-            (void) mexPrintf(" Frame: %2d, Time: %.2f, length: %.2f (sec)\n",
-                             frame+1,
-                             frame_time[frame],
-                             frame_length[frame]);
-         }
-         
+   for (i = 0; i < NumSlices; i++)
+   {
+      if (debug)
+      {
+         printf ("User slice %d is study slice %d\n", i, Slices[i]);
       }
-*/
-      /*
-       * Select those time points associated with the selected frames.
-       */
+      if ((Slices [i] >= Image->Slices) || (Slices [i] < 0))
+      {
+         sprintf (ErrMsg, "Bad slice number: %ld (max %ld)", 
+                  Slices[i], Image->Slices-1);
+         return (FALSE);
+      }
+   }     /* for i - loop slices */
 
-      for (frame = 0; frame < frame_count; frame++){
-         Time[frame] = frame_time[frames[frame]-1];
-         TimeWidth[frame] = frame_length[frames[frame]-1];
-         if (debug) {
-            (void) mexPrintf(" User frame: %2d, Study frame: %2d, ",
-                             frame+1,
-                             (long)frames[frame]);
-            (void) mexPrintf("frame start time:  %.2f, frame length: %.2f\n",
-                             Time[frame],
-                             TimeWidth[frame]); 
-         }		/* if debug */
-      }		/* for frame */
-   }		/* if frames_specified */
-#endif
-   
-   return(NORMAL_STATUS);
-   
-}
+   for (i = 0; i < NumFrames; i++)
+   {
+      if (debug)
+      {
+         printf ("User frame %d is study frame %d\n", i, Frames[i]);
+      }
+      if ((Frames [i] >= Image->Frames) || (Frames [i] < 0))
+      {
+         sprintf (ErrMsg, "Bad frame number: %ld (max %ld)", 
+                  Frames[i], Image->Frames-1);
+         return (FALSE);
+      }
+
+   }     /* for i - loop frames */
+
+   return (TRUE);
+}     /* VerifyVectors */
+
+
 
 /* ----------------------------- MNI Header -----------------------------------
-@NAME       : 
-@INPUT      : 
-@OUTPUT     : 
-@RETURNS    : 
-@DESCRIPTION: 
+@NAME       : ReadImages
+@INPUT      : *Image - struct describing the image
+              Slices[] - vector of zero-based slice numbers to read
+              Frames[] - vector of zero-based frame numbers to read
+              NumSlices - number of elements in Slices[]
+              NumFrames - number of elements in Frames[]
+@OUTPUT     : *Mimages - pointer to MATLAB matrix (allocated by ReadImages)
+              containing the images specified by Slices[] and Frames[].
+              The matrix will have Image->ImageSize rows, and each column
+              will correspond to one image, with the highest dimension
+              of the image variable varying fastest.  Eg., if xspace is
+              the highest image dimension, then each contiguous 128 element
+              block of the output matrix will correspond to one row 
+              of the image.
+@RETURNS    : ERR_NONE if all went well
+              ERR_IN_MINC if there was an error reading the MINC file;
+                this should NOT happen!!  Any errors in the input
+                (eg. invalid slices or frames) should be detected before
+                we reach this stage, and if miicv_get returns an error,
+                that counts as a bug in THIS program.
+@DESCRIPTION: Given a struct describing a MINC image variable and vectors 
+              listing the slices and frames to read, reads in a series of
+              images from the MINC file.  The Slices and Frames vectors
+              should contain valid zero-based slice and frame numbers for
+              the given MINC file.
 @METHOD     : 
-@GLOBALS    : 
-@CALLS      : 
-@CREATED    : 
+@GLOBALS    : debug, ErrMsg
+@CALLS      : standard library, MINC functions
+@CREATED    : 93-6-6, Greg Ward
 @MODIFIED   : 
 ---------------------------------------------------------------------------- */
-int close_minc_file(MincInfo *MincFile)
+int ReadImages (ImageInfoRec *Image,
+                long    Slices [],
+                long    Frames [],
+                long    NumSlices,
+                long    NumFrames,
+                Matrix  **Mimages)
 {
+   long     slice, frame;
+   long     Start [MAX_NC_DIMS], Count [MAX_NC_DIMS];
+   double   *VectorImages;
+   Boolean  DoFrames;
+   int      RetVal;           /* from miicv_get -- if this is MI_ERROR */
+                              /* we have a problem!!  Should NOT!!! happen */
 
-   /* 
-    * Free the image icv 
+   /*
+    * First ensure that we will always read an *entire* image, but only
+    * one slice/frame at a time (no matter how many slices/frames we
+    * may be reading)
     */
 
-   (void) miicv_free(MincFile->Icv);
-   
+   Start [Image->HeightDim] = 0L;
+   Count [Image->HeightDim] = Image->Height;
+   Start [Image->WidthDim] = 0L;
+   Count [Image->WidthDim] = Image->Width;
+   Count [Image->SliceDim] = 1L;
+
+	/*
+	 * Note: the following check for missing time dimension is based on
+    *	ImageInfoRec: -1 for a "dimension number" means the dimension
+	 * does not exist in the MIimage variable.
+	 */
+
+	if ((Image->FrameDim == -1) || (Image->Frames == 0))
+   {
+      DoFrames = FALSE;
+      NumFrames = 1;			  /* so that we at least get into the frames loop */
+   }
+   else
+   {
+      Count [Image->FrameDim] = 1;
+      DoFrames = TRUE;
+   }
+
+   if (debug)
+   {
+      printf ("Reading %ld slices, %ld frames: %ld total images.",
+              NumSlices, NumFrames, NumSlices*NumFrames);
+      printf ("  Any time dimension: %s\n", DoFrames ? "YES" : "NO");
+   }
+
    /* 
-    * Close the file and return
+    * Now allocate a MATLAB matrix to put the images into, and point our local
+    * VectorImages at the real part of it.
     */
 
-   (void) ncclose(MincFile->CdfId);
-   
-}
+   *Mimages = mxCreateFull(Image->ImageSize, NumSlices*NumFrames, REAL);
+   VectorImages = mxGetPr (*Mimages);
 
-void usage(char * program_name)
-{
-   (void) printf("usage: [i,t] = %s('filename', options [, slices [, frames]])\n",
-                 program_name);
-}
+   /*
+    * Now loop through slices and frames to read in the images, one at a time.
+    */
 
-#if 0
-void TestFunction (Matrix *Options, Boolean *debug)
-{
-   Matrix  *Tmp;
-   Tmp = Options;
-   if (mxGetM (Options) == 1) return;
-}
-#endif 
+   for (slice = 0; slice < NumSlices; slice++)
+   {  
+      Start [Image->SliceDim] = Slices [slice];
+
+      for (frame = 0L; frame < NumFrames; frame++)
+      {
+         if (DoFrames)
+         {
+            Start [Image->FrameDim] = Frames [frame];
+         }
+
+			if (debug)
+			{
+				printf ("Reading: user slice %d, study slice%d",
+						  slice, Slices[slice]);
+				if (DoFrames)
+				{
+					printf ("; user frame %d, study frame %d\n",
+							  frame, Frames[frame]);
+				}
+			}
+
+         RetVal = miicv_get (Image->ICV, Start, Count, VectorImages);
+         if (RetVal == MI_ERROR)
+         {
+            sprintf (ErrMsg, "INTERNAL BUG: error code %d set by miicv_get",
+                     ncerr);
+            return (ERR_IN_MINC);
+         }
+
+         VectorImages += Image->ImageSize;
+
+      }     /* for frame */
+
+   }     /* for slice */
+
+   return (ERR_NONE);
+
+}     /* ReadImages */
+
+
+
 
 void mexFunction(int    nlhs,
                  Matrix *plhs[],
                  int    nrhs,
-                 Matrix *prhs[]
-                 )
+                 Matrix *prhs[])
 {
+   char        *Filename;
+   ImageInfoRec   ImInfo;
+   long        Slice[MAX_NC_DIMS];
+   long        Frame[MAX_NC_DIMS];
+   long        NumSlices;
+   long        NumFrames;
+   FILE        *InFile;
+   int         Result;
 
-   MincInfo
-      *MincFile;
+   debug = TRUE;        /* default for development -- can be overridden by */
+                        /* OPTIONS input argument */
+	ErrMsg = (char *) mxCalloc (256, sizeof (char));
 
-   int
-      m, n,
-      slice,
-      frame,
-      slice_count = 1,
-      frame_count = 1,
-      *slices,
-      *frames,
-      image_out_count = 1;
+   /* First make sure a valid number of arguments was given. */
 
-   double
-      *VectorImages,
-      *Time,
-      *TimeWidth,
-      *double_slices,
-      *double_frames;
+   if ((nrhs < MIN_IN_ARGS) || (nrhs > MAX_IN_ARGS))
+   {
+      sprintf (ErrMsg, "Incorrect number of arguments (%d; min %d, max %d)",
+               nrhs, MIN_IN_ARGS, MAX_IN_ARGS);
+      ErrAbort (ErrMsg, TRUE, ERR_ARGS);
+   }
 
-   Boolean
-      progress = FALSE,
-      debug = FALSE,
-      dump_only = FALSE,
-      slices_specified = FALSE,
-      frames_specified = FALSE;
 
-   char
-      *minc_filename;
+   /* If anything was given as an options vector, parse it. */
 
-   /* 
-    * Check for proper number of arguments 
-    */
+   if (nrhs >= OPTIONS_POS)
+   {
+      Result = ParseOptions (OPTIONS, 1, &debug);
+		if (!(Result > 0)) 
+		{
+			ErrAbort ("Error parsing options vector", TRUE, ERR_ARGS);
+		}
+   }
 
-	if (nrhs < MIN_INPUT_ARGUMENTS || nrhs > MAX_INPUT_ARGUMENTS) {
-      usage("MINCREAD");
-		(void) mexErrMsgTxt("\nMINCREAD: supply at least two input arguments.");  
+	/*
+    * Parse the filename option -- this is required by the above check
+	 * for number of arguments, so don't need to ensure that MINC_FILENAME
+	 * actaually exists.
+	 */
+
+	if (debug) printf ("Parsing filename\n");
+   if (ParseStringArg (MINC_FILENAME, &Filename) == NULL)
+   {
+		ErrAbort ("Error in filename", TRUE, ERR_ARGS);
+   }
+
+   /* Open MINC file, get info about image, and setup ICV */
+
+	if (debug) printf ("Opening file\n");
+   Result = OpenImage (Filename, &ImInfo);
+	if (Result != ERR_NONE)
+   {
+      ErrAbort (ErrMsg, TRUE, Result);
+   }
+
+	if (debug) printf ("Parsing numerics\n");
+
+	/* 
+	 * If the vector of slices is given, parse it into a vector of longs.
+	 * If not, just read slice 0 by default.
+	 */
+
+	if (nrhs >= SLICES_POS)
+	{
+		NumSlices = ParseIntArg (SLICES, MAX_NC_DIMS, Slice);
+		if (NumSlices < 0)
+		{
+			CloseImage (&ImInfo);
+			ErrAbort ("Error: slices must be specified in an all-integer vector",
+						 TRUE, ERR_ARGS);
+		}
 	}
-   
-   /*
-    * Check for valid filename, convert to C string.
-    */
+	else							/* caller did *not* specify slices vector */
+	{
+		Slice [0] = 0;			/* so read just slice 0 by default */
+		NumSlices = 1;
+	}
 
-   if (!mxIsString(MINC_FILENAME)){
-      usage("MINCREAD");
-      (void) mexErrMsgTxt("\nMINCREAD: first argument must be minc filename.");
+	/* Now do the exact same thing for frames. */
+
+	if (nrhs >= FRAMES_POS)
+	{
+		NumFrames = ParseIntArg (FRAMES, MAX_NC_DIMS, Frame);
+		if (NumFrames < 0)
+		{
+			CloseImage (&ImInfo);
+			ErrAbort ("Error: frames must be specified in an all-integer vector",
+						 TRUE, ERR_ARGS);
+		}
+	}
+	else
+	{
+		Frame [0] = 0;				/* read just frame 0 by default */
+		NumFrames = 1;
+	}
+
+	/* Make sure the supplied slice and frame numbers are within bounds */
+   if (!VerifyVectors (Slice, Frame, NumSlices, NumFrames, &ImInfo))
+   {
+      CloseImage (&ImInfo);
+      ErrAbort (ErrMsg, TRUE, ERR_ARGS);
+   }
+	
+
+	/* And read the images to a MATLAB Matrix (of doubles!) */
+
+   Result = ReadImages (&ImInfo, 
+                        Slice, Frame, 
+                        NumSlices, NumFrames, 
+                        &VECTOR_IMAGES);
+   if (Result != ERR_NONE) 
+   {
+      CloseImage (&ImInfo);
+      ErrAbort (ErrMsg, TRUE, Result);
    }
 
-   n = mxGetN(MINC_FILENAME)+1;
-   minc_filename = mxCalloc(n,sizeof(char));
-   mxGetString(MINC_FILENAME,minc_filename,n);
+   CloseImage (&ImInfo);
 
-
-   /*
-    * Check for user selected options
-    */
-   m = max(mxGetM(OPTIONS),mxGetN(OPTIONS));
-	n = min(mxGetM(OPTIONS),mxGetN(OPTIONS));
-   
-	if (!mxIsNumeric(OPTIONS) || mxIsComplex(OPTIONS) || 
-       !mxIsFull(OPTIONS)  || !mxIsDouble(OPTIONS) ||
-       (n != 1 && n != 0)) {
-		(void) mexErrMsgTxt("\nMINCREAD: <options> must be a vector.");
-      }
-   
-   /*
-    * If options are specified, parse them
-    */
-
-   if (m != 0){
-
-      int option;
-      double *options;
-
-      if (m > MAX_OPTIONS) {
-         (void) mexErrMsgTxt("\nMINCREAD: <options> vector to large.");
-      }
-
-      options = mxGetPr(OPTIONS);
-
-      for (option = 0; option < m; option++) {
-         switch(option){
-         case 0:
-            if ((int)options[option] == 1) progress = TRUE;
-            break;
-         case 1:
-            if ((int)options[option] == 1) debug = TRUE;
-            break;
-         case 2:
-            if ((int)options[option] == 1){
-               dump_only = TRUE;
-               debug = TRUE;
-            }
-            break;
-         }
-      }
-   }
-
-   if (debug && !dump_only) (void) mexPrintf("MINC filename: %s\n", minc_filename);
-
-   /* 
-    * Check to see if slice and frame specifications are legal 
-    * if so, dereference pointers.
-    */
-
-   if (nrhs >= SLICES_POSITION && !dump_only) {
-      
-      slices_specified = TRUE;
-      
-      m = mxGetM(SLICES);
-      n = mxGetN(SLICES);
-      
-      if (!mxIsNumeric(SLICES) || mxIsComplex(SLICES) || 
-          !mxIsFull(SLICES)  || !mxIsDouble(SLICES) ||
-          (min(m,n) != 1)) {
-         (void) mexErrMsgTxt("\nMINCREAD: <slices> must be a vector.");
-      }
-      
-      slice_count = max(m,n);
-      double_slices = mxGetPr(SLICES);
-      slices = (int *)mxCalloc(slice_count,sizeof(int));
-      for (slice = 0; slice < slice_count; slice++)
-         slices[slice] = (int)double_slices[slice];
-      
-      if (debug){
-         (void) mexPrintf("User selections:\n");
-         (void) mexPrintf(" Slice count: %d\n", slice_count);
-         (void) mexPrintf(" %s", slice_count > 1 ? "Slices:" : "Slice:");
-         for (slice = 0; slice < slice_count; slice++){
-            (void) mexPrintf(" %d", slices[slice]);
-         }
-         (void) mexPrintf("\n");
-      }
-
-   }else{
-
-      slices = (int *)mxCalloc(1,sizeof(int));
-      slices[0] = 1;
-
-   }
-   
-   if (nrhs == FRAMES_POSITION && !dump_only) {
-
-      frames_specified = TRUE;
-
-      m = mxGetM(FRAMES);
-      n = mxGetN(FRAMES);
-
-      if (!mxIsNumeric(FRAMES) || mxIsComplex(FRAMES) || 
-          !mxIsFull(FRAMES)  || !mxIsDouble(FRAMES) ||
-          (min(m,n) != 1)) {
-         (void) mexErrMsgTxt("\nMINCREAD: <frames> must be a vector.");
-      }
-
-      frame_count = max(m,n);
-      double_frames = mxGetPr(FRAMES);
-      frames = (int *)mxCalloc(frame_count,sizeof(int));
-      for (frame = 0; frame < frame_count; frame++)
-         frames[frame] = (int)double_frames[frame];
-
-#if 0
-      TIME_VECTOR = mxCreateFull(frame_count,1,REAL);
-      Time = mxGetPr(TIME_VECTOR);
-
-      TIME_WIDTH = mxCreateFull (frame_count,1,REAL);
-      TimeWidth = mxGetPr(TIME_WIDTH);
-#endif 
-      
-      if (debug){
-         (void) mexPrintf(" Frame count: %d\n", frame_count);
-         (void) mexPrintf(" %s", frame_count > 1 ? "Frames:" : "Frame:");
-         for (frame = 0; frame < frame_count; frame++){
-            (void) mexPrintf(" %d", frames[frame]);
-         }
-         (void) mexPrintf("\n");
-      }
-            
-   }else{
-      
-      frames = (int *)mxCalloc(1,sizeof(int));
-      frames[0] = 1;
-      
-   }
-
-   /*
-    * Allow only one of the z or t dimensions to be multiple
-    */
-   
-   if (slice_count != 1 && frame_count != 1){
-      (void) mexErrMsgTxt("\nMINCREAD: <slices> and <frames> cannot both be vectors");
-   }
-   
-   if (!dump_only) image_out_count = slice_count * frame_count;
-   
-   if (debug && !dump_only) 
-      (void) mexPrintf(" Total Images requested: %d\n", image_out_count);
-
-   if ((MincFile = open_minc_file(minc_filename, progress, debug)) == NULL){
-      (void) mexErrMsgTxt("\nMINCREAD: exiting");
-   }
-
-   /*
-    * Check to see that file contains requested dimensions
-    */
-
-   if (slices_specified){
-
-      if (MincFile->Slices == 0){
-         (void) mexErrMsgTxt("\nMINCREAD: File has no z dimension ... exiting");
-      }
-
-      if (slice_count > MincFile->Slices){
-         (void) mexPrintf("\nRequested %d slices, file has only %d\n", 
-                          slice_count,
-                          MincFile->Slices);
-         (void) mexErrMsgTxt("\nMINCREAD: exiting");
-      }
-
-      if (slices[slice_count - 1] > MincFile->Slices){
-         (void) mexPrintf("\nLast slice requested is %d, file has only %d\n", 
-                          slices[slice_count - 1],
-                          MincFile->Slices);
-         (void) mexErrMsgTxt("\nMINCREAD: exiting");
-      }
-
-   }
-
-   if (frames_specified){
-
-      if (MincFile->Frames == 0){
-         (void) mexErrMsgTxt("\nMINCREAD: File has no time dimension ... exiting");
-      }
-
-      if (frame_count > MincFile->Frames){
-         (void) mexPrintf("\nRequested %d frames, file has only %d\n", 
-                          frame_count,
-                          MincFile->Frames);
-         (void) mexErrMsgTxt("\nMINCREAD: exiting");
-      }
-
-      if (frames[frame_count - 1] > MincFile->Frames){
-         (void) mexPrintf("\nLast frame requested is %d, file has only %d\n", 
-                          frames[frame_count - 1],
-                          MincFile->Frames);
-         (void) mexErrMsgTxt("\nMINCREAD: exiting");
-      }
-
-   }
-
-   /*
-    * Everything seems Ok, ... (famous last words) here we go ...
-    */
-
-   if (debug) 
-      (void) mexPrintf("Individual image size: %d\n", MincFile->ImageSize);
-   
-   if (!dump_only) {
-
-      VECTOR_IMAGES = mxCreateFull(MincFile->ImageSize, image_out_count, REAL);
-      VectorImages = mxGetPr(VECTOR_IMAGES);      
-      
-      (void) read_minc_file(MincFile,
-                            slices,
-                            slice_count,
-                            frames,
-                            frame_count,
-                            image_out_count,                  
-                            frames_specified,
-                    /*      Time,
-                            TimeWidth,       */
-                            VectorImages,
-                            progress,
-                            debug);
-
-   }
-
-   close_minc_file(MincFile);
-
-}
+}     /* mexFunction */
