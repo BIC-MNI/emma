@@ -1,3 +1,6 @@
+ * Modified Makefile.linux to force chars to be unsigned in compilation.
+   Handles assumptions in micreateimage (and possibly elsewhere).
+
 Release 0.9.5 (25 September, 2001)
 -------------
  * Removed memory re-use feature of getimages for matlab 5 and later since
