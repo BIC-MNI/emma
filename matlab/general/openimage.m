@@ -67,7 +67,7 @@ function ImHandle = openimage (filename, mode)
 %              97-5-27 Mark Wolforth: Minor modification to work with
 %                                     Matlab 5, which handles global
 %                                     variables differently from Matlab 4.x
-%@VERSION    : $Id: openimage.m,v 1.26 2000-04-10 16:00:52 neelin Exp $
+%@VERSION    : $Id: openimage.m,v 1.27 2000-04-18 15:34:55 neelin Exp $
 %              $Name:  $
 %-----------------------------------------------------------------------------
 
@@ -157,8 +157,7 @@ end
 % it onto filename, and make sure filename exists.
 
 if (filename (1) ~= '/')
-   curdir = pwd;
-%   curdir = mexec ('pwd');
+   curdir = getcwd;
    curdir (find (curdir == 10)) = [];        % strip out newline
    filename = [curdir '/' filename];
 end
