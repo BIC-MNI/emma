@@ -10,6 +10,25 @@
 
 
 /* ----------------------------- MNI Header -----------------------------------
+@NAME       : micreatedim
+@INPUT      : filename       - The name of the MINC file in which to create the
+                               dimension.
+              dimension name - The name to be given to the newly created
+                               dimension.
+              length         - The length of the dimension.
+@OUTPUT     : 
+@RETURNS    : int - Return code
+@DESCRIPTION: Creates a dimension in the specified MINC file of the specified
+              length.
+@GLOBALS    : ncopts
+@CALLS      : netCDF library
+@CREATED    : June 3, 1993 by MW
+@MODIFIED   : 
+---------------------------------------------------------------------------- */
+
+
+
+/* ----------------------------- MNI Header -----------------------------------
 @NAME       : usage
 @INPUT      : void
 @OUTPUT     : void
@@ -33,18 +52,19 @@ void usage (void)
 
 /* ----------------------------- MNI Header -----------------------------------
 @NAME       : main
-@INPUT      : 
-@OUTPUT     : 
-@RETURNS    : 
-@DESCRIPTION: 
-@METHOD     : 
-@GLOBALS    : 
-@CALLS      : 
-@CREATED    : 
+@INPUT      : argc, argv - See header at top of file
+@OUTPUT     : none
+@RETURNS    : int - Return code
+@DESCRIPTION: Creates a dimension in the specified MINC file of the specified
+              length.
+@GLOBALS    : ncopts
+@CALLS      : usage
+              netCDF library
+@CREATED    : June 3, 1993 by MW
 @MODIFIED   : 
 ---------------------------------------------------------------------------- */
 
-void main (int argc, char *argv[])
+int main (int argc, char *argv[])
 {
     int file_CDF;
     long length;
