@@ -23,26 +23,32 @@
 
 typedef int Boolean;
 
+#define TRUE    1
+#define FALSE   0
 
-#define PROGNAME "frameint"
-                 
-
+#define PROGNAME "nframeint"
 #define MAX_X_LENGTH 1024       /* maximum number of elements of X that can */
                                 /* be found within each frame */
-
-
 #define TIMES   prhs[0]
 #define VALUES  prhs[1]
 #define START   prhs[2]
 #define LENGTHS prhs[3]
 #define INTS    plhs[0]
 
-
-#define TRUE    1
-#define FALSE   0
-
 #define min(A, B) ((A) < (B) ? (A) : (B))
 #define max(A, B) ((A) > (B) ? (A) : (B))
+
+/* External functions: need to link in monotonic.o, lookup12.o, trapint.o */
+
+extern int Monotonic (double *oldX, int TableRows);
+extern void Lookup1 (double *oldX, double *oldY,
+		     double *newX, double *newY,
+		     int TableRows, int OutputRows);
+extern void Lookup2 (double *oldX, double *oldY,
+		     double *newX, double *newY,
+		     int TableRows, int OutputRows);
+extern void TrapInt (int num_bins, double *times, double *values,
+		     double *bin_lengths, double *area);
 
 
 double  NaN;                    /* NaN in native C format */
@@ -135,75 +141,6 @@ Boolean CheckInputs (Matrix *TS, Matrix *Y, Matrix *FStart, Matrix *FLengths,
 }       /* end CheckInputs */
 
 
-/* ----------------------------- MNI Header -----------------------------------
-@NAME       : C_trapz
-@INPUT      : 
-@OUTPUT     : 
-@RETURNS    : 
-@DESCRIPTION: Performs a trapezoid integration.
-@METHOD     : 
-@GLOBALS    : 
-@CALLS      : 
-@CREATED    : 
-@MODIFIED   : 
----------------------------------------------------------------------------- */
-void C_trapz (int num_bins, double *times, double *values,
-              double *bin_lengths, double *area)
-{
-   int current_bin;
-   
-   *area = 0;
-   
-   for (current_bin=0; current_bin<(num_bins-1); current_bin++)
-   {
-      *area = *area + ((values[current_bin]+values[current_bin+1])/2*
-		       (times[current_bin+1]-times[current_bin]));
-   }
-}
-
-
-
-void Lookup1 (double *oldX, double *oldY,
-              double *newX, double *newY,
-              int TableRows,
-              int OutputRows)
-{
-   int      i, j;
-   double   slope;
-   
-   for (i=0; i<OutputRows; i++)
-   {
-      /*
-       * Make sure that newX [i] is within the bounds of oldX [0..TableSize-1]
-       * change this for oldX descending monotonic
-       */
-      
-      if ((newX [i] < oldX [0]) || (newX [i] > oldX [TableRows-1]))
-      {
-	 newY [i] = NaN;
-	 continue;                   /* skip to next newY */
-      }
-      
-      /*
-       * Find the element (j+1) of oldX *just* larger than newX [i]
-       * Note that we are guaranteed oldX[0] <= newX[i] <= oldX[TableRows-1]
-       */
-      
-      j = 0;
-      while (oldX [j+1] < newX [i])
-      {
-	 j++;
-      }
-      
-      /*
-       * Now we have oldX [j] < newX [i] <= oldX [j+1], so interpolate
-       * linearly to find newY [i]
-       */
-      
-      slope = (oldY[j+1] - oldY[j]) / (oldX[j+1] - oldX[j]);
-      newY [i] =  oldY[j] + slope*(newX[i] - oldX[j]);
-   }
-}
 
 
 
@@ -421,7 +358,7 @@ void IntOneFrame (double X[], double Y[], int XYLength, int *LowIndex,
 #endif
       
       
-      C_trapz((numBins-1), (x_values+1), (y_values+1), NULL, Integral);
+      TrapInt ((numBins-1), (x_values+1), (y_values+1), NULL, Integral);
 
 #ifdef DEBUG
       printf ("Unnormalised integral = %g\n", *Integral);
@@ -440,7 +377,7 @@ void IntOneFrame (double X[], double Y[], int XYLength, int *LowIndex,
 	      y_values[0], y_values[numBins-1]);
 #endif
 
-      C_trapz ((numBins), x_values, y_values, NULL, Integral);
+      TrapInt ((numBins), x_values, y_values, NULL, Integral);
 
 #ifdef DEBUG
       printf ("Unnormalised integral = %g\n", *Integral);
