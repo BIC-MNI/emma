@@ -201,23 +201,26 @@ As an example of the EMMA functions presented thus far, we will
 explore sample code for both masking and summing/integrating images
 from a dynamic study.  The MINC file used in this example will be one
 of the H$_2$$^{15}$O CBF studies from
-\verb|/local/matlab/toolbox/emma/examples|.  To make accessing these
-files easier, you may want to create a symbolic link in one of your
-directories using the command:
+\code{/usr/local/matlab/toolbox/emma/examples}; there is also a
+corresponding BNC ({\bf b}lood {\bf n}et{\bf C}DF) file, which is
+necessary to get the plasma activity data.  To make accessing
+these files easier, you may want to create symbolic links to them in a
+directory of your own:
 \begin{verbatim}
-     ln -s /local/matlab/toolbox/emma/examples examples
+     cd <your-work-directory>
+     ln -s /local/matlab/toolbox/emma/examples/yates_19445.* .
 \end{verbatim}
 That way, the file
 \verb|/local/matlab/toolbox/emma/examples/yates_19445.mnc| can be
-accessed as simply \verb|examples/yates_19445.mnc|.  In the remainder
-of this section, it will be assumed that the symbolic link
-\verb|examples| exists in the current directory.
+accessed as simply \verb|yates_19445.mnc| (as long as you are in your
+work directory).  In the remainder of this section, it will be assumed
+that these symbolic links exist in the current directory.
 
 \subsection{Reading the Data}
 
 First, let us open the MINC file:
 \begin{verbatim}
-     handle = openimage ('examples/yates_19445.mnc');
+     handle = openimage ('yates_19445.mnc');
 \end{verbatim}
 Now, we may wish to find out some basic data about the MINC file.  Try
 the following (note that we will need \verb|nf|, the number of frames,
@@ -397,9 +400,10 @@ To write our single image to slice 1 of the new MINC file, we enter:
 Alternately, we could create a MINC file with a full 15 slices, and
 loop through the entire original study to sum every slice.  MATLAB
 will allow us to enter a \verb|for| loop interactively, so enter the
-following (note that the \code{newimage} call will overwrite
-\verb|yates_summed.mnc|; you may want to use a different name or copy
-the one-slice version):
+following (note that if you already executed the above code, you
+should use a new filename in place of \code{yates\_summed.mnc} or
+delete the old one---\code{newimage} will die if you try to overwrite
+an existing file):
 \begin{verbatim}
      closeimage (new_handle);
      new_handle = newimage ('yates_summed.mnc', [0 ns], ...
@@ -422,11 +426,11 @@ First, let us clear some of the unneeded variables from the workspace:
 Now, we will use \verb|PETsummed2| for a very simple form of image
 masking: namely, we will use only pixels whose values in the
 integrated image are greater than the mean of the integrated image.
-For CBF studies, this creates a usable mask that contains only head.
-This is done by calculating the mean of the integrated image, and
-creating another image consisting entirely of 1's and 0's (a
-``boolean'' image), where a 1 indicates that the pixel is inside the
-head, and a zero indicates outside:
+For CBF studies, this usually creates a usable mask that contains only
+in-brain voxels.  It can be done by calculating the mean of the
+integrated image, and creating another image consisting entirely of
+1's and 0's (a ``binary'' image), where a 1 indicates that the pixel
+is inside the head, and a zero indicates outside:
 \begin{verbatim}
      avg = mean (PETsummed2);
      mask = PETsummed2 > avg;
