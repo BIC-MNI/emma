@@ -1,3 +1,30 @@
+/* ----------------------------- MNI Header -----------------------------------
+@NAME       : micreateimage.c
+@INPUT      : Name of new MINC file, and a ton of options to control
+              the dimensions and variables that are created in it. 
+	      (See args.c for details on the argument parsing.)
+@OUTPUT     : A brand new MINC file, which may inherit various
+              parameters from an optional parent file.
+@RETURNS    : 
+@DESCRIPTION: Create a new MINC file, complete with image dimensions,
+              dimension and dimension-width variables, image max/min
+	      variables, and (of course) the image variable.  If the 
+	      new file is based on a "parent" MINC file, any other 
+	      variables and global attributes will be copied from 
+	      the parent to the new file.  As much information as CAN
+	      be copied about the image and image dimensions will also
+	      be copied, but the fact that the new file may or may
+	      not have the same orientation, dimensions, and dimension
+	      lengths as its parent complicates matters greatly.
+	      See various functions in dimensions.c for details.
+@METHOD     : 
+@GLOBALS    : ErrMsg (string set by functions and displayed by main())
+              a bunch of globals required for ParseArgv
+@CALLS      : MINC, NetCDF libraries
+              various functions in args.c and dimensions.c
+@CREATED    : September - November 1993, Greg Ward.
+@MODIFIED   : 
+---------------------------------------------------------------------------- */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -20,16 +47,27 @@
 
 char    *ErrMsg;
 
-/* These are needed for ParseArgv to work */
+/* 
+ * Various options from the command line.  These must be global for
+ * ParseArgv to work correctly.  They are interpreted by the functions
+ * in args.c, and thence passed to the various functions (in dimensions.c
+ * and this file) that need them.  Note that gChildFile and gParentFile
+ * are the filenames; gChildFile doesn't really need to be global
+ * (since it's not parsed out by ParseArgv -- it's just left over in
+ * argv[]), but I've made it global for consistency.  (Also, this way
+ * functions that set ErrMsg and need to know the name of the child
+ * file can do so without yet another argument being added to that 
+ * function.  Also, the "g" in all these just stands for "global".
+ */
 
-int     Sizes [MAX_IMAGE_DIM] = {-1,-1,-1,-1};
-char   *TypeStr = "byte";
-double  ValidRange [NUM_VALID];
-char   *Orientation = "transverse";
-char   *ChildFile;
-char   *ParentFile;
+int     gSizes [MAX_IMAGE_DIM] = {-1,-1,-1,-1};
+char   *gTypeStr = "byte";
+double  gValidRange [NUM_VALID];
+char   *gOrientation = "transverse";
+char   *gChildFile;
+char   *gParentFile;
 
-/* Type strings (from ~neelin/src/file/minc/progs/mincinfo/mincinfo.c) */
+/* Type strings (borrowed from Peter Neelin's mincinfo.c) */
 
 char *type_names[] = 
    { NULL, "byte", "char", "short", "long", "float", "double" };
@@ -44,8 +82,7 @@ Boolean OpenFiles (char parent_file[], char child_file[],
                    int *parent_CDF,    int *child_CDF);
 void FinishExclusionLists (int ParentCDF,
 			   int NumChildDims, char *ChildDimNames[],
-			   int *NumExDefn, int ExDefn[],
-			   int *NumExVal, int ExVal[]);
+			   int *NumExclude, int Exclude[]);
 Boolean CreateImageVars (int CDF, int NumDim, int DimIDs[], 
 			 nc_type NCType, Boolean Signed, double ValidRange[]);
 
@@ -93,7 +130,23 @@ void ErrAbort (char *msg, Boolean PrintUsage, int ExitCode)
 }
 
 
+
+
 #ifdef DEBUG
+/* ----------------------------- MNI Header -----------------------------------
+@NAME       : DumpInfo
+@INPUT      : CDF - a NetCDF file handle
+@OUTPUT     : Info to stdout.
+@RETURNS    : (void)
+@DESCRIPTION: Prints to stdout a bunch of handy information about a NetCDF 
+              file.  Includes number of dimensions, variables, and global
+	      attributes; dimension lengths; variable types and dimensions.
+@METHOD     : 
+@GLOBALS    : 
+@CALLS      : NetCDF library
+@CREATED    : November 1993, Greg Ward.
+@MODIFIED   : 
+---------------------------------------------------------------------------- */
 void DumpInfo (int CDF)
 {
    int     NumDims;
@@ -136,18 +189,6 @@ void DumpInfo (int CDF)
 
 
 
-
-/* 
- * Functions that actually Do Something to the new MINC file:
- *   OpenFiles
- *   CreateDims
- *   CopyDimVar
- *   CreateDimVars
- */
-
-
-
-
 /* ----------------------------- MNI Header -----------------------------------
 @NAME       : OpenFiles
 @INPUT      : parent_file -> The name of the minc file to create the child
@@ -176,8 +217,6 @@ void DumpInfo (int CDF)
 Boolean OpenFiles (char parent_file[], char child_file[],
                    int *parent_CDF,    int *child_CDF)
 {
-   int      child_root;
-   
    /*
     * If a filename for the parent MINC file was supplied, open the file;
     * else return -1 for *parent_CDF.
@@ -219,9 +258,12 @@ Boolean OpenFiles (char parent_file[], char child_file[],
    /* created and opened for definition.                             */
    
    /* Create the root variable */
-   
+/*   
    child_root = micreate_group_variable (*child_CDF, MIrootvariable);
-
+   if (child_root == MI_ERROR)
+   {
+      sprintf (ErrMsg
+*/
    return (true);
 }      /* OpenFiles () */
 
@@ -230,8 +272,7 @@ Boolean OpenFiles (char parent_file[], char child_file[],
 
 void FinishExclusionLists (int ParentCDF,
 			   int NumChildDims, char *ChildDimNames[],
-			   int *NumExDefn, int ExDefn[],
-			   int *NumExVal, int ExVal[])
+			   int *NumExclude, int Exclude[])
 {
    int	NumParentDims;
    int	CurParentDim;
@@ -241,21 +282,13 @@ void FinishExclusionLists (int ParentCDF,
    int	WidthVar;
    int	CurChildDim;
    int	DimMatch;
-   int	i;
 
 #ifdef DEBUG
    printf ("FinishExclusionLists\n");
-   printf (" Initial list of variables to exclude from copying definitions:\n");
-   for (i = 0; i < *NumExDefn; i++)
+   printf (" Initial list of variables to exclude from copying:\n");
+   for (i = 0; i < *NumExclude; i++)
    {
-      ParentVar = ExDefn [i];
-      ncvarinq (ParentCDF, ParentVar, ParentVarName, NULL, NULL, NULL, NULL);
-      printf ("  %s (ID %d)\n", ParentVarName, ParentVar);
-   }
-   printf (" Initial list of variables to exclude from copying values:\n");
-   for (i = 0; i < *NumExVal; i++)
-   {
-      ParentVar = ExVal [i];
+      ParentVar = Exclude [i];
       ncvarinq (ParentCDF, ParentVar, ParentVarName, NULL, NULL, NULL, NULL);
       printf ("  %s (ID %d)\n", ParentVarName, ParentVar);
    }
@@ -336,14 +369,12 @@ void FinishExclusionLists (int ParentCDF,
       {
 	 if (ParentVar != -1)
 	 {
-	    ExDefn [(*NumExDefn)++] = ParentVar;
-	    ExVal [(*NumExVal)++] = ParentVar;
+	    Exclude [(*NumExclude)++] = ParentVar;
 	 }
 
 	 if (WidthVar != -1)
 	 {
-	    ExDefn [(*NumExDefn)++] = WidthVar;
-	    ExVal [(*NumExVal)++] = WidthVar;
+	    Exclude [(*NumExclude)++] = WidthVar;
 	 }
       }
    }     /* for CurParentDim */
@@ -353,44 +384,33 @@ void FinishExclusionLists (int ParentCDF,
    ParentVar = ncvarid (ParentCDF, MIrootvariable);
    if (ParentVar != -1)
    {
-      ExDefn [(*NumExDefn)++] = ParentVar;
-      ExVal [(*NumExVal)++] = ParentVar;
+      Exclude [(*NumExclude)++] = ParentVar;
    }
    
    ParentVar = ncvarid (ParentCDF, MIimage);
    if (ParentVar != -1)
    {
-      ExDefn [(*NumExDefn)++] = ParentVar;
-      ExVal [(*NumExVal)++] = ParentVar;
+      Exclude [(*NumExclude)++] = ParentVar;
    }
    
    ParentVar = ncvarid (ParentCDF, MIimagemax);
    if (ParentVar != -1)
    {
-      ExDefn [(*NumExDefn)++] = ParentVar;
-      ExVal [(*NumExVal)++] = ParentVar;
+      Exclude [(*NumExclude)++] = ParentVar;
    }
    
    ParentVar = ncvarid (ParentCDF, MIimagemin);
    if (ParentVar != -1)
    {
-      ExDefn [(*NumExDefn)++] = ParentVar;
-      ExVal [(*NumExVal)++] = ParentVar;
+      Exclude [(*NumExclude)++] = ParentVar;
    }
    
 
 #ifdef DEBUG
-   printf (" Final list of variables to exclude from copying definitions:\n");
-   for (i = 0; i < *NumExDefn; i++)
+   printf (" Final list of variables to exclude from copying:\n");
+   for (i = 0; i < *NumExclude; i++)
    {
-      ParentVar = ExDefn [i];
-      ncvarinq (ParentCDF, ParentVar, ParentVarName, NULL, NULL, NULL, NULL);
-      printf ("  %s (ID %d)\n", ParentVarName, ParentVar);
-   }
-   printf (" Final list of variables to exclude from copying values:\n");
-   for (i = 0; i < *NumExVal; i++)
-   {
-      ParentVar = ExVal [i];
+      ParentVar = Exclude [i];
       ncvarinq (ParentCDF, ParentVar, ParentVarName, NULL, NULL, NULL, NULL);
       printf ("  %s (ID %d)\n", ParentVarName, ParentVar);
    }
@@ -542,8 +562,7 @@ void UpdateHistory (int ChildCDF, char *TimeStamp)
 
 
 Boolean CopyOthers (int ParentCDF, int ChildCDF, 
-		    int NumExDefn, int ExDefn[],
-		    int NumExVal, int ExVal[],
+		    int NumExclude, int Exclude[],
 		    char *TimeStamp)
 {
 #ifdef DEBUG
@@ -551,7 +570,7 @@ Boolean CopyOthers (int ParentCDF, int ChildCDF,
    printf (" copying variable definitions...\n");
 #endif
 
-   if (micopy_all_var_defs(ParentCDF, ChildCDF, NumExVal, ExVal) == MI_ERROR)
+   if (micopy_all_var_defs(ParentCDF, ChildCDF, NumExclude, Exclude) == MI_ERROR)
    {
       sprintf (ErrMsg, "Error %d copying variable definitions: %s", 
 	       ncerr, NCErrMsg (ncerr));
@@ -570,7 +589,7 @@ Boolean CopyOthers (int ParentCDF, int ChildCDF,
 #endif
    ncendef (ChildCDF);
 
-   if (micopy_all_var_values(ParentCDF, ChildCDF, NumExVal, ExVal) == MI_ERROR)
+   if (micopy_all_var_values(ParentCDF, ChildCDF, NumExclude, Exclude) == MI_ERROR)
    {
       sprintf (ErrMsg, "Error %d copying variable values: %s", 
 	       ncerr, NCErrMsg (ncerr));
@@ -627,8 +646,8 @@ int main (int argc, char *argv[])
    int     DimIDs [MAX_IMAGE_DIM];
    char   *DimNames [MAX_IMAGE_DIM];
 
-   int	   NumExDefn, NumExVal;
-   int	   ExDefn[MAX_NC_DIMS], ExVal[MAX_NC_DIMS];
+   int	   NumExclude;
+   int	   Exclude[MAX_NC_DIMS];
 
 
    ErrMsg = (char *) calloc (256, sizeof (char));
@@ -638,31 +657,31 @@ int main (int argc, char *argv[])
             &NCType, &Signed);
 
 #ifdef DEBUG
-   printf ("main: Parent file: %s; new file: %s\n\n", ParentFile, ChildFile);
+   printf ("main: Parent file: %s; new file: %s\n\n", gParentFile, gChildFile);
 #endif
 
    ncopts = 0;
 
    ERROR_CHECK 
-      (OpenFiles (ParentFile, ChildFile, &ParentCDF, &ChildCDF));
+      (OpenFiles (gParentFile, gChildFile, &ParentCDF, &ChildCDF));
 
    ERROR_CHECK 
       (CreateDims (ChildCDF, NumFrames, NumSlices, Height, Width, 
-		   Orientation, &NumDim, DimIDs, DimNames));
+		   gOrientation, &NumDim, DimIDs, DimNames));
    ERROR_CHECK
       (CreateDimVars (ParentCDF, ChildCDF, NumDim, DimIDs, DimNames, 
-		      &NumExDefn, ExDefn, &NumExVal, ExVal));
+		      &NumExclude, Exclude));
 
    ERROR_CHECK 
-      (CreateImageVars (ChildCDF, NumDim, DimIDs, NCType, Signed, ValidRange));
+      (CreateImageVars (ChildCDF, NumDim, DimIDs, NCType, Signed, gValidRange));
 
 #ifdef DEBUG
    printf ("--------------------------------------------------------------\n");
-   printf ("State of %s immediately before entering CopyOthers:\n",ParentFile);
+   printf ("State of %s immediately before entering CopyOthers:\n",gParentFile);
    DumpInfo (ParentCDF);
 
    printf ("--------------------------------------------------------------\n");
-   printf ("State of %s immediately before entering CopyOthers:\n", ChildFile);
+   printf ("State of %s immediately before entering CopyOthers:\n", gChildFile);
    DumpInfo (ChildCDF);
 #endif
 
@@ -675,12 +694,10 @@ int main (int argc, char *argv[])
    if (ParentCDF != -1)
    {
 
-      FinishExclusionLists (ParentCDF, NumDim, DimNames,
-			    &NumExDefn, ExDefn, &NumExVal, ExVal);
+      FinishExclusionLists (ParentCDF, NumDim, DimNames, &NumExclude, Exclude);
 
       ERROR_CHECK
-	 (CopyOthers (ParentCDF, ChildCDF, 
-		      NumExDefn, ExDefn, NumExVal, ExVal, TimeStamp));
+	 (CopyOthers (ParentCDF, ChildCDF, NumExclude, Exclude, TimeStamp));
    }
 
    ncclose (ChildCDF);

@@ -1,18 +1,47 @@
+/* ----------------------------- MNI Header -----------------------------------
+@NAME       : args.c
+@INPUT      : 
+@OUTPUT     : 
+@RETURNS    : 
+@DESCRIPTION: Functions for parsing/interpreting the command line arguments
+              to micreateimage.
+@METHOD     : 
+@GLOBALS    : 
+@CALLS      : 
+@CREATED    : 
+@MODIFIED   : 
+---------------------------------------------------------------------------- */
 #include <stdio.h>
 #include <string.h>
 #include <netcdf.h>
 #include <limits.h>
-#include <float.h>
-
 #include "ParseArgv.h"
 #include "micreateimage.h"	/* typedef's, #define's, and extern's */
 #include "args.h"		/* prototypes for functions in this file */
 
 
 /*
- * GetArgs and SetTypeAndVR - two functions for parsing and making sense
- * out of the command line in micreateimage.
+ * Define the valid command line arguments (-size, -type, -valid_range,
+ * -orientation, and -help); what type of arguments should follow them;
+ * and where to put those arguments when found.
  */
+      
+     
+ArgvInfo ArgTable [] = 
+{
+   {"-parent", ARGV_STRING, NULL, (char *) &gParentFile,
+       "MINC file to inherit attributes from"},
+   {"-size", ARGV_INT, (char *) MAX_IMAGE_DIM, (char *) gSizes, 
+       "lengths of the four image dimensions"},
+   {"-type", ARGV_STRING, NULL, (char *) &gTypeStr,
+       "type of the image variable: byte, short, long, float, or double"},
+   {"-valid_range", ARGV_FLOAT, (char *) NUM_VALID, (char *) gValidRange,
+       "valid range of image data to be stored in the MINC file"},
+   {"-orientation", ARGV_STRING, NULL, (char *) &gOrientation,
+       "orientation of the image dimensions: transverse, coronal, or sagittal"},
+   {"-help", ARGV_HELP, NULL, NULL, NULL},
+   {NULL, ARGV_END, NULL, NULL, NULL}
+};
 
 
 
@@ -30,16 +59,16 @@
                  types.  (Although eventually we should be able to
                  parse the word "signed" or "unsigned" from the type
                  name.)
-              ValidRange, Orientation [global variables] - other options;
+              gValidRange, gOrientation [global variables] - other options;
                  has its own command-line option and will be parsed
-                 out by ParseArgv.  (Note that ValidRange and Orientation
+                 out by ParseArgv.  (Note that gValidRange and gOrientation
                  are global variables, to be directly accessed by the 
                  caller.)
-              ChildFile, ParentFile [global variables] are also set;
-                 ParentFile comes from the -parent option (if anything),
-                 and ChildFile is whatever is left on the command line
+              gChildFile, gParentFile [global variables] are also set;
+                 gParentFile comes from the -parent option (if anything),
+                 and gChildFile is whatever is left on the command line
                  after all options have been parsed.  If there
-                 is no -parent option on the command line, ParentFile
+                 is no -parent option on the command line, gParentFile
                  will be NULL.
 @RETURNS    : true on success
               on error, does NOT return -- just calls ErrAbort()
@@ -52,25 +81,25 @@
               that drives ParseArgv lives here, so this is what needs to
               be changed to add more options.  Also, intelligent defaults
               should be set by whoever calls GetArgs if the argument is
-              truly optional (this is how Type, ValidRange, and Orientation
+              truly optional (this is how Type, gValidRange, and gOrientation
               work); GetArgs should make sure that the value(s) set by
               ParseArgv are NOT the same as the defaults if an option
               is required to be set on the command line.  (Hence the check
-              that Sizes[0] != -1.)
+              that gSizes[0] != -1.)
 
               Note that the command line arguments will all change various
-              *global* variables, namely Sizes[], TypeStr, ValidRange,
-              Orientation, ChildFile, and ParentFile.  Sizes[] and TypeStr
+              *global* variables, namely gSizes[], gTypeStr, gValidRange,
+              gOrientation, gChildFile, and gParentFile.  gSizes[] and gTypeStr
               require some processing to get them into the format we 
               want them in -- thus, GetArgs has a bunch of parameters that
-              return the parsed versions of Sizes[] and TypeStr.  (Namely,
-              Sizes[] becomes NumFrames, NumSlices, Height, and Width;
-              TypeStr becomes Type and Signed.)  However, the other global
-              variables -- ValidRange, Orientation, ChildFile, and 
-              ParentFile should be usable as is.  Thus, the caller can
+              return the parsed versions of gSizes[] and gTypeStr.  (Namely,
+              gSizes[] becomes NumFrames, NumSlices, Height, and Width;
+              gTypeStr becomes Type and Signed.)  However, the other global
+              variables -- gValidRange, gOrientation, gChildFile, and 
+              gParentFile should be usable as is.  Thus, the caller can
               simply use them.
 @METHOD     : 
-@GLOBALS    : Orientation, ChildFile, ParentFile
+@GLOBALS    : gOrientation, gChildFile, gParentFile
 @CALLS      : ParseArgv, ErrAbort (on error)
 @CREATED    : 93-10-16, Greg Ward
 @MODIFIED   : 
@@ -81,36 +110,15 @@ Boolean GetArgs (int *pargc, char *argv[],
                  long *NumFrames, long *NumSlices, long *Height, long *Width,
                  nc_type *Type, Boolean *Signed)
 {
-   /*
-    * Define the valid command line arguments (-size, -type, -valid_range,
-    * -orientation, and -help); what type of arguments should follow them;
-    * and where to put those arguments when found.
-    */
-   
-   ArgvInfo ArgTable [] = 
-   {
-      {"-parent", ARGV_STRING, NULL, (char *) &ParentFile,
-       "MINC file to inherit attributes from"},
-      {"-size", ARGV_INT, (char *) MAX_IMAGE_DIM, (char *) Sizes, 
-       "lengths of the four image dimensions"},
-      {"-type", ARGV_STRING, NULL, (char *) &TypeStr,
-       "type of the image variable: byte, short, long, float, or double"},
-      {"-valid_range", ARGV_FLOAT, (char *) NUM_VALID, (char *) ValidRange,
-       "valid range of image data to be stored in the MINC file"},
-      {"-orientation", ARGV_STRING, NULL, (char *) &Orientation,
-       "orientation of the image dimensions: transverse, coronal, or sagittal"},
-      {"-help", ARGV_HELP, NULL, NULL, NULL},
-      {NULL, ARGV_END, NULL, NULL, NULL}
-   };
 
 #ifdef DEBUG
    printf ("GetArgs: default values are\n");
    printf (" %ld frames, %ld slices, height %ld, width %ld\n",
-           Sizes [0], Sizes [1], Sizes [2], Sizes [3]);
+           gSizes [0], gSizes [1], gSizes [2], gSizes [3]);
    printf (" valid range = [%lg %lg]\n", 
-           ValidRange [0], ValidRange [1]);
+           gValidRange [0], gValidRange [1]);
    printf (" Image type = %s %s, Orientation = %s\n\n",
-           SIGN_STR (*Signed), TypeStr, Orientation);
+           SIGN_STR (*Signed), gTypeStr, gOrientation);
 #endif
 
 
@@ -121,14 +129,14 @@ Boolean GetArgs (int *pargc, char *argv[],
       ErrAbort ("", true, 1);
    }
 
-   /* Break-down the elements of the Sizes[] array. */
+   /* Break-down the elements of the gSizes[] array. */
    
-   *NumFrames = (long) Sizes [0];
-   *NumSlices = (long) Sizes [1];
-   *Height = (long) Sizes [2];
-   *Width = (long) Sizes [3];
+   *NumFrames = (long) gSizes [0];
+   *NumSlices = (long) gSizes [1];
+   *Height = (long) gSizes [2];
+   *Width = (long) gSizes [3];
 
-   if (!SetTypeAndVR (TypeStr, Type, Signed, ValidRange))
+   if (!SetTypeAndVR (gTypeStr, Type, Signed, gValidRange))
    {
       ErrAbort (ErrMsg, true, 1);
    }
@@ -136,14 +144,14 @@ Boolean GetArgs (int *pargc, char *argv[],
 #ifdef DEBUG
    printf ("GetArgs: Values after ParseArgv and SetTypeAndVR:\n");
    printf (" %ld frames, %ld slices, height %ld, width %ld\n",
-           Sizes [0], Sizes [1], Sizes [2], Sizes [3]);
+           gSizes [0], gSizes [1], gSizes [2], gSizes [3]);
    printf (" valid range = [%lg %lg]\n", 
-           ValidRange [0], ValidRange [1]);
+           gValidRange [0], gValidRange [1]);
    printf (" Image type = %s %s, Orientation = %s\n\n",
-           SIGN_STR (*Signed), TypeStr, Orientation);
+           SIGN_STR (*Signed), gTypeStr, gOrientation);
 #endif
 
-   if (Sizes[0] == -1)
+   if (gSizes[0] == -1)
    {
       ErrAbort ("-size option is required and sizes must be non-negative integers", true, 1);
    }
@@ -161,7 +169,7 @@ Boolean GetArgs (int *pargc, char *argv[],
    }
    else
    {
-      ChildFile = argv [1];
+      gChildFile = argv [1];
    }
 
    return (true);

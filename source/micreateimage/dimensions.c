@@ -1,3 +1,62 @@
+/* ----------------------------- MNI Header -----------------------------------
+@NAME       : dimensions.c
+@INPUT      : 
+@OUTPUT     : 
+@RETURNS    : 
+@DESCRIPTION: Part of micreateimage.  Functions for creating/copying
+              dimensions and dimension/dimension-width variables.
+	      This is a good deal more complicated than it sounds,
+	      mainly due to the fact that the newly-created MINC file
+	      may take any form the user desires -- number and length
+	      of image dimensions, in particular, can be varied at 
+	      will -- and the new file still has to copy as much
+	      information as possible from the parent file -- but, of 
+	      course, only if the parent file exists.
+
+	      CreateDims creates the 2, 3, or 4 image dimensions.  
+	      Frame, slice, height and width dimensions have very
+	      specific meanings in the MINC file -- they must be present
+	      in that order, and height and width dimensions must
+	      always be present.  The main job of CreateDims is to
+	      take the four dimension lengths (of which Frames and
+	      Slices may either or both be zero), and the orientation
+	      string (coronal, transverse, or sagittal) and to map 
+	      the zspace/xspace/yspace dimension names (which themselves
+	      have very specific meanings with respect to the patient)
+	      to the slice, height, and width dimensions.  (Frames 
+	      always corresponds to time.)
+
+	      CopyDimVar copies a single dimension or dimension-width
+	      variable from the parent file to the new file.  This 
+	      is where most of the ornery special case handling occurs, 
+	      as we must make sure that the variable specified does in
+	      fact look like a dimension variable in the parent file, 
+	      and we must see if the dimension it is associated with
+	      is "compatible" between the two files.  (Essentially,
+	      the dimensions must have the same length -- there may
+	      be more obscure conditions, but they're not currently
+	      handled.)  If this is not the case, then the variable
+	      is put into a list of variables to exclude from copying
+	      wholesale from the parent file to the new file, and 
+	      just the variable attributes are copied.  (Note that 
+	      this will be incorrect if, for example, the step
+	      or start of the dimension is different between the files.)
+
+	      CreateDimVars loops through all dimensions present in
+	      the child file, and calls CopyDimVar for each dimension
+	      or dimension-width variable found in the parent file and
+	      corresponding to one of the child file's dimensions.
+	      If there is no parent file, or if a particular dimension
+	      does not have a dimension variable in the parent file,
+	      then the dimension variable in the child file will
+	      be created from scratch.  (No dimension-width variables
+	      will be created unless they also exist in the parent file.)
+@METHOD     : 
+@GLOBALS    : ErrMsg, gParentFile
+@CALLS      : NetCDF, MINC libraries
+@CREATED    : October-November 1993, Greg Ward
+@MODIFIED   : 
+---------------------------------------------------------------------------- */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -235,7 +294,7 @@ Boolean CreateDims (int CDF,
               parent file.
 
 @METHOD     : 
-@GLOBALS    : ErrMsg, ParentFile (name of parent MINC file, used to build
+@GLOBALS    : ErrMsg, gParentFile (name of parent MINC file, used to build
               error messages if necessary)
 @CALLS      : 
 @CREATED    : 93-11-3, Greg Ward
@@ -301,7 +360,7 @@ Boolean CopyDimVar (int ParentCDF, int ChildCDF,
       {
          sprintf (ErrMsg, "Dimension variable %s is not subscripted by "
                   "its dimension (%s) in file %s\n", 
-                  VarName, DimName, ParentFile);
+                  VarName, DimName, gParentFile);
          return (false);
       }
       
@@ -354,7 +413,7 @@ Boolean CopyDimVar (int ParentCDF, int ChildCDF,
    {
       sprintf (ErrMsg, "Dimension variable %s in file %s is "
                "subscripted by more than one dimension\n",
-               VarName, ParentFile);
+               VarName, gParentFile);
       return (false);
    }
 
@@ -380,12 +439,12 @@ Boolean CopyDimVar (int ParentCDF, int ChildCDF,
 		 (NOTE: this could well include dimension/width variables
 		 in the parent file that are associated with a dimension
 		 that doesn't exist in the child file!)
-	      NumXVal, XVal - list of variable ID's (in *parent* file)
+	      NumExclude, Exclude - list of variable ID's (in *parent* file)
 	         that should not have their values copied via 
 		 micopy_var_values.  This will be basically the same as 
 		 XDefn, except any dimension/width variables in the parent
 		 file that have had a corresponding variable of the same
-		 dimensioning will not be in XVal -- we do not want to
+		 dimensioning will not be in Exclude -- we do not want to
 		 copy their definitions (because that will have been done
 		 by CreateDimVars), but we must still copy their values.
 		 Also, it's still the caller's responsibility to add 
@@ -402,15 +461,14 @@ Boolean CopyDimVar (int ParentCDF, int ChildCDF,
               dimensions in the new MINC file.  
 @METHOD     : 
 @GLOBALS    : ErrMsg (set on any error condition)
-              ParentFile (name of parent MINC file - used to set ErrMsg)
+              gParentFile (name of parent MINC file - used to set ErrMsg)
 @CALLS      : 
 @CREATED    : 93-10-31 to 93-11-3, Greg Ward
 @MODIFIED   : 93-11-10, GPW: added provisions for width variables
 ---------------------------------------------------------------------------- */
 Boolean CreateDimVars (int ParentCDF, int ChildCDF,
                        int NumDim, int DimIDs[], char *DimNames[],
-		       int *NumXDefn, int XDefn[], 
-		       int *NumXVal, int XVal[])
+		       int *NumExclude, int Exclude[])
 {
    int  CurDim;
    int  ChildVars [MAX_IMAGE_DIM]; 
@@ -432,8 +490,7 @@ Boolean CreateDimVars (int ParentCDF, int ChildCDF,
    printf (" Copying/creating %d dimension variables\n", NumDim);
 #endif
 
-   *NumXDefn = 0;		/* zero the counters of variables to exclude */
-   *NumXVal = 0;
+   *NumExclude = 0;
 
 
    /* 
@@ -519,7 +576,7 @@ Boolean CreateDimVars (int ParentCDF, int ChildCDF,
          }
 	 if (!Copyable)
 	 {
-	    XVal [(*NumXVal)++] = ParentVar;
+	    Exclude [(*NumExclude)++] = ParentVar;
 #ifdef DEBUG
 	    printf ("  - will not copy values of variable %s (ID %d)\n", 
 		    VarName, ParentVar);
@@ -532,8 +589,6 @@ Boolean CreateDimVars (int ParentCDF, int ChildCDF,
 		    VarName, ParentVar);
 	 }
 #endif
-
-	 XDefn [(*NumXDefn)++] = ParentVar;
 
       }     /* else: variable *was* found in parent file */
 
@@ -566,7 +621,7 @@ Boolean CreateDimVars (int ParentCDF, int ChildCDF,
 
 	 if (!Copyable)
 	 {
-	    XVal [(*NumXVal)++] = WidthVar;
+	    Exclude [(*NumExclude)++] = WidthVar;
 #ifdef DEBUG
 	    printf ("  - will not copy values of variable %s (ID %d)\n", 
 		    VarName, WidthVar);
@@ -579,8 +634,6 @@ Boolean CreateDimVars (int ParentCDF, int ChildCDF,
 		    VarName, WidthVar);
 	 }
 #endif
-
-	 XDefn [(*NumXDefn)++] = WidthVar;
 
 
       }
@@ -598,20 +651,12 @@ Boolean CreateDimVars (int ParentCDF, int ChildCDF,
       int i;
       char Name [MAX_NC_NAME];
 
-      printf ("CreateDimVars: Have flagged %d variables to be excluded from defn. copy:\n",
-	      *NumXDefn);
-      for (i = 0; i < *NumXDefn; i++)
+      printf ("CreateDimVars: Have flagged %d variables to be excluded from copy:\n",
+	      *NumExclude);
+      for (i = 0; i < *NumExclude; i++)
       {
-	 ncvarinq (ParentCDF, XDefn[i], Name, NULL, NULL, NULL, NULL);
-	 printf (" var %s (id %d) in parent file\n", Name, XDefn[i]);
-      }
-
-      printf ("CreateDimVars: Have flagged %d variables to be excluded from value copy:\n",
-	      *NumXVal);
-      for (i = 0; i < *NumXVal; i++)
-      {
-	 ncvarinq (ParentCDF, XVal[i], Name, NULL, NULL, NULL, NULL);
-	 printf (" var %s (id %d) in parent file\n\n", Name, XVal[i]);
+	 ncvarinq (ParentCDF, Exclude[i], Name, NULL, NULL, NULL, NULL);
+	 printf (" var %s (id %d) in parent file\n\n", Name, Exclude[i]);
       }
    }
 #endif
