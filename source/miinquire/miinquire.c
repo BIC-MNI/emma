@@ -34,7 +34,7 @@
 #include "emmageneral.h"
 
 #define PROGNAME "miinquire"
-
+#define DEBUG 0
 
 
 /* Borrowed from Peter's mincinfo */
@@ -405,7 +405,7 @@ int GetAttValue (int CDF, int nargin, Matrix *InArgs[], int *CurInArg,
    /* Make sure we have enough input parameters (variable and attribute name)*/
 
    (*CurInArg)++;		/* point to the variable name */
-#ifdef DEBUG
+#if DEBUG
    printf ("GetAttValue:\n");
 #endif
    if (*CurInArg > nargin-2)
@@ -432,7 +432,7 @@ int GetAttValue (int CDF, int nargin, Matrix *InArgs[], int *CurInArg,
       sprintf (ErrMsg, "attvalue: variable name must be a character string");
       return (ERR_ARGS);
    }
-#ifdef DEBUG
+#if DEBUG
    printf ("  CurInArg = %d (%s)\n", *CurInArg, VarName);
 #endif
 
@@ -443,7 +443,7 @@ int GetAttValue (int CDF, int nargin, Matrix *InArgs[], int *CurInArg,
       sprintf (ErrMsg, "attvalue: attribute name must be a character string");
       return (ERR_ARGS);
    }
-#ifdef DEBUG
+#if DEBUG
    printf ("  CurInArg = %d (%s)\n", *CurInArg, AttName);
 #endif
 
@@ -461,7 +461,7 @@ int GetAttValue (int CDF, int nargin, Matrix *InArgs[], int *CurInArg,
       return (ERR_NONE);
    }
 
-#ifdef DEBUG
+#if DEBUG
    printf ("Got variable name (%s), attribute name (%s), variable ID (%d)\n",
 	   VarName, AttName, VarID);
 #endif
@@ -475,7 +475,7 @@ int GetAttValue (int CDF, int nargin, Matrix *InArgs[], int *CurInArg,
       return (ERR_NONE);
    }  
 
-#ifdef DEBUG
+#if DEBUG
    printf ("Got attribute type (%s) and length (%d)\n",
 	   type_names[AttType], AttLen);
 #endif
@@ -501,7 +501,7 @@ int GetAttValue (int CDF, int nargin, Matrix *InArgs[], int *CurInArg,
 
    OutArgs[*CurOutArg] = mAttValue;
    (*CurOutArg)++;
-#ifdef DEBUG
+#if DEBUG
    printf ("  CurInArg = %d\n", *CurInArg);
 #endif
    
@@ -755,7 +755,118 @@ int GetDimNames (int CDF, int nargin, Matrix *InArgs[], int *CurInArg,
 
    return (ERR_NONE);
    
+}     /* GetDimNames () */
+
+
+int std_dim_offset (char *dimname)
+{
+   if (strcmp (dimname, MIxspace) == 0)
+      return 0;
+   else if (strcmp (dimname, MIyspace) == 0)
+      return 1;
+   else if (strcmp (dimname, MIzspace) == 0)
+      return 2;
+   else
+      return -1;
 }
+
+
+/* ----------------------------- MNI Header -----------------------------------
+@NAME       : GetPermutation
+@INPUT      : 
+@OUTPUT     : 
+@RETURNS    : 
+@DESCRIPTION: Computes the permutation matrix needed to reorder points
+              given in voxel order to world order.
+@METHOD     : 
+@GLOBALS    : 
+@CALLS      : 
+@CREATED    : 95/09/01, Greg Ward
+@MODIFIED   : 
+---------------------------------------------------------------------------- */
+int GetPermutation (int CDF, int nargin, Matrix *InArgs[], int *CurInArg,
+		       int nargout, Matrix *OutArgs[], int *CurOutArg)
+{
+   int       i, j;
+   int       Result;
+   int       NumDims;                   /* number of image dimensions */
+   int       DimIDs [MAX_NC_DIMS];      /* dimension *id*'s for MIimage */
+   char      DimName [MAX_NC_NAME];
+   int       xdim, ydim, zdim;          /* NetCDF dimension ID's */
+   int       PermVec [3];	        /* map vector to world coords */
+   Matrix   *PermMatrix;
+   double   *RawPerm;
+
+   Result = get_dimension_info (CDF, &NumDims, DimIDs, &xdim, &ydim, &zdim);
+   if (Result != ERR_NONE)
+   {
+      return (Result);
+   }
+
+   /* 
+    * Build the permutation vector: need to walk over the list of all 
+    * dimensions, but we're only interested in spatial dimensions
+    * (ie. MIxspace, MIyspace, MIzspace).  Thus we use two iterators.
+    */
+
+   j = 0;
+   for (i = 0; i < NumDims; i++)
+   {
+      int  offs;
+      
+      ncdiminq (CDF, DimIDs[i], DimName, NULL);
+      offs = std_dim_offset (DimName);
+      if (offs == -1) continue;
+      
+      if (j > 2)
+      {
+	 sprintf (ErrMsg, "permutation: too many spatial dimensions!");
+	 return (ERR_BAD_MINC);
+      }
+      
+      PermVec[offs] = j++;
+   }
+
+#if DEBUG 
+   printf ("permutation vector = ");
+   for (j = 0; j < 3; j++)
+   {
+      printf ("%d ", PermVec[j]);
+   }
+   printf ("\n");
+#endif
+
+   /*
+    * Now build the permutation matrix, by filling in ones in certain
+    * positions in a matrix of zeros.  (Always set the (4,4) position
+    * to one just so this can be used on homogeneous coordinates.)
+    */
+
+   PermMatrix = mxCreateFull (4, 4, FALSE);
+   RawPerm = mxGetPr (PermMatrix);
+
+   for (i = 0; i < 3; i++)
+   {
+      RawPerm[PermVec[i]*4 + i] = 1.0;
+   }
+   RawPerm[3*4 + 3] = 1;
+   
+
+#ifdef DEBUG
+   printf ("permutation matrix (column major!) = \n");
+   for (j = 0; j < 16; j++)
+      printf ("%g ", RawPerm[j]);
+   printf ("\n");
+#endif
+
+   OutArgs [(*CurOutArg)++] = PermMatrix;
+   (*CurInArg)++;
+
+   return (ERR_NONE);
+
+}     /* GetPermutation () */
+
+
 
 
 
@@ -780,7 +891,7 @@ void mexFunction (int nargout, Matrix *outargs [],      /* output args */
    int      Result;                /* return value from various functions */
    int      cur_outarg, cur_inarg; /* indeces into *outargs and *inargs arrays */
 
-#ifdef DEBUG
+#if DEBUG
    printf ("Starting miinquire.\n");
 #endif
 
@@ -788,7 +899,7 @@ void mexFunction (int nargout, Matrix *outargs [],      /* output args */
    ErrMsg = (char *) mxCalloc (256, sizeof(char));
    if (nargin == 0) ErrAbort ("Not enough arguments", TRUE, ERR_ARGS);
 
-#ifdef DEBUG
+#if DEBUG
    printf ("Parsing the filename.\n");
 #endif
 
@@ -799,7 +910,7 @@ void mexFunction (int nargout, Matrix *outargs [],      /* output args */
       ErrAbort ("Filename argument must be a character string", TRUE, ERR_ARGS);
    }
 
-#ifdef DEBUG
+#if DEBUG
    printf ("Filename: %s\n", Filename);
 #endif
 
@@ -809,7 +920,7 @@ void mexFunction (int nargout, Matrix *outargs [],      /* output args */
       ErrAbort (ErrMsg, TRUE, ERR_IN_MINC );
    }
 
-#ifdef DEBUG
+#if DEBUG
    printf ("CDF ID for file: %d\n", CDF);
 #endif
 
@@ -818,7 +929,7 @@ void mexFunction (int nargout, Matrix *outargs [],      /* output args */
 
    if (nargin == 1) 
    {
-#ifdef DEBUG
+#if DEBUG
       printf ("Getting general info for MINC file\n");
 #endif
       Result = GeneralInfo (CDF, &NUM_DIMS, &NUM_GATTS, &NUM_VARS);
@@ -863,7 +974,7 @@ void mexFunction (int nargout, Matrix *outargs [],      /* output args */
       
       /* Currently cur_inarg points to the next option in the argument list. */
       
-#ifdef DEBUG
+#if DEBUG
       printf ("Parsing inargs[%d]...", cur_inarg); 
 #endif
       if (ParseStringArg (inargs[cur_inarg], &Option) == NULL)
@@ -871,7 +982,7 @@ void mexFunction (int nargout, Matrix *outargs [],      /* output args */
          ncclose (CDF);
          ErrAbort ("Option argument must be a string", TRUE, ERR_ARGS);
       }
-#ifdef DEBUG
+#if DEBUG
       printf ("it's %s\n", Option);
       printf ("Passing inargs[%d] and outargs[%d] on\n", 
                          cur_inarg, cur_outarg);
@@ -907,7 +1018,12 @@ void mexFunction (int nargout, Matrix *outargs [],      /* output args */
       else if (strcasecmp (Option, "dimnames") == 0)
       {
 	 Result = GetDimNames (CDF, nargin, inargs, &cur_inarg,
-                                  nargout,outargs,&cur_outarg);
+			       nargout,outargs,&cur_outarg);
+      }
+      else if (strcasecmp (Option, "permutation") == 0)
+      {
+	 Result = GetPermutation (CDF, nargin, inargs, &cur_inarg,
+				  nargout,outargs,&cur_outarg);
       }
       else if ((strcasecmp (Option, "varnames") == 0)
                ||(strcasecmp (Option, "vardims") == 0)
