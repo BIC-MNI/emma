@@ -44,7 +44,7 @@ extern void Lookup2 (double *oldX, double *oldY,
 		     double *newX, double *newY,
 		     int TableRows, int OutputRows);
 extern void TrapInt (int num_bins, double *times, double *values,
-		     double *bin_lengths, double *area);
+		     double *area);
 
 
 double  NaN;                    /* NaN in native C format */

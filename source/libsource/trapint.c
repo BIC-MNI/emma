@@ -5,14 +5,6 @@
                          domain of the function being integrated
 	      values[] - vector of points on the ordinate - defines the
 	                 shape of the function
-	      bin_lengths[] - the width of each interval to which the 
-	                 elements of times[] and values[] refer.  Normally,
-			 this would be taken to be simply the difference
-			 between successive elements of times[]; however, 
-			 if the intervals over which the function was 
-			 sampled have gaps between them, supplying 
-			 bin_lengths[] is the only way to get the complete
-			 picture.  This parameter is currently IGNORED!
 @OUTPUT     : *area - an approximation to the area under the curve defined
                       by values[], as calculated by a trapezoidal integration
 @RETURNS    : (void)
@@ -26,7 +18,7 @@
               into source file trapint.c; beefed up comments.
 ---------------------------------------------------------------------------- */
 void TrapInt (int num_bins, double *times, double *values,
-	      double *bin_lengths, double *area)
+	      double *area)
 {
     int current_bin;
 
