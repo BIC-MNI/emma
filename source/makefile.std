@@ -68,10 +68,10 @@ CFLAGS   = $(STD_OPT) $(INCLUDES)
 LINTFLAGS = $(LINTOPT) $(INCLUDES)
 
 # the default case: PROG depends on PROG_SRC, OBJS, HEADERS, and this makefile
-$(EMMA_BIN)/$(PROG): $(PROG_SRC) $(OBJS) $(HEADERS) \
+$(EMMA_BIN)/$(PROG): $(PROG_OBJ) $(OBJS) $(HEADERS) \
                      Makefile $(EMMA_ROOT)/source/makefile.std
 	rm -f $@
-	$(CC) $(CFLAGS) $(PROG_SRC) $(OBJS) -o $@ $(LDFLAGS)
+	$(CC) $(PROG_OBJ) $(OBJS) -o $@ $(LDFLAGS)
 
 
 # N.B. The following line is needed for compiling multi-module 
