@@ -135,7 +135,8 @@ char *NCErrMsg (int NCErrCode)
 @CREATED    : 93-5-31, adapted from code in micopyvardefs.c, Greg Ward
 @MODIFIED   : 93-6-4, modified debug/error handling and added Mode parameter
             : 93-6-30, changed error message
-
+            : 94-8-11, commented out haunted code and added warning of
+                       its odd behaviour
 ---------------------------------------------------------------------------- */
 int OpenFile (char *Filename, int *CDF, int Mode)
 {
@@ -143,8 +144,17 @@ int OpenFile (char *Filename, int *CDF, int Mode)
 
    if (*CDF == MI_ERROR)
    {
-      sprintf (ErrMsg, "Error opening file %s: %s", 
-               Filename, NCErrMsg(ncerr));
+      /*
+       * The following code is haunted.  Anyone who can explain the 
+       * supernatural behaviour -- namely, simply *accessing* the
+       * global variable ncerr, which is declared an extern int in
+       * netcdf.h, and presumable defined somewhere in the NetCDF
+       * library -- wins a free muffin from the Cafe Neuro.
+       */
+
+/*      sprintf (ErrMsg, "Error opening file %s: %s", 
+               Filename, NCErrMsg(ncerr));  */
+      sprintf (ErrMsg, "Error opening file %s", Filename);
       return (ERR_IN_MINC);
    }  
    return (ERR_NONE);
@@ -398,9 +408,6 @@ int OpenImage (char Filename[], ImageInfoRec *Image, int mode)
    int   CDF;
    int   Result;        /* of various function calls */
 
-#ifdef DEBUG
-   printf ("(now in OpenImage, calling OpenFile)\n");
-#endif
    Result = OpenFile (Filename, &CDF, mode);
    if (Result != ERR_NONE)
    {
