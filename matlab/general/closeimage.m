@@ -12,7 +12,7 @@ for handle = handles
    eval(['Flags = Flags' int2str(handle) ';']);
    eval(['Filename = Filename' int2str(handle) ';']);
    
-   if (size(Flags) == [2 2])        % make sure it was actually an open image
+   if (size(Flags) == [1 2])        % make sure it was actually an open image
       if (Flags(2)) 				  % compressed file?
 	 delete (Filename);
       end
