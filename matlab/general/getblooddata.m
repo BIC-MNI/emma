@@ -1,7 +1,7 @@
-function [activity, start_times, stop_times] = getblooddata (study)
+function [activity, mid_times] = getblooddata (study)
 %  GETBLOODDATA retrieve blood activity and sample times from a study
 %
-%        [activity, start_times, stop_times] = getblooddata (study)
+%        [activity, mid_times] = getblooddata (study)
 %
 %  The study variable can be a handle to an open image, or the name of 
 %  a NetCDF (MNC or BNC) file containing the blood activity data for
@@ -10,6 +10,12 @@ function [activity, start_times, stop_times] = getblooddata (study)
 %  (if any) for the blood activity variables.  If just a filename
 %  (either a MINC or BNC file) is given, getblooddata will look in that
 %  file only.
+% 
+%  The mid-sample times will be calculated from amongst the variables
+%  sample_start, sample_stop, and sample_length.  The default is
+%  mid = (sample_start + sample_stop)/2; but if sample_stop is not
+%  found in the MNC or BNC file, then mid = sample_start + (sample_length/2)
+%  will be used instead.
 %
 %  If a file that does not exist is specified, or getblooddata cannot
 %  find the blood activity data in either the MINC or BNC file, it will
@@ -19,40 +25,40 @@ function [activity, start_times, stop_times] = getblooddata (study)
 % ------------------------------ MNI Header ----------------------------------
 %@NAME       : getblooddata
 %@INPUT      : study - either a handle to an already opened image, or the
-% 					name of a NetCDF file (MINC or BNC) containing the blood
-%					activity data
+%              name of a NetCDF file (MINC or BNC) containing the blood
+%              activity data
 %@OUTPUT     : 
 %@RETURNS    : the three return variables (all column vectors) simply return
-%					the full contents of one of the blood analysis NetCDF
-%					variables, namely:
-%					activity gets corrected_activity
-%					start_times gets sample_start
-%					stop_times gets sample_stop
+%              the full contents of one of the blood analysis NetCDF
+%              variables, namely:
+%              activity gets corrected_activity
+%              start_times gets sample_start
+%              stop_times gets sample_stop
 %@DESCRIPTION: Reads blood activity data from either a MINC or BNC file.
-%					If the input argument study is an image handle (as returned
-%					by openimage), then getblooddata will dig up the filename
-%					associated with that handle -- presumably a MINC file -- 
-%					and look for the blood activity data there.  (This is done
-%					by checking for the existence of the NetCDF variable 
-%					blood_analysis, which is the parent of all the variables
-%					we're really interested in.)  If the blood data is not found
-%					in the MINC file, getblooddata will generate a similiar-
-%					looking .bnc filename (eg. foobar.mnc will become foobar.bnc)
-%					and then, if it exists, read the blood activity data from
-%					there.
+%              If the input argument study is an image handle (as returned
+%              by openimage), then getblooddata will dig up the filename
+%              associated with that handle -- presumably a MINC file -- 
+%              and look for the blood activity data there.  (This is done
+%              by checking for the existence of the NetCDF variable 
+%              blood_analysis, which is the parent of all the variables
+%              we're really interested in.)  If the blood data is not found
+%              in the MINC file, getblooddata will generate a similiar-
+%              looking .bnc filename (eg. foobar.mnc will become foobar.bnc)
+%              and then, if it exists, read the blood activity data from
+%              there.
 %
-%					If study is a character string, it is assumed to be the name
-%					of a NetCDF file that contains the blood activity data.  
-%					getblooddata will attempt to read the data from that file
-%					only, and will print a warning and return empty matrices
-%					if either the file doesn't exist or doesn't contain the
-%					blood analysis data.
+%              If study is a character string, it is assumed to be the name
+%              of a NetCDF file that contains the blood activity data.  
+%              getblooddata will attempt to read the data from that file
+%              only, and will print a warning and return empty matrices
+%              if either the file doesn't exist or doesn't contain the
+%              blood analysis data.
 %@METHOD     : 
 %@GLOBALS    : Filename#, if study is a handle
 %@CALLS      : mireadvar (CMEX)
 %@CREATED    : June 1993, Greg Ward & Mark Wolforth
 %@MODIFIED   : 6 July 1993, Greg Ward: greater flexibility wrt. handling
-%					both MINC and BNC files
+%              both MINC and BNC files
 %-----------------------------------------------------------------------------
 
 
@@ -124,3 +130,12 @@ end
 activity = mireadvar (filename, 'corrected_activity');
 start_times = mireadvar (filename, 'sample_start');
 stop_times = mireadvar (filename, 'sample_stop');
+lengths = mireadvar (filename, 'sample_length');
+
+if (~isempty (stop_times))
+   mid_times = (start_times + stop_times) / 2;
+elseif (~isempty (lengths))
+   mid_times = start_times + (lengths / 2);
+else
+   error ('Cannot calculate mid-sample times');
+end;
