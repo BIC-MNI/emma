@@ -36,12 +36,8 @@ if (nargin < 2) | (nargin > 3)
    error ('Incorrect number of arguments.');
 end
 
-% If both frames and slices given, make sure they are not both vectors
-
-if (nargin == 3)
-	if (length(frames) > 1) & (length(slices) > 1)
-		error ('Cannot handle both multiple slices and multiple frames');
-	end
+if (nargin < 3)			% no frames vector given, so make it empty
+	frames = [];
 end
 
 % Make the handle's filename global, and check that it exists
@@ -55,14 +51,19 @@ end
 
 filename = eval (['Filename' int2str(handle)]);
 
+% now make sure input arguments are valid: check_sf aborts with error 
+% message if not
+
+check_sf (handle, slices, frames);
+
 % Now read the images!  (remembering to make slices and frames zero-based for
 % mireadimages).  If frames was not supplied, then do not attempt to pass
 % it to mireadimages.
 
-if (nargin == 3)
-	disp (['Reading slice ' int2str(slice) ' frame ' int2str(frame) ' from ' filename]);
+% if (nargin == 3)
+	disp (['Reading slice ' int2str(slices) ' frame ' int2str(frames) ' from ' filename]);
 	images = mireadimages (filename, slices-1, frames-1);
-else
-	disp (['Reading slice ' int2str(slice) ' from ' filename]);
-	images = mireadimages (filename, slices-1);
-end
+%else
+%	disp (['Reading slice ' int2str(slices) ' from ' filename]);
+%	images = mireadimages (filename, slices-1);
+%end
