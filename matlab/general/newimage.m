@@ -93,7 +93,7 @@ function handle = newimage (NewFile, DimSizes, ParentFile, ...
 %                              image type/valid range/orientation;
 %                              a few more fixes to the argument handling code
 %              27 May 1997   - Modified to work with Matlab 5 (MW)
-%@VERSION    : $Id: newimage.m,v 2.13 1999-06-09 18:35:20 neelin Exp $
+%@VERSION    : $Id: newimage.m,v 2.14 1999-06-17 20:29:34 neelin Exp $
 %              $Name:  $
 %-----------------------------------------------------------------------------
 
@@ -186,7 +186,8 @@ end
 % will ALL be overridden if ValidRange is already set, ie. if the user
 % supplied one in the arguments to newimage.)
 
-if (isempty (ValidRange)) & (Parent ~= -1) & (strcmp (ImageType, ParentType))
+if (isempty (ValidRange)) & (Parent ~= -1) & strcmp (ImageType, ParentType)
+  & ~(strcmp (ImageType, 'float') | strcmp (ImageType, 'double'))
    ValidRange = miinquire (ParentFile, 'attvalue', 'image', 'valid_range');
 end   
 
