@@ -1,16 +1,15 @@
 % PET image analysis
 %
 % High-level MINC I/O functions
-%   openimage     - Open an image stored in a MINC file.
+%   openimage     - Open an image volume stored in a MINC file.
 %   newimage      - Create a new MINC file.
 %   getimageinfo  - Get information about an opened MINC file.
-%   getimages     - Get images from an open MINC file.
-%   putimages     - Put an image into a MINC file created with newimage.
-%   getimglines   - Get a contiguous range of horizontal lines from an image.
-%   getblooddata  - Get blood data from a data set.
+%   getimages     - Get whole or partial images from an open MINC file.
+%   putimages     - Put whole images into a MINC file created with newimage.
+%   getblooddata  - Get blood data associated with a dynamic PET study.
 %   getmask       - Interactively calculate a threshold mask.
 %   resampleblood - Get resampled blood data from a data set.
-%   closeimage    - Close an image data set.
+%   closeimage    - Close an image volume.
 %
 % Low-level (CMEX or standalone executables) MINC I/O functions
 %
@@ -24,27 +23,32 @@
 %     general purpose image analysis applications.  Use the high-
 %     level functions instead.
 %
-% General utility functions
-%   calpix        - Generate a vector index for a point in an image vector.
+% General utility functions (numeric)
 %   deriv         - Calculate the derivative of a numerical function.
-%   getmask       - Returns a mask that is the same size as the passed image.
-%   getpixel      - Use this instead of ginput.
-%   gettaggedhist - Get a histogram of tagged points within a volume.
-%   getvolumehist - Get a histogram of a volume.
-%   hotmetal      - Generate the RGB numbers for a hotmetal colourmap.
-%   igrate        - Performs a piecewise linear integration.
-%   loadtagfile   - Load coordinates from an MNI tag file.
 %   lookup        - Fast CMEX function for linear interpolation.
-%   maketac       - Generate a time-activity curve from a set of data.
 %   nconv         - Convolution of two vectors with not necessarily unit spacing.
 %   nfmins        - Minimize a function of several variables.
 %   nframeint     - Fast CMEX integration across frames.
 %   ntrapz        - Fast CMEX function for trapezoidal integration.
 %   rescale       - Multiply a matrix by a scalar.
+%   
+% General utility functions (image processing)
+%   pixelindex    - Generate a vector index for a point in an image vector.
+%   getmask       - Returns a mask that is the same size as the passed image.
+%   getpixel      - Use this instead of ginput.
+%   gettaggedhist - Get a histogram of tagged points within a volume.
+%   getvolumehist - Get a histogram of a volume.
+%   hotmetal      - Generate the RGB numbers for a hotmetal colourmap.
+%   maketac       - Generate a time-activity curve from a set of data.
 %   smooth        - Perform a simple spatial smoothing on an image.
 %   spectral      - Generate the RGB numbers for a spectral colourmap.
+%   
+% General utility (coordinate transforms, tag and transform files)
+%   loadtagfile   - Load coordinates from an MNI tag file.
 %   viewimage     - View an image.
-%   world2voxel   - Convert world coordinates to voxel coordinates.
+%   getvoxeltoworld - Compute the voxel-to-world transform for a volume.
+%   worldtovoxel  - Convert world coordinates to voxel coordinates.
+%   voxeltoworld  - Convert voxel coordinates to world coordinates.
 %
 % rCBF analysis functions
 %   rcbfanalysis  - Perform two compartment rCBF analysis, and write out
