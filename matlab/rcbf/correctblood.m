@@ -96,6 +96,7 @@ if (progress >= 2)
    plot (ts_even, g_even, 'y:');
    title ('Blood activity: dotted=g(t), solid=g(t) + tau*dg/dt');
    drawnow
+   hold on
 end
 
 % First let's do the dispersion correction: differentiate and smooth
