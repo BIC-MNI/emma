@@ -1,7 +1,7 @@
-function status = check_sf (handle, slices, frames)
+function msg = check_sf (handle, slices, frames)
 %  check_sf  - for internal use only
-%  status = 0: all is OK
-%  status = error message if there's anything wrong
+%  msg = []: all is OK
+%  msg = error message if there's anything wrong
 
 % check_sf - makes sure that the given slices and frames vectors
 % are consistent with the image specified by handle.  Checks for:
@@ -11,6 +11,7 @@ function status = check_sf (handle, slices, frames)
 %   * if image has no slices, slices vector should be empty (warning only)
 %   * if slices vector is empty, image must have no slices
 
+msg = [];
 
 % First retrieve the number of frames and slices from the global workspace
 
@@ -20,7 +21,7 @@ num_frames = eval(['NumFrames' int2str(handle)]);
 num_slices = eval(['NumSlices' int2str(handle)]);
 
 if (length(slices) > 1) & (length(frames) > 1)
-   status = 'Cannot specify both multiple slices and multiple frames';
+   msg = 'Cannot specify both multiple slices and multiple frames';
 end
 
 if (num_frames == 0)
@@ -30,7 +31,7 @@ if (num_frames == 0)
 end
 
 if (isempty (frames)) & (num_frames > 0)
-   status = 'Image has a time dimension; you must specify frames';
+   msg = 'Image has a time dimension; you must specify frames';
 end
 
 if (num_slices == 0)
@@ -40,5 +41,5 @@ if (num_slices == 0)
 end
 
 if (isempty (slices)) & (num_slices > 0)
-   status = 'Image has a slice dimension; you must specify slices';
+   msg = 'Image has a slice dimension; you must specify slices';
 end
