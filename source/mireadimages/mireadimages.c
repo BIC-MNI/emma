@@ -5,7 +5,7 @@
 #include "mex.h"
 #include "minc.h"
 #include "mierrors.h"         /* mine and Mark's */
-#include "mexutils.h"			/* N.B. must link in mexutils.o */
+#include "mexutils.h"         /* N.B. must link in mexutils.o */
 #include "mincutil.h"
 
 #define PROGNAME "mireadimages"
@@ -43,7 +43,7 @@
  */
 
 Boolean    debug;
-char       *ErrMsg ;		         /* set as close to the occurence of the
+char       *ErrMsg ;             /* set as close to the occurence of the
                                     error as possible; displayed by whatever
                                     code exits */
 
@@ -208,16 +208,16 @@ int ReadImages (ImageInfoRec *Image,
    Count [Image->WidthDim] = Image->Width;
    Count [Image->SliceDim] = 1L;
 
-	/*
-	 * Note: the following check for missing time dimension is based on
-    *	ImageInfoRec: -1 for a "dimension number" means the dimension
-	 * does not exist in the MIimage variable.
-	 */
+   /*
+    * Note: the following check for missing time dimension is based on
+    * ImageInfoRec: -1 for a "dimension number" means the dimension
+    * does not exist in the MIimage variable.
+    */
 
-	if ((Image->FrameDim == -1) || (Image->Frames == 0))
+   if ((Image->FrameDim == -1) || (Image->Frames == 0))
    {
       DoFrames = FALSE;
-      NumFrames = 1;			  /* so that we at least get into the frames loop */
+      NumFrames = 1;         /* so that we at least get into the frames loop */
    }
    else
    {
@@ -255,16 +255,16 @@ int ReadImages (ImageInfoRec *Image,
             Start [Image->FrameDim] = Frames [frame];
          }
 
-			if (debug)
-			{
-				printf ("Reading: user slice %d, study slice%d",
-						  slice, Slices[slice]);
-				if (DoFrames)
-				{
-					printf ("; user frame %d, study frame %d\n",
-							  frame, Frames[frame]);
-				}
-			}
+         if (debug)
+         {
+            printf ("Reading: user slice %d, study slice%d",
+                    slice, Slices[slice]);
+            if (DoFrames)
+            {
+               printf ("; user frame %d, study frame %d\n",
+                       frame, Frames[frame]);
+            }
+         }
 
          RetVal = miicv_get (Image->ICV, Start, Count, VectorImages);
          if (RetVal == MI_ERROR)
@@ -301,9 +301,8 @@ void mexFunction(int    nlhs,
    FILE        *InFile;
    int         Result;
 
-   debug = TRUE;        /* default for development -- can be overridden by */
-                        /* OPTIONS input argument */
-	ErrMsg = (char *) mxCalloc (256, sizeof (char));
+   debug = FALSE;
+   ErrMsg = (char *) mxCalloc (256, sizeof (char));
 
    /* First make sure a valid number of arguments was given. */
 
@@ -320,83 +319,83 @@ void mexFunction(int    nlhs,
    if (nrhs >= OPTIONS_POS)
    {
       Result = ParseOptions (OPTIONS, 1, &debug);
-		if (!(Result > 0)) 
-		{
-			ErrAbort ("Error parsing options vector", TRUE, ERR_ARGS);
-		}
+      if (!(Result > 0)) 
+      {
+         ErrAbort ("Error parsing options vector", TRUE, ERR_ARGS);
+      }
    }
 
-	/*
+   /*
     * Parse the filename option -- this is required by the above check
-	 * for number of arguments, so don't need to ensure that MINC_FILENAME
-	 * actaually exists.
-	 */
+    * for number of arguments, so don't need to ensure that MINC_FILENAME
+    * actaually exists.
+    */
 
-	if (debug) printf ("Parsing filename\n");
+   if (debug) printf ("Parsing filename\n");
    if (ParseStringArg (MINC_FILENAME, &Filename) == NULL)
    {
-		ErrAbort ("Error in filename", TRUE, ERR_ARGS);
+      ErrAbort ("Error in filename", TRUE, ERR_ARGS);
    }
 
    /* Open MINC file, get info about image, and setup ICV */
 
-	if (debug) printf ("Opening file\n");
+   if (debug) printf ("Opening file\n");
    Result = OpenImage (Filename, &ImInfo);
-	if (Result != ERR_NONE)
+   if (Result != ERR_NONE)
    {
       ErrAbort (ErrMsg, TRUE, Result);
    }
 
-	if (debug) printf ("Parsing numerics\n");
+   if (debug) printf ("Parsing numerics\n");
 
-	/* 
-	 * If the vector of slices is given, parse it into a vector of longs.
-	 * If not, just read slice 0 by default.
-	 */
+   /* 
+    * If the vector of slices is given, parse it into a vector of longs.
+    * If not, just read slice 0 by default.
+    */
 
-	if (nrhs >= SLICES_POS)
-	{
-		NumSlices = ParseIntArg (SLICES, MAX_NC_DIMS, Slice);
-		if (NumSlices < 0)
-		{
-			CloseImage (&ImInfo);
-			ErrAbort ("Error: slices must be specified in an all-integer vector",
-						 TRUE, ERR_ARGS);
-		}
-	}
-	else							/* caller did *not* specify slices vector */
-	{
-		Slice [0] = 0;			/* so read just slice 0 by default */
-		NumSlices = 1;
-	}
+   if (nrhs >= SLICES_POS)
+   {
+      NumSlices = ParseIntArg (SLICES, MAX_NC_DIMS, Slice);
+      if (NumSlices < 0)
+      {
+         CloseImage (&ImInfo);
+         ErrAbort ("Error: slices must be specified in an all-integer vector",
+                   TRUE, ERR_ARGS);
+      }
+   }
+   else                    /* caller did *not* specify slices vector */
+   {
+      Slice [0] = 0;       /* so read just slice 0 by default */
+      NumSlices = 1;
+   }
 
-	/* Now do the exact same thing for frames. */
+   /* Now do the exact same thing for frames. */
 
-	if (nrhs >= FRAMES_POS)
-	{
-		NumFrames = ParseIntArg (FRAMES, MAX_NC_DIMS, Frame);
-		if (NumFrames < 0)
-		{
-			CloseImage (&ImInfo);
-			ErrAbort ("Error: frames must be specified in an all-integer vector",
-						 TRUE, ERR_ARGS);
-		}
-	}
-	else
-	{
-		Frame [0] = 0;				/* read just frame 0 by default */
-		NumFrames = 1;
-	}
+   if (nrhs >= FRAMES_POS)
+   {
+      NumFrames = ParseIntArg (FRAMES, MAX_NC_DIMS, Frame);
+      if (NumFrames < 0)
+      {
+         CloseImage (&ImInfo);
+         ErrAbort ("Error: frames must be specified in an all-integer vector",
+                   TRUE, ERR_ARGS);
+      }
+   }
+   else
+   {
+      Frame [0] = 0;          /* read just frame 0 by default */
+      NumFrames = 1;
+   }
 
-	/* Make sure the supplied slice and frame numbers are within bounds */
+   /* Make sure the supplied slice and frame numbers are within bounds */
    if (!VerifyVectors (Slice, Frame, NumSlices, NumFrames, &ImInfo))
    {
       CloseImage (&ImInfo);
       ErrAbort (ErrMsg, TRUE, ERR_ARGS);
    }
-	
+   
 
-	/* And read the images to a MATLAB Matrix (of doubles!) */
+   /* And read the images to a MATLAB Matrix (of doubles!) */
 
    Result = ReadImages (&ImInfo, 
                         Slice, Frame, 
