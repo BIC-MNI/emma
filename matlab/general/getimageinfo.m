@@ -13,7 +13,7 @@ function info = getimageinfo (handle, what)
 %
 %      Filename       the name of the MINC file (if applicable)
 %                     as supplied to openimage or newimage; will be
-%							 empty if data set has no associated MINC file.
+%                     empty if data set has no associated MINC file.
 %      NumFrames      number of frames in the study, 0 if non-dynamic
 %                     study (equivalent to 'time')
 %      NumSlices      number of slices in the study (equivalent to 'zspace')
@@ -23,6 +23,8 @@ function info = getimageinfo (handle, what)
 %                     in the study, in seconds
 %      FrameTimes     vector with NumFrames elements - start time of each 
 %                     frame, relative to start of study, in seconds
+%      MidFrameTimes  time at the middle of each frame (calculated by
+%                     FrameTimes + FrameLengths/2) in seconds
 %      
 % If the requested data item is invalid or the image specified by handle
 % is not found (ie. has not been opened), then info will be empty.
@@ -30,21 +32,21 @@ function info = getimageinfo (handle, what)
 % ------------------------------ MNI Header ----------------------------------
 %@NAME       : getimageinfo
 %@INPUT      : handle - handle to an opened MATLAB image set
-%					what - character string describing what info is to be returned
-%						for currently supported values, type "help getimageinfo"
-%						in MATLAB
+%              what - character string describing what info is to be returned
+%                 for currently supported values, type "help getimageinfo"
+%                 in MATLAB
 %@OUTPUT     : 
 %@RETURNS    : info - the appropriate image data, either from within
-%					MATLAB or read from the associated MINC file
+%              MATLAB or read from the associated MINC file
 %@DESCRIPTION: Read and return various data about an image set.
 %@METHOD     : 
 %@GLOBALS    : Filename#, NumFrames#, NumSlices#, ImageSize#, FrameLengths#
-%					FrameTimes#
+%              FrameTimes#
 %@CALLS      : mireadvar (CMEX)
 %@CREATED    : 93-6-17, Greg Ward
 %@MODIFIED   : 93-6-17, Greg Ward: added standard MINC dimension names,
-%					spruced up help
-%					93-7-6, Greg Ward: added this header
+%              spruced up help
+%              93-7-6, Greg Ward: added this header
 %-----------------------------------------------------------------------------
 
 if nargin ~= 2
@@ -60,30 +62,37 @@ if ~isstr(what)
 end
 
 % Make global the three image-size variables, and also the (possibly)
-% named value.  This may be reduntant, eg. if what=='NumFrames'.  But
+% named value.  This may be redundant, eg. if what=='NumFrames'.  But
 % it assures that everything we could possible need global is global
 % before calling exist or eval with it.
 
 eval(['global NumFrames' int2str(handle)]);
 eval(['global NumSlices' int2str(handle)]);
+eval(['global FrameTimes' int2str(handle)]);
+eval(['global FrameLengths' int2str(handle)]);
 eval(['global ImageSize' int2str(handle)]);
 eval(['global ' what int2str(handle)])
 
-% If 'what' doesn't exist as a variable, try interpreting it as a dimension
-% name and retrieving the associated variable.  Else just get the 
-% (numbered) variable.
+% If 'what' doesn't exist as a variable, try interpreting it as a
+% dimension name or special name (eg. MidFrameTimes) and retrieving the
+% associated variable.  Else just get the (numbered) variable.
 
 if exist ([what int2str(handle)]) ~= 1
-	if (strcmp (what, 'time'))				% MINC dimension name, so get dim size
-		info = eval (['NumFrames' int2str(handle)]);
-	elseif (strcmp (what, 'zspace'))		% ditto - another dimension name
-		info = eval (['NumSlices' int2str(handle)]);
-	elseif (strcmp (what, 'xspace') | strcmp (what, 'yspace'))
-		info = eval (['ImageSize' int2str(handle)]);
-	else
-		disp (['getimageinfo: data item not found: ' what int2str(handle)]);
-		info = [];
-	end
+   if (strcmp (what, 'time'))          % MINC dimension name, so get dim size
+      info = eval(['NumFrames' int2str(handle)]);
+   elseif (strcmp (what, 'zspace'))    % ditto - another dimension name
+      info = eval(['NumSlices' int2str(handle)]);
+   elseif (strcmp (what, 'xspace') | strcmp (what, 'yspace'))
+      info = eval(['ImageSize' int2str(handle)]);
+   elseif (strcmp (what, 'MidFrameTimes'))
+      info = eval(['FrameTimes' int2str(handle) ' + FrameLengths' int2str(handle) ' / 2']);
+   else
+      disp (['getimageinfo: data item not found: ' what int2str(handle)]);
+      info = [];
+   end
 else
+	
+	% Otherwise, the "numbered variable" does exist, so just retrieve its value
+	
    info = eval([what int2str(handle)]);
 end
