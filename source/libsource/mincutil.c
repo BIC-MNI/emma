@@ -19,6 +19,7 @@
 ---------------------------------------------------------------------------- */
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include "minc.h"
 #include "emmageneral.h"
 #include "mincutil.h"
