@@ -1,23 +1,38 @@
 function ImHandle = openimage (filename, mode)
 % OPENIMAGE   setup appropriate variables in MATLAB for reading a MINC file
 %
-%  handle = openimage (filename)
-%
-%  Sets up a MINC file and prepares for reading.  This function
-%  creates all variables required by subsequent get/put functions such
-%  as getimages and putimages.  It also reads in various data about
-%  the size and number of images on the file, all of which can be
-%  queried via getimageinfo.
+%   handle = openimage (filename)
+% 
+% Sets up a MINC file and prepares for reading.  This function creates
+% all variables required by subsequent get/put functions such as
+% getimages and putimages.  It also reads in various data about the
+% size and number of images on the file, all of which can be queried
+% via getimageinfo.
 %  
-%  If the file in question is compressed (i.e., it ends with `.z',
-%  `.gz', or `.Z', then openimage will transparently uncompress it to a
-%  uniquely named temporary directory.  The filename returned by
-%  getimageinfo (handle, 'filename') in this case will be the name of
-%  the temporary, uncompressed file.  When the file is closed with
-%  closeimage, this temporary file will be deleted.
+% If the file in question is compressed (i.e., it ends with `.z',
+% `.gz', or `.Z', then openimage will transparently uncompress it to a
+% uniquely named temporary directory.  The filename returned by
+% getimageinfo (handle, 'filename') in this case will be the name of
+% the temporary, uncompressed file.  When the file is closed with
+% closeimage, this temporary file will be deleted.
+% 
+% The value returned by openimage is a handle to be passed to
+% getimages, putimages, getimageinfo, etc.
+% 
+% Note that by default you cannot use putimages to write data into a
+% file opened with openimage.  This differs from the behaviour of
+% previous versions of EMMA.  However, this can be overridden by
+% supplying a `mode' description when you open the file.  In
+% particular,
 %
-%  The value returned by openimage is a handle to be passed to getimages,
-%  putimages, getimageinfo, etc.
+%    openimage (filename, 'w')
+% 
+% emulates the old behaviour of EMMA: you can use the image handle
+% returned by openimage here to either read from or write to the file.
+% However, use of this feature should be strongly avoided, as it means
+% an image volume can be modified with no backup copy and no record of
+% the changes made.  When you wish to write data to a MINC volume, you
+% should always create a new volume using newimage.
 
 % ------------------------------ MNI Header ----------------------------------
 %@NAME       : openimage
@@ -41,26 +56,21 @@ function ImHandle = openimage (filename, mode)
 %              done by the MATLAB string concatenation: eg., for
 %              handle=3, ['Filename' int2str(handle)] yields
 %              Filename3.  This is frequently combined with the eval
-% 
+%              function to access the per-handle global variables.
+%              
 %              This convention is followed for the variables Filename,
-%              NumFrames, NumSlices, ImageSize, PETimages, FrameTimes,
-%              FrameLengths, AvailFrames, AvailSlices, and CurLine.
-%              Note that not all of these variables are currently
-%              used; some of them are meant for a line-by-line image
-%              retrieval/storage system (coming Real Soon Now), rather
-%              than the currently implemented and rather memory
-%              intensive image-by-image system.
-%
+%              NumFrames, NumSlices, ImageSize, FrameTimes,
+%              FrameLengths, and Flags.
+%              
 %              The functions getimages, putimages, getimageinfo,
 %              viewimage, getblooddata, check_sf, and closeimage also
 %              follow this convention for retrieving/storing data in
 %              these global variables.
-%
+%              
 %              Note that in the documentation for all of these
-%              functions, we will use the convention Filename# or
-%              PETimages# to refer to the "instance" of those (or
-%              other) image variables associated with the current
-%              handle.
+%              functions, we will use the convention (e.g.) Filename#
+%              to refer to the "instance" of those (or other) image
+%              variables associated with the current handle.
 %@GLOBALS    : reads/increments: ImageCount
 %              creates: Filename#, DimSizes#, FrameTimes#, FrameLengths#
 %@CALLS      : mireadvar (CMEX)
@@ -69,6 +79,8 @@ function ImHandle = openimage (filename, mode)
 %@MODIFIED   : 93-7-29, Greg Ward: added calls to miinquire, took out
 %              mincinfo and length(various variables) to determine
 %              image sizes.
+%              95-4-12 - 4/20, Greg Ward: changed to handle compressed
+%                              files and the new Flags# global variable
 %-----------------------------------------------------------------------------
 
 
