@@ -63,7 +63,13 @@ end
 % Generate a temporary filename, create the file, and write the entire
 % images matrix to it as doubles.
 
+
 tempfile = tempfilename;
+
+execstr = sprintf ('miwriteimages %s %s %s %s', ...
+   filename, slicelist, framelist, tempfile);
+disp (execstr);
+
 outfile = fopen (tempfile, 'w');
 if (outfile == -1)
    error (['Could not open temporary file ' tempfile ' for writing!']);
@@ -76,8 +82,10 @@ fclose (outfile);
 % Finally, do a shell escape to miwriteimages to write the data from the
 % temporary (raw) file to the MINC file.
 
-unix(['miwriteimages ' filename ' ' slicelist ' ' framelist ' ' tempfile]);
+[Result, Output] = unix (execstr);
 
-% Get rid of the temporary file.
-
-eval (['delete ' tempfile]);
+if (Result ~= 0)
+   disp (['Error ' int2str(Result) ' running miwriteimages']);
+else
+   eval (['delete ' tempfile]);
+end
