@@ -94,7 +94,13 @@ if exist (filename) ~= 2
    error ([filename ': file not found']);
 end
 
+% Initialize the flags for this volume.  Flags(1) is "read-write", 
+% Flags(2) is "compressed".
+
 Flags = [0 0];
+
+% Did the caller supply a `mode' argument?  Then check to see if it's
+% 'w', and if so, set the "read-write" flag.
 
 if (nargin > 1)
    if (~isstr (mode) | length(mode) ~= 1)
@@ -122,10 +128,15 @@ if (strcmp (filename(len-2:len), '.gz') | ...
    if (Flags(1))
       error (['Cannot open compressed files for writing']);
    end
+   
+   % Parse the filename (strip off directory and last extension)
+
    dots = find (filename == '.');
    lastdot = dots (length (dots));
+   slashes = find (filename == '/');
+   lastslash = slashes (length (slashes));
 
-   newname = [tempdir filename(1:lastdot-1)];
+   newname = [tempdir filename((lastslash+1):(lastdot-1))];
    if (exist (newname) == 2)
       error (['Uncompressed version of ' filename ' already exists in ' newname]);
    end
