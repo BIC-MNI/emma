@@ -63,13 +63,17 @@ no = zeros (1,length(xo));
 
 %
 % Get the histograms
-%
+% 
+
+fprintf ('Procesing %d slices', slices);
 
 for i=1:slices
   MRI = getimages(handle,i);
   [n,x] = hist(MRI,xo);
   no = no+n;
+  fprintf ('.');
 end
+fprintf ('done\n');
 
 %
 % If there are no output arguments, then plot
