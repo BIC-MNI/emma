@@ -1,15 +1,17 @@
 function [K1,k2,V0,delta] = rcbf2 (filename, slice, progress, correction)
 
-% RCBF2 a two-compartment (triple-weighted integral) rCBF model.  %
-% [K1,k2,V0,delta] = rcbf2 (filename, slice) % rcbf2 implements the
-% three-weighted integral method of calculating k2, K1, and V0 (in that
-% order) for a particular slice.  This function also returns the delay value
-% calculated for blood correction.  It first reads in a great mess of data
-% (viz., the brain activity for every frame of the slice, frame start times
-% and lengths, blood sample activity, and blood sample times).  Then, a
-% simple mask is created and used to filter out roughly all points outside
-% the head.
-% 
+% RCBF2 a two-compartment (triple-weighted integral) rCBF model.
+%
+%       [K1,k2,V0,delta] = rcbf2 (filename, slice)
+%
+% rcbf2 implements the three-weighted integral method of calculating k2, K1,
+% and V0 (in that order) for a particular slice.  This function also returns
+% the delay value calculated for blood correction.  It first reads in a
+% great mess of data (viz., the brain activity for every frame of the slice,
+% frame start times and lengths, blood sample activity, and blood sample
+% times).  Then, a simple mask is created and used to filter out roughly all
+% points outside the head.
+%
 % The actual calculations follow the procedure outlined in Ohta
 % et. al.  (see the references section in the document "RCBF Analysis Using
 % Matlab").  Thus, all equation numbers cited in this M-file refer to that
