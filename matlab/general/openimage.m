@@ -67,7 +67,7 @@ function ImHandle = openimage (filename, mode)
 %              97-5-27 Mark Wolforth: Minor modification to work with
 %                                     Matlab 5, which handles global
 %                                     variables differently from Matlab 4.x
-%@VERSION    : $Id: openimage.m,v 1.27 2000-04-18 15:34:55 neelin Exp $
+%@VERSION    : $Id: openimage.m,v 1.28 2004-10-06 15:04:36 bert Exp $
 %              $Name:  $
 %-----------------------------------------------------------------------------
 
@@ -156,7 +156,7 @@ end
 % Get the current directory if filename only has a relative path, tack
 % it onto filename, and make sure filename exists.
 
-if (filename (1) ~= '/')
+if (filename (1) ~= '/') & (filename(2) ~= ':')
    curdir = getcwd;
    curdir (find (curdir == 10)) = [];        % strip out newline
    filename = [curdir '/' filename];
