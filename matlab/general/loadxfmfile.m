@@ -50,9 +50,11 @@ xfm = zeros (4, 4);
 % a "continue" statement and short-circuit boolean evaluation.
 
 i = 1;
-while (i <= num_lines)
+done = 0;
+
+while (i <= num_lines & ~done)
    curline = '';
-   while (isempty(curline))
+   while (isempty(curline) & (i <= num_lines))
       curline = deblank (contents ((delim(i)+1):(delim(i+1)-1)));
       if (~isempty (curline))
          if (curline (1) == '%')
@@ -63,8 +65,6 @@ while (i <= num_lines)
    end
    i = i - 1;
 %   fprintf (1, 'line %d/%d (state=%d): %s\n', i, num_lines, state, curline);
-%   if (isempty (curline)), break, end;
-%   if (curline(1) ~= '%'), break, end;
 
    if (state == 1 & strcmp (curline, 'MNI Transform File'))
       state = 2;
@@ -78,7 +78,8 @@ while (i <= num_lines)
       end
 
       if (state == 6 & curline (length (curline)) == ';')
-         curline (length (curline)) = ' ';
+	 curline (length (curline)) = ' ';
+	 done = 1;
       end
 
       [currow, count, errmsg, nextindex] = sscanf (curline, '%g');
