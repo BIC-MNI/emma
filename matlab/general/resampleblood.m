@@ -1,7 +1,7 @@
-function [newCa, newtimes] = resampleblood (handle, type)
+function [new_g, new_ts] = resampleblood (handle, type)
 %  RESAMPLEBLOOD  resample the blood activity in some time new domain
 %
-%  [newCa, newtimes] = resampleblood (handle, type)
+%  [new_g, new_ts] = resampleblood (handle, type)
 %
 %  reads the blood activity and sample timing data from the study specified
 %  by handle, and resamples the activity data at times specified by
@@ -9,9 +9,9 @@ function [newCa, newtimes] = resampleblood (handle, type)
 %  For 'even', a new, evenly-spaced set of times will be generated
 %  and used as the resampling times.  For 'frame', the mid frame times
 %  will be used.  In either case, the resampled blood activity is
-%  returned as newCa, and the times used are returned as newtimes.
+%  returned as new_g, and the times used are returned as new_ts.
 %
-%  Note that the number of elements in newCa is not necessarily the
+%  Note that the number of elements in new_g is not necessarily the
 %  same as that in Ca, the actual blood activity.  For 'even' sampling,
 %  it will in fact by twice the number of original blood activity
 %  data points (with a nod to Nyquist).  For 'frame' sampling, it
@@ -36,13 +36,13 @@ end
 ts_mid = (ts_start + ts_stop) / 2;
 
 if (strcmp (type, 'even'))
-	newtimes = linspace (min(ts_mid), max(ts_mid), 2 * length (ts_mid))';
-	newCa = lookup (ts_mid, Ca, newtimes);
+	new_ts = linspace (min(ts_mid), max(ts_mid), 2 * length (ts_mid))';
+	new_g = lookup (ts_mid, Ca, new_ts);
 elseif (strcmp (type, 'frame'))
 	tf_start = getimageinfo (handle, 'FrameTimes');
 	tf_len = getimageinfo (handle, 'FrameLengths');
-	newtimes = tf_start + (tf_len/2);
-	newCa = lookup (ts_mid, Ca, newtimes);
+	new_ts = tf_start + (tf_len/2);
+	new_g = lookup (ts_mid, Ca, new_ts);
 else
 	help resampleblood
 	error(['Unknown sampling type: ' type]);
