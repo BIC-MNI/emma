@@ -1,7 +1,7 @@
 \documentstyle[11pt,fullpage]{article}
 
-\title{EMMA: Extensible MATLAB Medical Analysis}
-% \subtitle{User Manual}
+\title{EMMA: Extensible MATLAB Medical Analysis \\ User Manual}
+
 \author{Mark Wolforth \and Greg Ward}
 
 \def\code#1{{\tt #1}}
@@ -9,12 +9,12 @@
 \begin{document} 
 
 \maketitle
-% \newpage
+\newpage
 
 \tableofcontents
 
 %--------------------------------------------------------------
-% \newpage
+\newpage
 \section{Introduction}
 
 This document is the user manual for EMMA (Extensible MATLAB Medical
@@ -70,17 +70,17 @@ way when read into MATLAB.
 \label{explain_images}
 Generally, EMMA functions deal with images transformed from their
 natural two-dimensional form (well-suited to a matrix representation)
-to a one-dimensional vector form.  Thus, a single 128 $\times$ 128
-image will become a vector of length 16384.  A further caveat is that
-EMMA always deals with images as {\em column} vectors, so that our
-vector will actually be a 16384 $\times$ 1 matrix.  We can thus put
-many such vectors together and, for example form a 16384 $\times$ 15
-matrix from 15 slices.  Thus, in an ``image matrix''---which is really
-a two-dimensional MATLAB matrix representing three-dimensional image
-data---the individual columns correspond to whole images.  MATLAB
-functions that use EMMA to perform analysis should always expect image
-data in this format, as shown in Section \ref{simple_example} and the
-document ``rCBF Analysis Using MATLAB.''
+to a one-dimensional vector form.  For example, a single 128 $\times$
+128 image will become a vector of length 16384.  A further caveat is
+that EMMA always deals with images as {\em column} vectors, so that
+our vector will actually be a 16384 $\times$ 1 matrix.  We can put
+several such vectors together in a matrix.  For example, we can form
+a 16384 $\times$ 15 matrix from 15 slices.  Thus, in an ``image
+matrix''---which is a two-dimensional MATLAB matrix representing
+three-dimensional image data---the individual columns correspond to
+whole images.  MATLAB functions that use EMMA to perform analysis
+should always expect image data in this format, as shown in Section
+\ref{simple_example} and the document ``rCBF Analysis Using MATLAB.''
 
 Also, keep in mind that EMMA makes it deliberately difficult to deal
 simultaneously with the full four dimensions allowed in a MINC image
@@ -115,11 +115,11 @@ used to access the MINC file with \code{getimages},
      handle = openimage (filename)
 \end{verbatim}
 
-\item \code{getimages} - Gets images from a MINC file.  If the
-file has no frame dimension, the parameter \verb|frames| should be
-empty or not provided.  The \verb|slices| parameter is similarly
-handled, although files with no slice dimension are less commonly
-encountered.  Also, \code{getimages} can read several frames from a
+\item \code{getimages} - Gets images from a MINC file.  If the file
+has no frame dimension, the parameter \verb|frames| should be empty
+or not provided.  For files with no slices (only frames), the
+\verb|slices| parameter should be made empty (a matrix of the form
+\verb|[]|).  Also, \code{getimages} can read several frames from a
 single slice or several slices from a single frame---but it can not
 read multiple slices and multiple frames simultaneously.  (This
 restriction is also imposed for writing images, mainly to avoid
@@ -188,8 +188,10 @@ argument is set to zero.
 As an example of the EMMA functions presented thus far, we will
 explore sample code for both masking and summing/integrating images
 from a dynamic study.  The MINC file used in this example will be one
-of the H$_2$$^{15}$O CBF studies from 
-\verb|/local/matlab/toolbox/local/examples|.  To make accessing these files easier, you may want to create a symbolic link in the current directory using the command
+of the H$_2$$^{15}$O CBF studies from
+\verb|/local/matlab/toolbox/local/examples|.  To make accessing these
+files easier, you may want to create a symbolic link in one of your
+directories using the command:
 \begin{verbatim}
      ln -s /local/matlab/toolbox/local/examples examples
 \end{verbatim}
@@ -216,15 +218,16 @@ below):
 Note that for the study \verb|yates_19445|, \verb|nf| will be 21.
 However, it is a good idea to always use \verb|getimageinfo| to find
 the number of frames rather than assuming that it will always stay the
-same for particular type of study.
+same for a particular type of study.
 
 Now, let us read in the frame lengths and mid-frame times:
 \begin{verbatim}
      FrameLengths = getimageinfo (handle, 'FrameLengths');
      MidFTimes = getimageinfo (handle, 'MidFrameTimes');
 \end{verbatim}
-Note that FrameLengths and MidFTimes are both column vectors.  This
-will be important when performing matrix arithmetic with them.
+Note that \code{FrameLengths} and \code{MidFTimes} are both column
+vectors.  This will be important when performing matrix arithmetic
+with them.
 
 Now, we read in all frames for one slice---slice 8 in this case,
 although you can work with whatever slice you like:
@@ -232,56 +235,55 @@ although you can work with whatever slice you like:
      slice = 8;
      PET = getimages (handle, slice, 1:nf);
 \end{verbatim}
-Note that {\em this} is the step where MATLAB uses up large amounts of
-memory.  If you execute \verb|whos| now, you will see that MATLAB's
-variables alone are taking up nearly 3 megabytes of memory.  However,
-the entire MATLAB workspace generally takes up considerably more
-memory than is reported by \verb|whos|, because of MATLAB's
+Note that {\em this} is the step where MATLAB uses up large amounts
+of memory.  If you execute \verb|whos| now, you will see that
+MATLAB's variables alone are taking up nearly 3 megabytes of memory.
+However, the entire MATLAB workspace generally takes up considerably
+more memory than is reported by \verb|whos|, because of MATLAB's
 overhead and inefficient memory management scheme.
 
 \subsection{Integrating Images}
 
-Now, we can view the matrix \verb|PET| as a collection of 21 PET
-images for the same brain slice but progressing in time, or as a
-collection of 16,384 time-activity curves (TAC)---one for every pixel
-in the 128 $\times$ 128 image created by the PET scanner.  (Of course,
-only about $\frac{1}{3}$ of the image data is actually data from
-inside the head.  This matter will be addressed when we consider image
-masking below.)
+We can view the matrix \verb|PET| as a collection of 21 PET images
+for the same brain slice but progressing in time, or as a collection
+of 16,384 time-activity curves (TAC)---one for every pixel in the 128
+$\times$ 128 image.  (Of course, only about $\frac{1}{3}$ of the
+image data is actually data from inside the head.  This matter will
+be addressed when we consider image masking below.)
 
 For purposes of integrating images, we will consider \verb|PET| as a
 collection of TACs.  Thus, we are simply performing 16384 numerical
 integrations.  This may seem a daunting task, but MATLAB's vectorized
-approach to mathematics makes it surprisingly easy.  In fact, let us calculate a rectangular integration using the formula
+approach to mathematics makes it surprisingly easy.  In fact, let us
+calculate a rectangular integration using the formula:
 \begin{equation}
 \int_{t_{1}}^{t_{n}} f(t) dt \approx \sum_{i=1}^{n} f(t_{i}) (\Delta t)_{i},
 \label{eq:rect_int}
 \end{equation}
-where $f(t)$ is one time-activity curve and the $\Delta t$'s are the frame
-lengths.  Since we have $f(t)$ stored as a row vector---remember,
-each column of \verb|PET| is the entire image for one frame, so each
-row of \verb|PET| corresponds to a single pixel across time---and
-$\Delta t$ stored as a column vector, the multiply/sum operation of
-Eq. \ref{eq:rect_int} is simply a dot product.  And since a matrix
-multiplication is nothing more than a sequence of dot products, all
-16,384 TACs can be quite easily integrated with a single MATLAB
-command:
+where $f(t)$ is one time-activity curve and the $\Delta t$'s are the
+frame lengths.  Since we have $f(t)$ stored as a row
+vector---remember, each column of \verb|PET| is the entire image for
+one frame, so each row of \verb|PET| corresponds to a single pixel
+across time---and $\Delta t$ stored as a column vector, the
+multiply/sum operation of equation (\ref{eq:rect_int}) is simply a
+dot product.  And since a matrix multiplication is nothing more than
+a sequence of dot products, all 16,384 TACs can be quite easily
+integrated with a single MATLAB command:
 \begin{verbatim}
      PETsummed1 = PET * FrameLengths;
 \end{verbatim}
 
-However, rectangular integration is a very crude approach to numerical
-integration.  Trapezoidal integration provides a slightly more refined
-method, and is almost as easy to implement.  Furthermore, it is
-provided by the MATLAB function \verb|trapz|---which, if you care to
-examine it (try \verb|type trapz| in MATLAB), is essentially a
-one-line operation as well.  (Incidentally, one of the functions
-provided by EMMA is \verb|ntrapz|.  \verb|ntrapz| currently has
-exactly the same restrictions and capabilities as \verb|trapz|, but is
-considerably faster due to being written in C using MATLAB's C
-interface.  Furthermore, \verb|ntrapz| may in future have options such
-as weighted integration added.  For the purposes of this discussion,
-however, the two functions are equivalent.)
+However, rectangular integration is a very crude approach to
+numerical integration.  Trapezoidal integration provides a slightly
+more refined method, and is almost as easy to implement.
+Furthermore, it is provided by the MATLAB function
+\verb|trapz|---which, if you care to examine it (try \verb|type
+trapz| in MATLAB), is essentially a one-line operation as well.
+(Incidentally, one of the functions provided by EMMA is
+\verb|ntrapz|.  \verb|ntrapz| currently has exactly the same
+restrictions and capabilities as \verb|trapz|, but is considerably
+faster due to being written in C using MATLAB's C interface.  For the
+purposes of this discussion, the two functions are equivalent.)
 
 \verb|trapz| takes two arguments: a vector of $x$-points, and a vector
 or matrix of $y$ points corresponding to each $x$-point.  If the $y$'s
@@ -310,12 +312,13 @@ integration:
      viewimage (PETsummed1);
 \end{verbatim}
 (Note that explicitly creating the window via the \verb|figure|
-command is not really necessary.  However, if you had already had a
+command is not really necessary.  However, if you already had a
 figure window with a plot or image that you did not want to lose,
 MATLAB would have overwritten the existing figure when you called
-\verb|viewimage|.  It is generally good practice to call \verb|figure|
-before creating new plots or images, unless you are sure you wish to
-obliterate whatever was previously in the current figure window.)
+\verb|viewimage|.  It is generally good practice to call
+\verb|figure| before creating new plots or images, unless you are
+sure you wish to obliterate whatever was previously in the current
+figure window.)
 
 You may want to title this window:
 \begin{verbatim}
@@ -329,28 +332,31 @@ a more objective comparison, we can calculate the ratio of the two
 images on a pixel-by-pixel basis and view this:
 \begin{verbatim}
      ratio = PETsummed1 ./ PETsummed2;
+     figure;
      viewimage (ratio);
 \end{verbatim}
+
 Note the use of the \verb|./| operator to specify an
 element-by-element operation on two matrices.  The resulting image
-shows that most of the pixels in the \verb|PETsummed1| and
-\verb|PETsummed2| appear fairly close.  However, because some pixels have
-such large values compared to 1, any small variations around 1 are
-swamped.  One way to deal with this is simply to clip the image at
-certain points: for example, set all points below -10 to -10, and all
-points above 10 to 10 to values.  This is accomplished as follows:
+shows that most of the pixels in \verb|PETsummed1| and
+\verb|PETsummed2| appear fairly close.  However, because some pixels
+have such large values compared to 1, any small variations around 1
+are swamped.  One way to deal with this is simply to clip the image
+at certain points: for example, set all points below -10 to -10, and
+all points above 10 to 10.  This is accomplished as follows:
 \begin{verbatim}
      clipneg = find (ratio < -10);
      ratio (clipneg) = ones (size (clipneg)) * (-10);
      clippos = find (ratio > 10);
      ratio (clippos) = ones (size (clippos)) * (10);
 \end{verbatim}
+
 If you wish to know how many points were clipped at either end,
 type \verb|size (clipneg)| or \verb|size (clippos)|.
 
 If you now \verb|viewimage (ratio)|, it should be clear that the
-overall ratio between the two integrated images is close to 1, at
-least inside the head.
+overall ratio between the two integrated images is close to 1 inside
+the head.
 
 \subsection{Saving the Integrated Image}
 
@@ -390,23 +396,26 @@ the one-slice version):
 
 First, let us clear some of the unneeded variables from the workspace:
 \begin{verbatim}
-     clear PETsummed1 clip ratio
+     clear PETsummed1 ratio clipneg clippos
 \end{verbatim}
+
 Now, we will use \verb|PETsummed2| for a very simple form of image
-masking: namely, use only pixels whose values in the integrated image
-are greater than the mean of the integrated images.  It turns out that
-for CBF studies, this works quite well.  This is done by calculating
-the mean of the integrated image, and creating another image
-consisting entirely of 1's and 0's (a ``boolean'' or ``binary''
-image), where a 1 indicates that the pixel is inside the head, and a
-zero indicates outside:
+masking: namely, we will use only pixels whose values in the
+integrated image are greater than the mean of the integrated image.
+For CBF studies, this creates a usable mask that contains only head.
+This is done by calculating the mean of the integrated image, and
+creating another image consisting entirely of 1's and 0's (a
+``boolean'' image), where a 1 indicates that the pixel is inside the
+head, and a zero indicates outside:
 \begin{verbatim}
      avg = mean (PETsummed2);
      mask = PETsummed2 > avg;
 \end{verbatim}
+
 We can view the mask as an image itself to see a silhouette of the
 brain at this slice:
 \begin{verbatim}
+     figure;
      viewimage (mask);
 \end{verbatim}
 Or, we can apply the mask to the summed image and view it.  To apply
@@ -427,22 +436,22 @@ Finally, to see just how many pixels are ``on'' in the mask, you can type
 \begin{verbatim}
      size (find (mask))
 \end{verbatim}
-The fact that only a fraction of the entire image consist of image
-data means that masking can be used to great advantage when performing
-analysis that is required computations for every pixel.  (Generally,
-this should be avoided if it is all possible to take advantage of
-MATLAB's vectorized structure.)
+The fact that only a fraction of the entire image consists of image
+data means that masking can be used to great advantage when
+performing analysis that requires computations for every pixel.
+(Generally, this should be avoided if it is all possible to take
+advantage of MATLAB's vectorized structure.)
 
 %--------------------------------------------------------------
 \newpage
 \section{Underlying Structure}
 
 EMMA has a set of underlying functions written in C that provide the
-interface to MINC files.  An EMMA user will not ordinarily require use
-of these functions since every interaction with MINC files should be
-possible using the MATLAB scripts and functions provided (.m files).
-However, for the sake of completeness, these functions are documented
-in this section.
+interface to MINC files.  An EMMA user will not ordinarily require
+use of these functions since every interaction with MINC files should
+be possible using the MATLAB scripts and functions provided (.m
+files).  However, for the sake of completeness, these functions are
+documented in this section.
 
 MATLAB provides an interface to external C programs that allows
 dynamic linking at runtime.  This interface, called CMEX, is detailed
@@ -457,29 +466,30 @@ reading functions are written as CMEX programs.
 \subsection {Stand-alone C Programs}
 
 The following programs are used by various EMMA functions and are not
-normally needed by the user.  
+normally needed by the user.
 
 \begin {itemize}
 
-\item \code{miwriteimages} - Writes images to a MINC file.  The images
-are taken from the specified temporary file, whose data is expected to
-be stored as doubles.  MINC file must exist, and contain an image
-structure (create with micreate and then micreateimage).
+\item \code{miwriteimages} - Writes images to a MINC file.  The
+images are taken from the specified temporary file, whose data is
+expected to be stored as doubles.  The MINC file must exist, and
+contain an image structure (create with micreate and then
+micreateimage).
 \begin{verbatim}
 miwriteimages <MINC file> <slices> <frames> <temp file>
 \end{verbatim}
 
-\item \code{micreateimage} - Create the MIimage variable in an existing 
-MINC file.  Also updates the file hierarchy (MIimage is a child of
-MIrootvariable).  The sizes of all four image dimensions are required;
-if any of them are zero the corresponding dimension will not be created.
-Note that the MINC standard requires that at least an image height and
-image width dimension exist; \verb|micreateimage| currently does not
-verify that the user is conforming to this requirement.  Orientation
-(also sometimes referred to as dimension order) is one of either
-``transverse'', ``sagittal'', or ``coronal''.  Orientation determines
-the order of \verb|zspace|, \verb|yspace|, and \verb|xspace| in the
-MINC file.
+\item \code{micreateimage} - Create the MIimage variable in an
+existing MINC file.  Also updates the file hierarchy (MIimage is a
+child of MIrootvariable).  The sizes of all four image dimensions are
+required; if any of them are zero the corresponding dimension will
+not be created.  Note that the MINC standard requires that at least
+an image height and image width dimension exist; \verb|micreateimage|
+currently does not verify that the user is conforming to this
+requirement.  Orientation (also sometimes referred to as dimension
+order) is one of either ``transverse'', ``sagittal'', or ``coronal''.
+Orientation determines the order of \verb|zspace|, \verb|yspace|, and
+\verb|xspace| in the MINC file.
 \begin{verbatim}
 micreateimage <MINC file> <number of frames> <number of slices> 
               <height> <width> [orientation]
@@ -503,15 +513,14 @@ micreatevar <MINC file> <var name> <data type> <num dims> <dim names>
 micreatedim <MINC file> <dim name> <length>
 \end{verbatim}
 
-\item \code{micreate} - Create a new MINC file by copying the global 
-attributes and root variable from another MINC file.  If <parent file>
-is a single ``-'' (hyphen), then no parent file will be used.
-\verb|micreate| will also copy the variables specified by <variable
-list>, and update the MINC file hierarchy, and add an entry to the
-"history" global attribute.  Note that the ``MINC'' file created by
-micreate is not actually a true MINC file, because it has no image
-variable.  This will most likely eventually be corrected by merging
-\verb|micreate| and \verb|micreateimage| into one program.
+\item \code{micreate} - Create a new MINC file by copying the global
+attributes and root variable from another MINC file.  If
+\verb|<parent file>| is a single ``-'' (hyphen), then no parent file
+will be used.  \verb|micreate| will also copy the variables specified
+by \verb|<variable list>|, and update the MINC file hierarchy, and
+add an entry to the ``history'' global attribute.  Note that the
+``MINC'' file created by micreate is not actually a true MINC file,
+because it has no image variable.
 \begin{verbatim}
 micreate <parent file> <new file> [<variable list>]
 \end{verbatim}
@@ -527,8 +536,10 @@ MATLAB {\em External Interface Guide} for an explanation of CMEX files.
 
 \begin{itemize}
 
-\item \code{mireadvar} - Read a hyperslab from a MINC (or any NetCDF) file into a MATLAB
-    vector, using NetCDF-style start and count vectors.  (Zero-based!!!)  
+\item \code{mireadvar} - Read a hyperslab from a MINC (or any NetCDF)
+file into a MATLAB vector, using NetCDF-style start and count
+vectors.  Note that the indexing of \code{start\_vector} and
+\code{stop\_vector} is zero-based.
 \begin{verbatim}
      mireadvar ('minc_file', 'var_name', start_vector, count_vector)
 \end{verbatim}
@@ -541,14 +552,11 @@ MATLAB {\em External Interface Guide} for an explanation of CMEX files.
 \end{itemize}
 
 %--------------------------------------
-
+\newpage
 \subsection{MATLAB files}
 \label{emma_reference}
-%--------------------------------------
-
 
 \input{emma-help}
-
 
 \end{document}
 
