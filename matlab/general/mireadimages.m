@@ -52,7 +52,7 @@ function images = mireadimages(minc_file, slices, frames, old_matrix, start_row,
 %  Currently, only one of the vectors slices or frames can contain multiple
 %  elements.
 
-% $Id: mireadimages.m,v 1.5 2000-04-10 16:08:15 neelin Exp $
+% $Id: mireadimages.m,v 1.6 2004-10-06 15:05:07 bert Exp $
 % $Name:  $
 
 %  MIREADIMAGES -- written by Greg Ward 93/6/6.
@@ -224,7 +224,7 @@ for islice=1:nslcrange
         thisimage = fread(fid, imgsize, 'double');
         if (length(thisimage) ~= imgsize)
           fclose(fid);
-          [stat,out]=unix(['rm -f ' tempfile]);
+          delete(tempfile);
           error(['Error reading in image data, expected ' num2str(imgsize) ...
                   ', got ', num2str(length(thisimage))]);
         end
@@ -238,7 +238,7 @@ for islice=1:nslcrange
     end
     
     fclose(fid);
-    [stat,out]=unix(['rm -f ' tempfile]);
+    delete(tempfile);
     
   end
     

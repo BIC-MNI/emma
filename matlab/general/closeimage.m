@@ -9,7 +9,7 @@ function closeimage (handles)
 % temporary file and directory used for the uncompressed data are
 % deleted.
 
-% $Id: closeimage.m,v 1.11 2000-04-10 16:00:50 neelin Exp $
+% $Id: closeimage.m,v 1.12 2004-10-06 15:04:13 bert Exp $
 % $Name:  $
 
 for handle = handles
@@ -20,7 +20,7 @@ for handle = handles
       if (Flags(2))                     % then nuke the temp directory
 	 slashes = find (Filename == '/');
 	 lastslash = slashes (length (slashes));
-	 unix (['/bin/rm -rf ' Filename(1:(lastslash-1))]);
+	 delete(Filename(1:(lastslash-1)));
       end
    else
       fprintf (2, 'closeimage: warning: invalid image handle (%d)\n', handle);
