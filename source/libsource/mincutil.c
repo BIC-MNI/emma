@@ -200,7 +200,17 @@ int GetImageInfo (int CDF, ImageInfoRec *Image)
                               Frames, Slices, Width, or Height */
 
    Image->CDF = CDF;
+
+   /* 
+    * Try to find the image, image-max, and image-min variables.  It's 
+    * only an error if MIimage is not found; however, *writing* data
+    * might flag the non-existence of MIimagemax or MIimagemin (indicated
+    * by MaxID or MinID being MI_ERROR) as an error!
+    */
+
    Image->ID = ncvarid (CDF, MIimage);
+   Image->MaxID = ncvarid (CDF, MIimagemax);
+   Image->MinID = ncvarid (CDF, MIimagemin);
 
    /* 
     * Abort if there was an error finding the image variable
@@ -335,8 +345,9 @@ int OpenImage (char Filename[], ImageInfoRec *Image, int mode)
 
    Image->ICV = miicv_create ();
    (void) miicv_setint (Image->ICV, MI_ICV_TYPE, NC_DOUBLE);
+   (void) miicv_setint (Image->ICV, MI_ICV_DO_RANGE, TRUE);
    (void) miicv_setint (Image->ICV, MI_ICV_DO_NORM, TRUE);
-   (void) miicv_setint (Image->ICV, MI_ICV_USER_NORM, TRUE);
+/* (void) miicv_setint (Image->ICV, MI_ICV_USER_NORM, TRUE);  */
    (void) miicv_attach (Image->ICV, Image->CDF, Image->ID);
 
    return (ERR_NONE);
