@@ -1,4 +1,5 @@
-function [new_ts_even, Ca_even, delta] = correctblood (A, FrameTimes, FrameLengths, g_even, ts_even, options)
+function [new_ts_even, Ca_even, delta] = correctblood (A, FrameTimes, FrameLengths, ...
+                                                       g_even, ts_even, options)
 
 % CORRECTBLOOD  perform delay and dispersion corrections on blood curve
 %
@@ -129,8 +130,6 @@ if (progress >= 2)
    old_fig = gcf;
    drawnow;
 end
-
-%  shifted_g_even = zeros (length(g_even), 1);
 
 % Here are the initial values of alpha, beta, and gamma, in units of:
 %  alpha = (mL blood) / ((g tissue) * sec)
