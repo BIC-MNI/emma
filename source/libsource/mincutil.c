@@ -33,8 +33,7 @@ int OpenFile (char *Filename, int *CDF, int Mode)
 
    if (*CDF == MI_ERROR)
    {
-      (void) sprintf (ErrMsg, "Error opening output (MINC) file %s", Filename);
-      if (debug) printf ("And quitting\n");
+      sprintf (ErrMsg, "Error opening output (MINC) file %s", Filename);
       return (ERR_IN_MINC);
    }  
    return (ERR_NONE);
@@ -103,11 +102,12 @@ int GetVarInfo (int CDF, char vName[], VarInfoRec *vInfo)
       ncdiminq (CDF, DimIDs [dim], Dims [dim].Name, &(Dims [dim].Size));
       if (debug)
       {
-         printf ("  Dim %d: %s, size %d\n", 
-                 dim, Dims[dim].Name, Dims [dim].Size);
+         printf ("  Dim %d: %s, size %ld\n", 
+					  dim, Dims[dim].Name, Dims [dim].Size);
       }
    }     /* for dim */  
    vInfo->Dims = Dims;
+	return (ERR_NONE);
 }     /* GetVarInfo */
 
 
@@ -168,8 +168,8 @@ int GetImageInfo (int CDF, ImageInfoRec *Image)
        (Image->MaxID == MI_ERROR) ||
        (Image->MinID == MI_ERROR))
    {
-      (void) sprintf (ErrMsg,
-             "Error in MINC file: could not find all required variables");
+      sprintf (ErrMsg,
+					"Error in MINC file: could not find all required variables");
       return (ERR_NO_VAR);
    }     /* if ID == MI_ERROR */
 
@@ -184,8 +184,8 @@ int GetImageInfo (int CDF, ImageInfoRec *Image)
 
    if (debug)
    {
-      (void) printf ("Image variable has %d dimensions, %d attributes\n",
-                     Image->NumDims, Image->NumAtts);
+      printf ("Image variable has %d dimensions, %d attributes\n",
+				  Image->NumDims, Image->NumAtts);
    }
 
    /*
@@ -229,7 +229,7 @@ int GetImageInfo (int CDF, ImageInfoRec *Image)
 
       if (debug)
       {
-         printf ("  Dim %d: %s, size %d\n", dim, CurDimName, CurDimSize);
+         printf ("  Dim %d: %s, size %ld\n",dim,CurDimName,CurDimSize);
       }
    }     /* for dim */  
   
@@ -237,8 +237,8 @@ int GetImageInfo (int CDF, ImageInfoRec *Image)
 
    if (debug)
    {
-      printf ("Image var has %d frames, %d slices; each image is %d x %d\n",
-              Image->Frames, Image->Slices, Image->Height, Image->Width);
+      printf("Image var has %ld frames, %ld slices; each image is %ld x %ld\n",
+				 Image->Frames, Image->Slices, Image->Height, Image->Width);
    }
    return (ERR_NONE);
 
