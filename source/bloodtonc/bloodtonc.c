@@ -3,7 +3,7 @@
 #include <string.h>
 #include "minc.h"
 #include "emmageneral.h"
-#include "bloodtonc.h"
+#include "ncblood.h"
 
 #define PROGNAME        "bloodtonc"
 
