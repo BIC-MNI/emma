@@ -1,15 +1,21 @@
 /* ----------------------------- MNI Header -----------------------------------
-@NAME       : nfmins
-@INPUT      : 
-@OUTPUT     : 
-@RETURNS    : 
-@DESCRIPTION: A CMEX replacement for the MATLAB fmins function.  We are
-              striving for speed here.        
+@NAME       : delaycorrect
+@DESCRIPTION: A CMEX program that performs delay correction on blood data
+              intended for rCBF analysis.
 @METHOD     : A CMEX program
-@GLOBALS    : 
-@CALLS      : 
-@CREATED    : October 29, 1993 by Mark Wolforth
+@GLOBALS    : NaN, progress
+@CREATED    : November 5, 1993 by Mark Wolforth
 @MODIFIED   : 
+@COPYRIGHT  :
+              Copyright 1993 Mark Wolforth, McConnell Brain Imaging Centre, 
+              Montreal Neurological Institute, McGill University.
+              Permission to use, copy, modify, and distribute this
+              software and its documentation for any purpose and without
+              fee is hereby granted, provided that the above copyright
+              notice appear in all copies.  The author and McGill University
+              make no representations about the suitability of this
+              software for any purpose.  It is provided "as is" without
+              express or implied warranty.
 ---------------------------------------------------------------------------- */
 
 #include <stdio.h>
@@ -26,20 +32,20 @@
 #define max(A, B) ((A) > (B) ? (A) : (B))
 #define abs(A)    ((A) < 0 ? (A*(-1)) : (A))
 
-#define PROGNAME "nfmins"
+
+#define PROGNAME "delaycorrect"
 
 
 void IntFrames (int Length, double *X, double *Y, 
-                int NumFrames, double *FrameStarts, double *FrameLengths,
-                double *Integrals);
+                int NumFrames, double *FrameStarts,
+		double *FrameLengths, double *Integrals);
 
 /*
  * Constants to check for argument number and position
  */
 
 
-#define MIN_IN_ARGS        2
-#define MAX_IN_ARGS        14
+#define NUM_IN_ARGS        6
 
 #define START              prhs[0]
 #define G_EVEN             prhs[1]
@@ -48,11 +54,19 @@ void IntFrames (int Length, double *X, double *Y,
 #define FRAMETIMES         prhs[4]
 #define FRAMELENGTHS       prhs[5]
 
+/*
+ * Some parameters for the simplex search algorithm
+ */
+
 #define ALPHA              1
 #define BETA               0.5
 #define GAMMA              2
 
 #define FUNCVAL            (numvars)
+
+/*
+ * type declarations
+ */
 
 typedef int Boolean;
 
@@ -69,12 +83,12 @@ typedef struct blooddata
 }
 BloodData;
 
+/*
+ * Global variables
+ */
+
 double  NaN;
 Boolean progress;
-char    *ErrMsg ;         /*
-                           * set as close to the occurence of the
-                           * error as possible
-                           */
 
 
 /* ----------------------------- MNI Header -----------------------------------
@@ -109,14 +123,17 @@ void ErrAbort (char msg[], Boolean PrintUsage, int ExitCode)
 
 /* ----------------------------- MNI Header -----------------------------------
 @NAME       : CreateLocalMatrix
-@INPUT      : 
-@OUTPUT     : 
-@RETURNS    : 
-@DESCRIPTION:               
+@INPUT      : rows -> an integer containing the number of rows in the matrix
+              cols -> an integer containing the number of columns in the matrix
+@OUTPUT     : none
+@RETURNS    : a pointer to a pointer to double.  This is a pointer to an array
+              of pointers to arrays containing the rows of the matrix.
+@DESCRIPTION: Allocates memory for a two-dimensional array.
 @METHOD     : 
-@GLOBALS    : 
-@CALLS      : 
-@CREATED    : 
+@GLOBALS    : none
+@CALLS      : standard MEX functions
+              ErrAbort
+@CREATED    : November 1993 by MW
 @MODIFIED   : 
 ---------------------------------------------------------------------------- */
 double **CreateLocalMatrix(int rows, int cols)
@@ -186,18 +203,19 @@ void Convolve (int n, double A[], double B[], double spacing, double C[])
               
 
 /* ----------------------------- MNI Header -----------------------------------
-@NAME       : VecExp
+@NAME       : VectorExponential
 @INPUT      : 
 @OUTPUT     : 
 @RETURNS    : 
-@DESCRIPTION:               
+@DESCRIPTION: Calculates the exponential of each member of a vector.  It also
+              allows a scale factor to be included in the exponent.
 @METHOD     : 
-@GLOBALS    : 
+@GLOBALS    : none
 @CALLS      : 
 @CREATED    : 
 @MODIFIED   : 
 ---------------------------------------------------------------------------- */
-void VecExp (int n, double scale, double A[], double C[])
+void VectorExponential (int n, double scale, double A[], double C[])
 {
    int   i;
    
@@ -213,7 +231,7 @@ void VecExp (int n, double scale, double A[], double C[])
 @INPUT      : 
 @OUTPUT     : 
 @RETURNS    : 
-@DESCRIPTION:               
+@DESCRIPTION: 
 @METHOD     : 
 @GLOBALS    : 
 @CALLS      : 
@@ -239,7 +257,7 @@ double BloodCurve (double x[], BloodData *data)
 
     spacing = data->ts_even[1] - data->ts_even[0];
     
-    VecExp (data->numsamples, -x[1], data->ts_even, Ntemp1);
+    VectorExponential (data->numsamples, -x[1], data->ts_even, Ntemp1);
     Convolve (data->numsamples, data->g_even, Ntemp1, spacing, Ntemp2); 
     
     /*
@@ -712,7 +730,7 @@ void MinimizeSimplex (double **simplex, BloodData *data, int numvars,
 @RETURNS    : (void)
 @DESCRIPTION: 
 @METHOD     : 
-@GLOBALS    : ErrMsg
+@GLOBALS    : NaN, progress
 @CALLS      : 
 @CREATED    : 
 @MODIFIED   : 
@@ -740,14 +758,11 @@ void mexFunction(int    nlhs,
     NaN = x/x;
     progress = FALSE;
 
-    ErrMsg = (char *) mxCalloc (256, sizeof (char));
-    
     /* First make sure a valid number of arguments was given. */
 
-    if ((nrhs < MIN_IN_ARGS) || (nrhs > MAX_IN_ARGS))
+    if (nrhs != NUM_IN_ARGS)
     {
-        strcpy (ErrMsg, "Incorrect number of arguments.");
-        ErrAbort (ErrMsg, TRUE, -1);
+        ErrAbort ("Incorrect number of arguments.", TRUE, -1);
     }
 
     progress = FALSE;
