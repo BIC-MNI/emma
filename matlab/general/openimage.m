@@ -117,7 +117,8 @@ if (strcmp (filename(len-2:len), '.gz') | ...
    if (exist (newname) == 2)
       error (['Uncompressed version of ' filename ' already exists in ' newname]);
    end
-   disp (['gunzip -c ' filename ' > ' newname]);
+%   disp (['gunzip -c ' filename ' > ' newname]);
+   disp ('(uncompressing...)');
    status = unix (['gunzip -c ' filename ' > ' newname]);
    if (status ~= 0)
       error (['Error trying to uncompress file ' filename]);
