@@ -18,7 +18,7 @@
                  the memory needed for the image(s), it is reused.  This
                  reduces the risk of memory fragmentation.
 @COMMENTS   : For full usage documentation, see mireadimages.m
-@VERSION    : $Id: mireadimages.c,v 1.21 2004-03-11 15:42:43 bert Exp $
+@VERSION    : $Id: mireadimages.c,v 1.22 2004-09-21 18:41:01 bert Exp $
               $Name:  $
 ---------------------------------------------------------------------------- */
 
@@ -272,9 +272,6 @@ int ReadImages (ImageInfoRec *Image,
    Boolean  DoSlices;           /* know to not set a frame (slice) number */
    int      RetVal;             /* from miicv_get -- if this is MI_ERROR */
                                 /* we have a problem!!  Should NOT!!! happen */
-   int      i;
-   long     j;
-
    /*
     * Setup start/count vectors.  We will always read from one image at
     * a time, because the user is allowed to specify slices/frames such

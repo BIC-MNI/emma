@@ -12,7 +12,7 @@
 @CALLS      : 
 @CREATED    : August 9, 1993
 @MODIFIED   : 
-@VERSION    : $Id: nframeint.c,v 1.10 2004-03-11 15:42:43 bert Exp $
+@VERSION    : $Id: nframeint.c,v 1.11 2004-09-21 18:41:01 bert Exp $
               $Name:  $
 ---------------------------------------------------------------------------- */
 #include <stdio.h>
@@ -66,7 +66,8 @@ void usage (void)
 @CREATED    : 
 @MODIFIED   : 
 ---------------------------------------------------------------------------- */
-Boolean CheckInputs (const mxArray *TS, const mxArray *Y, const mxArray *FStart, const mxArray *FLengths,
+Boolean CheckInputs (const mxArray *TS, const mxArray *Y, 
+                     const mxArray *FStart, const mxArray *FLengths,
                      int *NumFrames, int *TableSize)
 {
    int tsrows, tscols;                      /* used for TS */
@@ -157,8 +158,6 @@ void mexFunction (int nlhs, mxArray *plhs [],
    mxArray  *mNaN;		/* NaN as a MATLAB Matrix */
    double *X;			/* these just point to the real parts */
    double *Y;			/* of various MATLAB Matrix objects */
-   double *FStarts;
-   double *FLengths;
 
    int NumFrames;		/* size of FStart and FLength */
    int Length;			/* size of X and Y */
@@ -189,8 +188,6 @@ void mexFunction (int nlhs, mxArray *plhs [],
    
    X = mxGetPr (TIMES);
    Y = mxGetPr (VALUES);
-   FStarts = mxGetPr (START);
-   FLengths = mxGetPr (LENGTHS);
    
 
    /* 
