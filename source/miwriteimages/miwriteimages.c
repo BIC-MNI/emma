@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <float.h>
 #include "minc.h"
+#include "emmageneral.h"
 #include "mincutil.h"
 #include "mierrors.h"
 
@@ -24,13 +25,11 @@
 #define VECTOR_LONG -2
 #define VECTOR_EMPTY -3
 
-typedef enum { false=0, true=1 } Boolean;
-
 /*
  * Global variables (with apologies)
  */
 
-Boolean    debug = false;       /* for mincutil.c only */
+Boolean    debug = FALSE;       /* for mincutil.c only */
 char       *ErrMsg;		/* set as close to the occurence of the */
                                 /* error as possible; displayed by whatever */
                                 /* code exits */
@@ -235,14 +234,14 @@ Boolean CheckBounds (long Slices[], long Frames[],
    {
       sprintf (ErrMsg, "File contains slice dimension; "
 	       "slice list must be provided");
-      return (false);
+      return (FALSE);
    }
 
    if ((Image->FrameDim != -1) && (NumFrames == 0))
    {
       sprintf (ErrMsg, "File contains frame dimension; "
 	       "frame list must be provided");
-      return (false);
+      return (FALSE);
    }
 
 
@@ -262,7 +261,7 @@ Boolean CheckBounds (long Slices[], long Frames[],
       {
          sprintf (ErrMsg, "Bad slice number: %ld (must be < %ld)", 
                   Slices[i], Image->Slices);
-         return (false);
+         return (FALSE);
       }
    }     /* for i - loop slices */
 
@@ -275,12 +274,12 @@ Boolean CheckBounds (long Slices[], long Frames[],
       {
          sprintf (ErrMsg, "Bad frame number: %ld (must be < %ld)", 
                   Frames[i], Image->Frames);
-         return (false);
+         return (FALSE);
       }
 
    }     /* for i - loop frames */
 
-   return (true);
+   return (TRUE);
 }     /* CheckBounds */
 
 
@@ -324,7 +323,7 @@ FILE *OpenTempFile (char Filename [])
               InFile - the file to read from
 @OUTPUT     : fills in Buffer
 @RETURNS    : true if image was read successfully
-              false if not all elements were read
+              FALSE if not all elements were read
 @DESCRIPTION: 
 @METHOD     : 
 @GLOBALS    : 
@@ -351,11 +350,11 @@ Boolean ReadNextImage (double *Buffer, long ImageSize, FILE *InFile)
 
    if ((long) AmtRead != ImageSize)
    {
-      return (false);
+      return (FALSE);
    }
    else
    {
-      return (true);
+      return (TRUE);
    }
 }     /* ReadNextImage */
 
@@ -525,11 +524,11 @@ int WriteImages (FILE *TempFile,
    if (NumFrames > 0)
    {
       Count [Image->FrameDim] = 1;
-      DoFrames = true;
+      DoFrames = TRUE;
    }
    else
    {
-      DoFrames = false;
+      DoFrames = FALSE;
       NumFrames = 1;
    }
 
@@ -538,11 +537,11 @@ int WriteImages (FILE *TempFile,
    if (NumSlices > 0)
    {
       Count [Image->SliceDim] = 1;
-      DoSlices = true;
+      DoSlices = TRUE;
    }
    else
    {
-      DoSlices = false;
+      DoSlices = FALSE;
       NumSlices = 1;
    }
 
@@ -642,7 +641,7 @@ int main (int argc, char *argv [])
 
    if (argc != NUM_ARGS + 1)        /* +1 because argv[0] counts! */
    {
-      ErrAbort ("Incorrect number of arguments", true, ERR_ARGS);
+      ErrAbort ("Incorrect number of arguments", TRUE, ERR_ARGS);
    }
 
 #ifdef DEBUG
@@ -658,14 +657,14 @@ int main (int argc, char *argv [])
    if (NumSlices < 0)
    {
       GVErrMsg (ErrMsg, "slices", NumSlices);
-      ErrAbort (ErrMsg, true, ERR_ARGS);
+      ErrAbort (ErrMsg, TRUE, ERR_ARGS);
    }
 
    NumFrames = GetVector (FRAME_VECTOR, Frame, MAX_WRITEABLE);
    if (NumFrames < 0)
    {
       GVErrMsg (ErrMsg, "frames", NumFrames);
-      ErrAbort (ErrMsg, true, ERR_ARGS);
+      ErrAbort (ErrMsg, TRUE, ERR_ARGS);
    }
 
 #ifdef DEBUG
@@ -689,20 +688,20 @@ int main (int argc, char *argv [])
    if ((NumSlices > 1) && (NumFrames > 1))
    {
       ErrAbort ("Cannot specify both multiple frames and multiple slices", 
-                true, ERR_ARGS);
+                TRUE, ERR_ARGS);
    }
 
 puts("Opening");
    Result = OpenImage (MINC_FILE, &ImInfo, NC_WRITE);
    if (Result != ERR_NONE)
    {
-      ErrAbort (ErrMsg, true, Result);
+      ErrAbort (ErrMsg, TRUE, Result);
    }
 
 puts("Checking bounds");
    if (!CheckBounds (Slice, Frame, NumSlices, NumFrames, &ImInfo))
    {
-      ErrAbort (ErrMsg, true, ERR_ARGS);
+      ErrAbort (ErrMsg, TRUE, ERR_ARGS);
    }
 
 puts("Checking for max/min variables");
@@ -710,20 +709,20 @@ puts("Checking for max/min variables");
    {
       sprintf (ErrMsg, "Missing image-max or image-min variable in file %s", 
                MINC_FILE);
-      ErrAbort (ErrMsg, true, ERR_IN_MINC);
+      ErrAbort (ErrMsg, TRUE, ERR_IN_MINC);
    }
 
 puts("Opening temp file");
    InFile = OpenTempFile (TEMP_FILE);
    if (InFile == NULL)
    {
-      ErrAbort (ErrMsg, true, ERR_IN_TEMP);
+      ErrAbort (ErrMsg, TRUE, ERR_IN_TEMP);
    }
 
    Result = WriteImages (InFile, &ImInfo, Slice, Frame, NumSlices, NumFrames);
    if (Result != ERR_NONE)
    {
-      ErrAbort (ErrMsg, true, Result);
+      ErrAbort (ErrMsg, TRUE, Result);
    }
 
    fclose (InFile);
