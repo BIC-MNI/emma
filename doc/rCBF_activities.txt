@@ -1,0 +1,54 @@
+PRELIMINARY
+
+The following must be completed in order to implement a two-compartment
+rCBF model in Matlab:
+
+1) Get the most recent articles on performing two-compartment analysis
+   that includes solving for V0.
+
+   COMPLETED ON:
+
+   STATUS:
+
+
+Although the desired final product is a package that solves for K1, K2 and
+V0, it is easier to start by neglecting V0.  In order to perform the analysis
+while ignoring V0, the following must be completed:
+
+2) Create a Matlab routine that generates the rR lookup table.  This lookup
+   table is used to find a value for K2 at each pixel, and should be 100x1
+   (100 values of rR corresponding to values of K2 from 0.01 minutes to
+   1 minute).
+
+   COMPLETED ON:
+
+   STATUS: June 21, 1993: Created an rR lookup table with Matlab, but not
+                          an actual .m file.  However, all of the commands
+			  used were saved in a matlab diary.
+
+3) Create a Matlab routine that calculates a value for rL.  Since there is a
+   different value of rL for each pixel in the image, rL should be 16384x1 for
+   every slice.
+
+   COMPLETED ON: June 21, 1993
+
+   STATUS: Completed.
+
+4) Create a Matlab routine that integrates the above two routines by 
+   using the look-up table to find an approximation for K2.  This
+   routine can probably also calculate K1 since this is straight
+   forward once K2 is known.  This routine should probably just take
+   a handle to an input data set, and a handle to an output data set.
+
+   COMPLETED ON:
+
+   STATUS: June 21, 1993: Played around with getting values for K2 by
+                          using the above two functions.  No actual
+                          .m file exists yet, but once again all of
+  			  the commands used were saved in a matlab
+			  diary.
+
+The above three routines will provide an rCBF package that does not take
+V0 into account.  At this time, we are not sure of the steps that are
+necessary in order to complete an analysis involving V0.  Therefore, these
+steps will be included in a later version of this list.
