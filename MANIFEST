@@ -1,3 +1,6 @@
+# Manifest file for EMMA
+# $Id: MANIFEST,v 1.3 1997-10-20 21:23:33 greg Rel $
+# $Name:  $
 README
 CHANGES
 MANIFEST
@@ -7,7 +10,7 @@ Makefile.irix5
 Makefile.irix4
 Makefile.linux
 Makefile.sun4
-mexrc.sh
+Makefile.version
 source/makefile.cmex
 source/makefile.std
 source/micreateimage/Makefile
@@ -70,14 +73,14 @@ source/bloodtonc/00Description
 source/bldtobnc/00Description
 source/bldtobnc/Makefile
 source/bldtobnc/bldtobnc.c
-include/ParseArgv.h
-include/mierrors.h
-include/mexutils.h
-include/mincutil.h
-include/mierrors.m
-include/emmageneral.h
-include/ncblood.h
-include/time_stamp.h
+source/include/ParseArgv.h
+source/include/mierrors.h
+source/include/mexutils.h
+source/include/mincutil.h
+source/include/emmageneral.h
+source/include/emmaproto.h
+source/include/ncblood.h
+source/include/time_stamp.h
 matlab/general/getblooddata.m
 matlab/general/check_sf.m
 matlab/general/getmask.m
