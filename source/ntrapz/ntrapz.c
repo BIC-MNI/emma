@@ -27,7 +27,7 @@ typedef int Boolean;
 
 #define TIMES   prhs[0]
 #define VALUES  prhs[1]
-#define LENGTHS prhs[2]
+#define WEIGHT  prhs[2]
 #define AREA    plhs[0]
 
 
@@ -39,13 +39,13 @@ typedef int Boolean;
 
 
 extern void TrapInt (int num_bins, double *times, double *values,
-		     double *bin_lengths, double *area);
+                     double *area);
 
 
 void usage (void)
 {
     mexPrintf("\nUsage:\n");
-    mexPrintf("area = %s (x, y, [bin_lengths])\n", PROGNAME);
+    mexPrintf("area = %s (x, y, [weight])\n", PROGNAME);
 }
 
 
@@ -61,63 +61,106 @@ void usage (void)
 @CREATED    : 
 @MODIFIED   : 
 ---------------------------------------------------------------------------- */
-Boolean CheckInputs (Matrix *X, Matrix *Y, int *InputRows, int *InputCols)
+Boolean CheckInputs (Matrix *X, Matrix *Y, Matrix *Weight,
+                     int *InputRows, int *InputCols)
 {
     int     xrows, xcols;       /* used for X */
     int     yrows, ycols;       /* used for Y */
+    int     wrows, wcols;
 
     /*
      * Get sizes of X and Y vectors and make sure they are vectors
      * of the same length.
      */
 
-    xrows = mxGetM (X);  xcols = mxGetN (X);
-    yrows = mxGetM (Y);  ycols = mxGetN (Y);
+    xrows = mxGetM (X);
+    xcols = mxGetN (X);
+    yrows = mxGetM (Y);
+    ycols = mxGetN (Y);
+    
+    if (Weight != NULL)
+    {
+        wrows = mxGetM(Weight);
+        wcols = mxGetN(Weight);
+    }
+    else
+    {
+        wrows = wcols = 0;
+    }
+
 
 #ifdef DEBUG
     printf ("Input X is %d x %d\n", xrows, xcols);
     printf ("Input Y is %d x %d\n", xrows, xcols);
+    printf ("Input Weight is %d x %d\n", wrows, wcols);
 #endif
+
 
     if ((min(xrows,xcols) == 0) || min(yrows, ycols) == 0)
     {
-	*InputRows = 0;
-	*InputCols = 0;
-	return (TRUE);
+        *InputRows = 0;
+        *InputCols = 0;
+        return (TRUE);
     }
 
     if (min(xrows, xcols) != 1)
     {
-	usage();
-	mexErrMsgTxt("X must be a vector.");
+        usage();
+        mexErrMsgTxt("X must be a vector.");
     }
 
     if (min(yrows, ycols) != 1)
     {
-	if (xcols != 1)
-	{
-	    usage();
-	    mexErrMsgTxt("X must be a column vector if Y is a matrix.");
-	}
-	if (xrows != yrows)
-	{
-	    usage();
-	    mexErrMsgTxt("X and Y must have the same number of rows.");
-	}
+        if (wrows == 0)
+        {
+            if (xcols != 1)
+            {
+                usage();
+                mexErrMsgTxt("X must be a column vector if Y is a matrix.");
+            }
+            if (xrows != yrows)
+            {
+                usage();
+                mexErrMsgTxt("X and Y must have the same number of rows.");
+            }
+            
+            *InputRows = xrows;
+            *InputCols = ycols;
+        }
+        else 
+        {
+	    if (xrows != ycols)
+	    {
+		usage();
+		mexErrMsgTxt("Number of X rows must equal number of Y columns\n if a weight was given.");
+	    }
 
-	*InputRows = xrows;
-	*InputCols = ycols;
+            if (ycols != wrows)
+            {
+                usage();
+                mexErrMsgTxt("Number of Y columns must equal number of Weight rows.");
+            }
+
+	    if (xrows != wrows)
+	    {
+		usage();
+		mexErrMsgTxt("X and Weight must have the same number of rows.");
+	    }
+	    
+            *InputRows = xrows;
+            *InputCols = yrows;
+	}
     }
     else 
     {
-	if (max(xrows, xcols) != max(yrows, ycols))
-	{
-	    usage();
-	    mexErrMsgTxt("X and Y must be vectors of the same length.");
-	}
+        if (max(xrows, xcols) != max(yrows, ycols))
+        {
+            usage();
+            mexErrMsgTxt("X and Y must be vectors of the same length.");
+        }
 
-	*InputRows = max(xrows, xcols);
-	*InputCols = 1;
+        *InputRows = max(xrows, xcols);
+        *InputCols = 1;
     }
 
 
@@ -147,10 +190,13 @@ void mexFunction (int nlhs, Matrix *plhs [],
     double *X;               /* these just point to the real parts */
     double *Y;               /* of various MATLAB Matrix objects */
     double *CurColumn;
-    double *Lengths;
+    double *CurRow;
+    double *Rowpointer;
+    double *Weightpointer;
+    double *Weight;
     double *Area;
     int xrows, ycols;
-    int i;
+    int i,j;
 
 
     if ((nrhs != 3) && (nrhs != 2))
@@ -159,7 +205,15 @@ void mexFunction (int nlhs, Matrix *plhs [],
         mexErrMsgTxt("Incorrect number of input arguments!");
     }
     
-    CheckInputs (TIMES, VALUES, &xrows, &ycols);
+    if (nrhs == 3)
+    {
+        CheckInputs (TIMES, VALUES, WEIGHT, &xrows, &ycols);
+    }
+    else
+    {
+        CheckInputs (TIMES, VALUES, NULL, &xrows, &ycols);
+    }
+    
 
     /*
      * Get pointers to the actual matrix data of the input arguments
@@ -169,41 +223,55 @@ void mexFunction (int nlhs, Matrix *plhs [],
     Y = mxGetPr (VALUES);
     if (nrhs == 3) 
     {
-	Lengths = mxGetPr (LENGTHS);
+        Weight = mxGetPr (WEIGHT);
     }
 
     if (ycols > 0)
     {
-	AREA = mxCreateFull (1, ycols, REAL);
-	Area = mxGetPr (AREA);
+        AREA = mxCreateFull (1, ycols, REAL);
+        Area = mxGetPr (AREA);
     }
     else 
     {
-	AREA = mxCreateFull (1,1,REAL);
-	Area = mxGetPr (AREA);
-	*Area = 0;
-	return;
+        AREA = mxCreateFull (1,1,REAL);
+        Area = mxGetPr (AREA);
+        *Area = 0;
+        return;
     }
+    
+    if (nrhs != 3)
+    {
+	for (i=0; i<ycols; i++)
+	{
+	    CurColumn = Y + (i*xrows);
+	    TrapInt (xrows, X, CurColumn, &(Area[i]));
+	}
+    }
+    else {    
 
-    if (nrhs == 3) 
-    {
+	CurRow = (double *) mxCalloc(xrows, sizeof(double));
+	if (CurRow == NULL)
+	{
+	    mexErrMsgTxt("Unable to allocate memory.");
+	}
+
 	for (i=0; i<ycols; i++)
 	{
-	    CurColumn = Y + (i*xrows);
-	    TrapInt (xrows, X, CurColumn, Lengths, &(Area[i]));
+	    Rowpointer = CurRow;
+	    Weightpointer = Weight;
+	    for (j=0; j<xrows; j++)
+	    {
+		*(Rowpointer++) = ((*(Y + i + j*ycols)) * (*(Weightpointer++)));
+	    }
+	    TrapInt (xrows, X, CurRow, &(Area[i]));
 	}
-    }
-    else
-    {
-	for (i=0; i<ycols; i++)
-	{
-	    CurColumn = Y + (i*xrows);
-	    TrapInt (xrows, X, CurColumn, NULL, &(Area[i]));
-	}
+
+	/*
+	 * A weight was passed, so we want to transpose the AREA matrix.
+	 * This can be done easily since the array is 1 x Something.
+	 */
+    
+        mxSetM(AREA, ycols);
+        mxSetN(AREA, 1);
     }
 }
-
-
-    
-    
-
