@@ -8,7 +8,7 @@ function threshimage (upper, lower, map, overcolour, undercolour)
 %  map may either be the name of a colormap (eg. spectral, hotmetal, etc)
 %      or an nx3 table of RGB values
 
-% $Id: threshimage.m,v 1.2 1997-10-20 18:23:20 greg Rel $
+% $Id: threshimage.m,v 1.3 2000-04-04 14:57:58 neelin Exp $
 % $Name:  $
 
 %
@@ -49,7 +49,7 @@ if (newmapsize>0)
   else
     n = length(map);
     X0 = linspace (1, n, newmapsize);
-    newmap = table([(1:n)' map],X0)';
+    newmap = emma_table([(1:n)' map],X0)';
   end
 else
   newmap = [];

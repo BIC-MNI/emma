@@ -1,12 +1,12 @@
-function [y,failures] = table(tab,x0)
+function [y,failures] = emma_table(tab,x0)
 %TABLE Table look-up.
 %
-% y = table(TAB,X0) 
+% y = emma_table(TAB,X0) 
 %
 %       returns a table of linearly interpolated rows from
 %	table TAB, looking up X0 in the first column of TAB.
 
-% $Id: emma_table.m,v 2.1 2000-04-04 14:55:23 neelin Exp $
+% $Id: emma_table.m,v 2.2 2000-04-04 14:57:58 neelin Exp $
 % $Name:  $
 
 %       NOTE:  TAB's 1st column is checked for monotonicity.

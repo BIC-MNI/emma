@@ -13,7 +13,7 @@ function s = hotmetal(m)
 % See also HSV, GRAY, PINK, HOT, COOL, BONE, COPPER, FLAG,
 %          COLORMAP, RGBPLOT, SPECTRAL.
 
-% $Id: hotmetal.m,v 1.2 1997-10-20 18:23:20 greg Rel $
+% $Id: hotmetal.m,v 1.3 2000-04-04 14:57:58 neelin Exp $
 % $Name:  $
 
 %         Copyright (c) 1984-92 by The MathWorks, Inc.
@@ -51,4 +51,4 @@ n = length(base);
 
 X0 = linspace (1, n, m);
 
-s = table(base,X0)';
+s = emma_table(base,X0)';
