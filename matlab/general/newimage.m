@@ -116,9 +116,11 @@ if (nargin >= 3)
    if (~isempty (ParentFile))
       if (isstr (ParentFile))
 	 Parent = openimage (ParentFile);
+	 CloseParent = 1;
       else
 	 Parent = ParentFile;
 	 ParentFile = getimageinfo (Parent, 'Filename');
+	 CloseParent = 0;
       end
       ParentType = miinquire (ParentFile, 'vartype', 'image');
    else
@@ -266,7 +268,9 @@ if (result ~= 0)
    error (['Error running micreateimage to create file ' NewFile]);
 end
 
-closeimage (Parent);
+if (Parent ~= -1 & CloseParent)
+   closeimage (Parent);
+end
 
 % Figure out what the handle to return should be
 
