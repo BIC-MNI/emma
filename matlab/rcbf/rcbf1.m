@@ -23,8 +23,8 @@ function [K1,k2] = rcbf1 (filename, slice, progress)
 % cross-calibration factor) and converted back to Bq/g_blood.  Thus,
 % K1 is calculated internally as g_blood / (g_tissue * sec).  The
 % final step of the rCBF analysis is to convert this to the more
-% standard mL_blood / (100 g_tissue * min).  k2 is left in CGS units
-% (1/sec).
+% standard mL_blood / (100 g_tissue * min).  k2 is similarly converted
+% to 1/min.
 
 
 % ----------------------------- MNI Header -----------------------------------
@@ -125,7 +125,8 @@ K1 (nuke) = zeros (size (nuke));
 
 rescale (K1, 100*60/1.05);    % convert from g_blood / (g_tissue * sec)
                               % to mL_blood / (100 g_tissue * min)
-
+rescale (k2, 60);             % from 1/sec to 1/min
+			      
 disp ('WARNING!!! rcbf1 now calculates K1 in mL_blood / (100 g_tissue * min)');
 
 % Cleanup
