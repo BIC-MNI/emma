@@ -71,8 +71,13 @@ end
 
 count = fwrite (outfile, images, 'double');
 
+fclose (outfile);
+
 % Finally, do a shell escape to miwriteimages to write the data from the
 % temporary (raw) file to the MINC file.
 
-% disp(['miwriteimages ' filename ' ' slicelist ' ' framelist ' ' tempfile]);
 unix(['miwriteimages ' filename ' ' slicelist ' ' framelist ' ' tempfile]);
+
+% Get rid of the temporary file.
+
+delete tempfile;
