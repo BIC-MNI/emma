@@ -75,7 +75,11 @@ end
 
 % figure out number of images we expect to see in matrix images
 
-num_required = max (length(slices), length(frames));
+if (isempty (slices) & isempty (frames))
+   num_required = 1;
+else
+   num_required = max (length(slices), length(frames));
+end
 
 % check that slices and frames are valid
 
