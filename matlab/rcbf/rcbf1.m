@@ -66,6 +66,20 @@ k1 (nuke) = zeros (size (nuke));
 nuke = find (isinf (k1));
 k1 (nuke) = zeros (size (nuke));
 
+
+% Magic number time: convert the values to the correct units.
+% k2 is currently expressed in units of s^-1 but should be expressed
+% min^-1; k1 is in (nCi * sec * (g blood)) / ((mL tissue) * counts * sec)
+% and should be (mL blood) / ((g tissue) * minute).  Since blood and
+% tissue are both taken to be 1.05 g / mL, and 1 nCi = 37 count/sec, and
+% of course 1 min = 60 sec, the conversion factor is 2013.605442176871
+
+k2 = k2 * 60;
+k1 = k1 * 2013.605442176871;
+
 % Cleanup
 
 closeimage (img);
+
+
+
