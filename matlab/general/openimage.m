@@ -142,11 +142,12 @@ if (strcmp (filename(len-2:len), '.gz') | ...
 
    newname = [tempdir filename((lastslash+1):(lastdot-1))];
    if (exist (newname) ~= 2)
-      disp ('(uncompressing...)');
+      fprintf ('(uncompressing...');
       status = unix (['gunzip -c ' filename ' > ' newname]);
       if (status ~= 0)
 	 error (['Error trying to uncompress file ' filename]);
       end
+      fprintf (')\n');
    end
 
    filename = newname;
