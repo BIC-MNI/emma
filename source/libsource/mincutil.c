@@ -153,7 +153,7 @@ int GetVarInfo (int CDF, char vName[], VarInfoRec *vInfo)
 
 #ifdef DEBUG
    printf ("Variable %s has %d dimensions, %d attributes\n",
-	   vInfo->Name, vInfo->NumDims, vInfo->NumAtts);
+           vInfo->Name, vInfo->NumDims, vInfo->NumAtts);
 #endif
 
    /*
@@ -167,7 +167,7 @@ int GetVarInfo (int CDF, char vName[], VarInfoRec *vInfo)
 
 #ifdef DEBUG
       printf ("  Dim %d: %s, size %ld\n", 
-	      dim, Dims[dim].Name, Dims [dim].Size);
+              dim, Dims[dim].Name, Dims [dim].Size);
 #endif
 
    }     /* for dim */  
@@ -257,7 +257,7 @@ int GetImageInfo (int CDF, ImageInfoRec *Image)
 
 #ifdef DEBUG
    printf ("Image variable has %d dimensions, %d attributes\n",
-	   Image->NumDims, Image->NumAtts);
+           Image->NumDims, Image->NumAtts);
 #endif
 
    /*
@@ -283,7 +283,7 @@ int GetImageInfo (int CDF, ImageInfoRec *Image)
        * the slice dimension will be next, followed by height, and width.
        * This code was taken pretty much verbatim from Gabe's mincread.
        */
-		
+                
       if (strcmp (CurDimName, MItime) == 0)
       {
          Image->FrameDim = dim;
@@ -321,7 +321,7 @@ int GetImageInfo (int CDF, ImageInfoRec *Image)
 
 #ifdef DEBUG
    printf("Image var has %ld frames, %ld slices; each image is %ld x %ld\n",
-	  Image->Frames, Image->Slices, Image->Height, Image->Width);
+          Image->Frames, Image->Slices, Image->Height, Image->Width);
 #endif
 
    return (ERR_NONE);
@@ -361,6 +361,7 @@ int OpenImage (char Filename[], ImageInfoRec *Image, int mode)
    Result = GetImageInfo (CDF, Image);
    if (Result != ERR_NONE)
    {
+      ncclose(CDF);
       return (Result);
    }
 
