@@ -168,17 +168,20 @@ if (do_delay)
       % args(2) a negative value, there will be infinities in the result
       % of b_curve, which will cause the entire thing to bomb.
 
+%      options(2) = 1;
+%      options(3) = 1;
+
 %      options(5) = 1;
 %      [final,options,f] = leastsq ('fit_b_curve', init, options, [], ...
 %                             shifted_g_even(g_select), ts_even(g_select), ...
 %                             A, FrameTimes, FrameLengths);
 
-      options(2) = 1;
-      options(3) = 1;
+%      final = fmins ('fit_b_curve', init, options, [], ...
+%                     shifted_g_even (g_select), ts_even (g_select), ...
+%                     A, FrameTimes, FrameLengths);
 
-      final = fmins ('fit_b_curve', init, options, [], ...
-                     shifted_g_even (g_select), ts_even (g_select), ...
-                     A, FrameTimes, FrameLengths);
+      final = delaycorrect (init, shifted_g_even(g_select), ts_even(g_select), ...
+	                    A, FrameTimes, FrameLengths);
 
       params (i,:) = final;
 %     rss (i) = sum (f .^ 2) ;            % if using leastsq
