@@ -39,10 +39,11 @@ end
 %
 
 new_data = zeros(xsize, xsize);
+norm = length (find (mask));          % Number of 1's in the mask
 
 for i=3:xsize-2
     for j=3:xsize-2
-        new_data(i,j) = mean (mean (old_data(i-2:i+2, j-2:j+2) .* mask));
+        new_data(i,j) = sum (sum (old_data(i-2:i+2, j-2:j+2) .* mask)) / norm;
     end
 end
 
