@@ -13,8 +13,9 @@
 @GLOBALS    : debug, ErrMsg
 @CALLS      : NetCDF, MINC, and mex functions.
 @CREATED    : 93/5/31 - 93/6/2, Greg Ward
-@MODIFIED   : 
-@COMMENTS   : need to robustify error checking in mexFunction.
+@MODIFIED   : 93/6/16, robustified/standardized error and debug handling.
+              Added gpw.h and mierrors.h includes, deleted def_mni.h.
+@COMMENTS   : 
 ---------------------------------------------------------------------------- */
 
 
@@ -22,14 +23,14 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include "def_mni.h"
+#include "gpw.h"
 #include "mex.h"
-#include "mexutils.h"			/* be sure to link in mexutils.o */
 #include "minc.h"
+#include "mierrors.h"
+#include "mexutils.h"			/* be sure to link in mexutils.o */
 #include "mincutil.h"			/* and mincutil.o */
 
-#define calloc mxCalloc
-#define PROGNAME "mireadvars"
+#define PROGNAME "mireadvar"
 
 /*
  * handy macros for accessing and checking the arguments to/from MATLAB
@@ -74,19 +75,20 @@ char		*ErrMsg;
 @GLOBALS    : requires PROGNAME macro
 @CALLS      : standard mex functions
 @CREATED    : 93-5-27, Greg Ward
-@MODIFIED   : 
+@MODIFIED   : 93-6-16, added PrintUsage and ExitCode parameters to harmonize
+              with mireadimages, etc.
 ---------------------------------------------------------------------------- */
-void ErrAbort (char *msg)
+void ErrAbort (char msg[], Boolean PrintUsage, int ExitCode)
 {
-   (void) mexPrintf ("Usage: %s ('MINC_file', 'var_name', ", PROGNAME);
-   (void) mexPrintf ("[, start, count[, options]])\n");
-   (void) mexPrintf ("where start and count are MATLAB vectors containing the starting index and\n");
-   (void) mexPrintf ("number of elements to read for each dimension of variable var_name.\n\n");
+   if (PrintUsage)
+   {
+		(void) mexPrintf ("Usage: %s ('MINC_file', 'var_name', ", PROGNAME);
+		(void) mexPrintf ("[, start, count[, options]])\n");
+		(void) mexPrintf ("where start and count are MATLAB vectors containing the starting index and\n");
+		(void) mexPrintf ("number of elements to read for each dimension of variable var_name.\n\n");
+   }
    (void) mexErrMsgTxt (msg);
 }
-
-
-
 
 
 
@@ -100,28 +102,32 @@ void ErrAbort (char *msg)
                 and Count[] that are actually used
               debug - same as usual
 @OUTPUT     : (none)
-@RETURNS    : (void)
-              ABORTS via ErrAbort on error
+@RETURNS    : ERR_NONE if no errors in start/count vectors
+              ERR_ARGS if Start[] and Count[] do not have the same size
+				      -or- if Start[] and Count[] do not have exactly one
+						     member for every dimension of the variable
+						-or- if any of the members of Start[] are outside the
+						     range of the associated dimension
+						-or- if any of the members of Count[] would specify
+						     data outside the range of the associated dimension
 @DESCRIPTION: Checks the Start[] and Count[] hyperslab specification vectors
-                to ensure that they are consistent with the variable whose
-                hyperslab they are meant to specify.  That is, all the Start
-                positions must be within the variable's bounds (ie. the size
-                of each dimension), and similarly Count cannot specify a
-                value outside of those bounds.  Also requires that StartSize
-                == CountSize, i.e. the two vectors describe the same number
-                of dimensions.
+              to ensure that they are consistent with the variable whose
+              hyperslab they are meant to specify.  That is, all the Start
+              positions must be within the variable's bounds (ie. the size
+              of each dimension), and similarly Count cannot specify a
+              value outside of those bounds.  Also requires that StartSize
+              == CountSize, i.e. the two vectors describe the same number
+              of dimensions.
 @METHOD     :                
-@GLOBALS    : (none)
+@GLOBALS    : debug, ErrMsg
 @CALLS      : standard mex functions
 @CREATED    : 93-6-1, Greg Ward
-@MODIFIED   : 
+@MODIFIED   : 93-6-16, standardized error/debug handling
 ---------------------------------------------------------------------------- */
-void VerifyVectors (VarInfoRec *vInfo, 
-                    long   Start[],    long  Count[],
-                    int    StartSize,  int   CountSize,
-                    Boolean debug)
+int VerifyVectors (VarInfoRec *vInfo, 
+                   long   Start[],    long  Count[],
+                   int    StartSize,  int   CountSize)
 {
-   char  Msg [256];
    int   DimSize;       /* size of current dim - copied from vInfo->Dims */
    int   i;
 
@@ -131,7 +137,8 @@ void VerifyVectors (VarInfoRec *vInfo,
 
    if (StartSize != CountSize)
    {
-      ErrAbort ("Start and Count vectors must have same number of elements");
+      ErrMsg = "Start and Count vectors must have same number of elements";
+		return ERR_ARGS;
    }
 
    /*
@@ -141,7 +148,8 @@ void VerifyVectors (VarInfoRec *vInfo,
 
    if (StartSize != vInfo->NumDims)
    {
-      ErrAbort ("Start and count vectors must have one element for every dimension");
+      ErrMsg = "Start and count vectors must have one element for every dimension";
+		return ERR_ARGS;
    }
 
    /* 
@@ -161,28 +169,31 @@ void VerifyVectors (VarInfoRec *vInfo,
       }
       if (Start [i] >= DimSize)
       {
-         sprintf (Msg, "Start value for dimension %d is out of range (max %d)",
+         sprintf (ErrMsg, 
+						"Start value for dimension %d is out of range (max %d)",
                   i, DimSize-1);
-         ErrAbort (Msg);
+         return ERR_ARGS;
       }     /* if start too large */
       if (Start [i] + Count [i] > DimSize)
       {
-         sprintf (Msg,
+         sprintf (ErrMsg,
 "Attempt to read too many values from dimension %d (total dimension size %d)",
                   i, DimSize);
-         ErrAbort (Msg);
+			return ERR_ARGS;
       }     /* if start+count too large */
    }     /* for i */
+
+	return ERR_NONE;
 }     /* VerifyVectors */
 
 
 
 /* ----------------------------- MNI Header -----------------------------------
 @NAME       : MakeDefaultVectors
-@INPUT      : *vInfo - struct, tells which variable and file we are concerned with
-              debug - as usual
+@INPUT      : *vInfo - struct, tells which variable and file we are
+              concerned with
 @OUTPUT     : Start[], Count[] - NetCDF-style start/count vectors; these
-                are filled in based on the size of each dimension
+              are filled in based on the size of each dimension
               *StartSize, *CountSize - the number of actual elements used
                 in Start[] and Count[].  (Kind of redundant; just provided to
                 be consistent with VerifyVectors.  Currently, these two
@@ -194,15 +205,14 @@ void VerifyVectors (VarInfoRec *vInfo,
 @METHOD     : Loops through however many dimensions the variable has, setting
                 each element of Start[] to 0 and each element of Count[]
                 to the length of that particular dimension.
-@GLOBALS    : (none)
+@GLOBALS    : debug
 @CALLS      : standard mex functions
 @CREATED    : 93-6-1, Greg Ward
-@MODIFIED   : 
+@MODIFIED   : 93-6-16, standardized error/debug handling
 ---------------------------------------------------------------------------- */
 void MakeDefaultVectors (VarInfoRec *vInfo, 
                          long Start[],    long  Count[],
-                         int  *StartSize, int   *CountSize,
-                         Boolean debug)
+                         int  *StartSize, int   *CountSize)
 {
    int   i;
 
@@ -233,11 +243,11 @@ void MakeDefaultVectors (VarInfoRec *vInfo,
 @INPUT      : *vInfo - struct, tells which variable and file to read
                 Start[], Count[] - starting corner and edge lengths of 
                 hyperslab to read (just like ncvarget, etc.)
-              debug - obligatory boolean flag
 @OUTPUT     : **Dest - a MATLAB Matrix.  Note that *Dest is modified by
                 this routine, as the Matrix is allocated here
-@RETURNS    : (void)
-              ABORTS via ErrAbort on error
+@RETURNS    : ERR_NONE if all goes well
+              ERR_OTHER if for some reason there are no values to read
+				  ERR_IN_MINC if there is some error reading the MINC file
 @DESCRIPTION: Read a hyperslab of any valid NC type from a MINC file into 
               a one-dimensional MATLAB Matrix.  If more than one dimension
               is read from the MINC file, the Matrix will contain the values
@@ -248,16 +258,15 @@ void MakeDefaultVectors (VarInfoRec *vInfo,
               values in, converting them to the NC_DOUBLE type, which
               is what MATLAB requires.  Does no scaling or shifting -- 
               see mireadimages if you need to read in image data.
-@GLOBALS    : (none)
+@GLOBALS    : debug, ErrMsg
 @CALLS      : standard NetCDF, mex functions
 @CREATED    : 93-6-2, Greg Ward.
-@MODIFIED   : 
+@MODIFIED   : 93-6-16, standardized error/debug handling
 ---------------------------------------------------------------------------- */
-void ReadValues (VarInfoRec *vInfo, 
-                 long Start [], long Count [],
-                 Matrix **Dest,
-                 Boolean debug)
-{  
+int ReadValues (VarInfoRec *vInfo, 
+                long Start [], long Count [],
+                Matrix **Dest)
+{
    double      *TmpDest;
    long        TotSize;
    int         vgRet, i;
@@ -279,7 +288,8 @@ void ReadValues (VarInfoRec *vInfo,
 
    if (TotSize == 0)
    {
-      ErrAbort ("No values to read");
+      ErrMsg = "No values to read";
+		return ERR_OTHER;
    }
 
    *Dest = mxCreateFull (TotSize, 1, REAL);
@@ -290,7 +300,8 @@ void ReadValues (VarInfoRec *vInfo,
 
    if (vgRet == MI_ERROR)
    {
-      ErrAbort ("Error reading from file!  (This is almost certainly a bug in mireadvar.c.)\n");
+      ErrMsg = "Error reading from file!  (This is almost certainly a bug in mireadvar.c.";
+		return ERR_IN_MINC;
    }
 
    if (debug)
@@ -301,6 +312,8 @@ void ReadValues (VarInfoRec *vInfo,
          mexPrintf ("  %g\n", TmpDest [i]);
       }
    }
+
+	return ERR_NONE;
 }     /* ReadValues */
 
 
@@ -313,30 +326,29 @@ void ReadValues (VarInfoRec *vInfo,
 @OUTPUT     : plhs[] - array of pointers to the output arguments
 @RETURNS    : (void)
 @DESCRIPTION: Given the name of a MINC file, a variable in it, and
-                optional vectors of starting points and counts (as per
-                ncvarget and mivarget), reads a hyperslab of values from
-                the MINC variable into a one-dimensional MATLAB Matrix.
+              optional vectors of starting points and counts (as per
+              ncvarget and mivarget), reads a hyperslab of values from
+              the MINC variable into a one-dimensional MATLAB Matrix.
 @METHOD     : Parses the filename and variable name from the MATLAB input
-                arguments.  Opens the MINC file, reads information about
-                the variable and its dimensions.  Parses the start/count
-                vectors if they are given and checks them for validity;
-                if not given, sets up defaults to read the entire variable.
-                Reads the hyperslab.
-@GLOBALS    : (none)
+              arguments.  Opens the MINC file, reads information about
+              the variable and its dimensions.  Parses the start/count
+              vectors if they are given and checks them for validity;
+              if not given, sets up defaults to read the entire variable.
+              Reads the hyperslab.
+@GLOBALS    : debug, ErrMsg
 @CALLS      : standard mex, library functions; ErrAbort, ParseOptions,
-                ParseStringArg, OpenFile, GetVarInfo, ParseIntArg,
-                VerifyVectors, MakeDefaultVectors, ReadValues.
+              ParseStringArg, OpenFile, GetVarInfo, ParseIntArg,
+              VerifyVectors, MakeDefaultVectors, ReadValues.
 @CREATED    : 93-5-31, Greg Ward.
-@MODIFIED   : 
+@MODIFIED   : 93-6-16, standardized error handling
 ---------------------------------------------------------------------------- */
 void mexFunction (int nlhs, Matrix *plhs [],
                   int nrhs, Matrix *prhs [])
 {
-   char     Msg [256];        /* for building error messages */
-   Boolean  debug;
    char     *Filename;
    char     *Varname;
    int      CDFid;
+	int		Result;				/* return value from various functions */
    VarInfoRec  VarInfo;       /* a nice handy structure */
    long     Start [MAX_NC_DIMS];
    long     Count [MAX_NC_DIMS];
@@ -344,15 +356,17 @@ void mexFunction (int nlhs, Matrix *plhs [],
    int      NumCount;
    
    debug = FALSE;             /* default: can be overridden by caller */
+   ErrMsg = (char *) mxCalloc (256, sizeof (char));
 
    /*
     * Ensure that caller supplied correct number of input arguments
     */
    if ((nrhs < MIN_IN_ARGS) || (nrhs > MAX_IN_ARGS))
    {
-      sprintf (Msg, "Incorrect number of arguments (%d): should be between %d and %d",
-               nrhs, MIN_IN_ARGS, MAX_IN_ARGS);
-      ErrAbort (Msg);
+      sprintf (ErrMsg, 
+			 "Incorrect number of arguments (%d): should be between %d and %d",
+           nrhs, MIN_IN_ARGS, MAX_IN_ARGS);
+      ErrAbort (ErrMsg, TRUE, ERR_ARGS);
    }
 
    /*
@@ -360,22 +374,40 @@ void mexFunction (int nlhs, Matrix *plhs [],
     */
    if (nrhs >= OPTIONS_POS)         /* options given? then parse them */
    {
-      ParseOptions (OPTIONS, 1, &debug);
+		Result = ParseOptions (OPTIONS, 1, &debug);
+      if (Result <= 0)              /* positive value => success */
+		{
+			ErrAbort ("Options must be a vector of integers", TRUE, ERR_ARGS);
+		}
    }
 
    /*
     * Parse the two string options -- these are required
     */
 
-   ParseStringArg (FILENAME, &Filename);
-   ParseStringArg (VARNAME, &Varname);
+   if (ParseStringArg (FILENAME, &Filename) == NULL)
+	{
+		ErrAbort ("Filename must be a string", TRUE, ERR_ARGS);
+	}
+   if (ParseStringArg (VARNAME, &Varname) == NULL)
+	{
+		ErrAbort ("Variable name must be a string", TRUE, ERR_ARGS);
+	}
 
    /*
     * Open the file and get info about the variable and its dimensions
     */
 
-   OpenFile (Filename, &CDFid, debug); 
-   GetVarInfo (CDFid, Varname, &VarInfo);
+	Result = OpenFile (Filename, &CDFid, debug);
+   if (Result != ERR_NONE)
+	{
+		ErrAbort (ErrMsg, TRUE, Result);
+	}
+	Result = GetVarInfo (CDFid, Varname, &VarInfo);
+	if (Result != ERR_NONE)
+	{
+		ErrAbort (ErrMsg, TRUE, Result);
+	}
 
    /*
     * If the start and count vectors are given (and they must BOTH be
@@ -388,20 +420,29 @@ void mexFunction (int nlhs, Matrix *plhs [],
    {
       if (nrhs < COUNT_POS)         /* can't have one without the other! */
       {
-         ErrAbort ("Cannot supply just one of start and count vectors");
+         ErrAbort ("Cannot supply just one of start and count vectors", 
+						 TRUE, ERR_ARGS);
       }
-      memset (Start, 0, MAX_NC_DIMS * sizeof (*Start));
+      Memset (Start, 0, MAX_NC_DIMS * sizeof (*Start));
       memset (Count, 0, MAX_NC_DIMS * sizeof (*Count));
       NumStart = ParseIntArg (START, MAX_NC_DIMS, Start);
       NumCount = ParseIntArg (COUNT, MAX_NC_DIMS, Count);
 
-      VerifyVectors (&VarInfo, Start, Count, NumStart, NumCount, debug);
-
+		Result = VerifyVectors (&VarInfo,Start,Count,NumStart,NumCount);
+		if (Result != ERR_NONE)
+		{
+			ErrAbort (ErrMsg, TRUE, Result);
+		}
    }     /* if start and count vectors given */
    else
    {
-      MakeDefaultVectors (&VarInfo, Start, Count, &NumStart, &NumCount, debug);
+	   MakeDefaultVectors (&VarInfo,Start,Count,&NumStart,&NumCount);
+
    }
 
-   ReadValues (&VarInfo, Start, Count, &RET_VECTOR, debug);
+	Result = ReadValues (&VarInfo, Start, Count, &RET_VECTOR);
+	if (Result != ERR_NONE)
+	{
+		ErrAbort (ErrMsg, TRUE, Result);
+	}	
 }     /* mexFunction */
