@@ -14,3 +14,6 @@
 %       operations up to two orders of magnitude faster.
 %
 %       See also TRAPZ, SUM, CUMSUM.
+
+% $Id: ntrapz.m,v 1.2 1997-10-20 18:23:20 greg Rel $
+% $Name:  $

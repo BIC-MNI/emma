@@ -13,6 +13,9 @@ function yi = igrate(t,y)
 %
 % The time spacing must be even.
 
+% $Id: igrate.m,v 1.3 1997-10-20 18:23:26 greg Rel $
+% $Name:  $
+
 if length(t) ~= length(y)
   error('t and y must have the same length.');
 end;

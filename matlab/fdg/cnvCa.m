@@ -9,6 +9,9 @@
 % When Ca is integral of a function (Ca'), cCa (output of this code)
 % is equal to integral of convolution of Ca', if finely sampled.
 
+% $Id: cnvCa.m,v 1.4 1997-10-20 18:23:26 greg Rel $
+% $Name:  $
+
 % Ca(:,ones(Lb,1))=Ca*ones(1,Lb) but faster.
 t=t(:); b=b(:);
   Lb=length(b); Lt=length(t); q=tril(ones(Lt));

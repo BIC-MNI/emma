@@ -9,6 +9,9 @@ function closeimage (handles)
 % temporary file and directory used for the uncompressed data are
 % deleted.
 
+% $Id: closeimage.m,v 1.10 1997-10-20 18:23:19 greg Rel $
+% $Name:  $
+
 for handle = handles
    eval(['global Flags' int2str(handle)]);
    eval(['global Filename' int2str(handle)]);

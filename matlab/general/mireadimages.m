@@ -51,4 +51,7 @@
 %  Currently, only one of the vectors slices or frames can contain multiple
 %  elements.
 
+% $Id: mireadimages.m,v 1.4 1997-10-20 18:23:20 greg Rel $
+% $Name:  $
+
 %  MIREADIMAGES -- written by Greg Ward 93/6/6.

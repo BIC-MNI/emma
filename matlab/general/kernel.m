@@ -25,6 +25,9 @@ function krn = kernel (fwhm, style)
 % SEE ALSO
 %   conv2, smooth
 
+% $Id: kernel.m,v 1.3 1997-10-20 18:23:23 greg Rel $
+% $Name:  $
+
 error (nargchk (1, 2, nargin));
 
 if (nargin < 2)

@@ -13,6 +13,9 @@ function [no,xo] = gettaggedhist (handle,tags,bins,progress)
 % See the help for gettaggedregion for more information on tagged
 % regions.
 
+% $Id: gettaggedhist.m,v 1.3 1997-10-20 18:23:21 greg Rel $
+% $Name:  $
+
 % @COPYRIGHT :Copyright 1994-95 Mark Wolforth and Greg Ward, McConnell
 %             Brain Imaging Centre, Montreal Neurological Institute,
 %             McGill University.  Permission to use, copy, modify, and

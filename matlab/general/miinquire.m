@@ -89,3 +89,6 @@
 % existence three option sequences ('dimlength', 'imagesize', and
 % 'attvalue') implies that there should be three MATLAB variables
 % to put the information in.
+
+% $Id: miinquire.m,v 1.5 1997-10-20 18:23:19 greg Rel $
+% $Name:  $

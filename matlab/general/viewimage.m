@@ -56,6 +56,9 @@ function [fig_handle, image_handle, bar_handle] = ...
 % colourbar - if 0, the colour bar will not be drawn [default: 1].
 % uiflag    - if 0, the buttons and sliders will not be drawn [default: 1]
 
+% $Id: viewimage.m,v 1.21 1997-10-20 18:23:21 greg Rel $
+% $Name:  $
+
 %  Copyright 1993,1994 Mark Wolforth and Greg Ward, McConnell Brain
 %  Imaging Centre, Montreal Neurological Institute, McGill
 %  University.

@@ -73,7 +73,6 @@ function handle = newimage (NewFile, DimSizes, ParentFile, ...
 %                     sagittal     MIxspace     MIzspace     MIyspace
 %                     coronal      MIyspace     MIzspace     MIxspace
 
-
 % ------------------------------ MNI Header ----------------------------------
 %@NAME       : newimage
 %@INPUT      : 
@@ -94,6 +93,8 @@ function handle = newimage (NewFile, DimSizes, ParentFile, ...
 %                              image type/valid range/orientation;
 %                              a few more fixes to the argument handling code
 %              27 May 1997   - Modified to work with Matlab 5 (MW)
+%@VERSION    : $Id: newimage.m,v 2.12 1997-10-20 18:23:23 greg Rel $
+%              $Name:  $
 %-----------------------------------------------------------------------------
 
 

@@ -19,4 +19,7 @@
 % then newy[i] will still be interpolated from oldx[j+1] and oldx[j];
 % note that this means any NaN's in oldy will be propagated to newy.
 
+% $Id: lookup.m,v 1.2 1997-10-20 18:23:23 greg Rel $
+% $Name:  $
+
 % lookup.c - CMEX by Greg Ward & Mark Wolforth

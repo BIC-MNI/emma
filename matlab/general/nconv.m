@@ -13,6 +13,9 @@ function c = conv(a, b, spacing)
 %
 %	See also CONV, XCORR, DECONV, CONV2, LOOKUP.
 
+% $Id: nconv.m,v 1.2 1997-10-20 18:23:20 greg Rel $
+% $Name:  $
+
 %	J.N. Little 4-21-85
 %	Revised 9-3-87 JNL
 %       Added spacing argument 93-8-4 Greg Ward (at MNI)

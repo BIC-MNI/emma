@@ -84,6 +84,8 @@ function ImHandle = openimage (filename, mode)
 %              97-5-27 Mark Wolforth: Minor modification to work with
 %                                     Matlab 5, which handles global
 %                                     variables differently from Matlab 4.x
+%@VERSION    : $Id: openimage.m,v 1.24 1997-10-20 18:23:23 greg Rel $
+%              $Name:  $
 %-----------------------------------------------------------------------------
 
 

@@ -33,6 +33,9 @@ function [int1, int2, int3] = findintconvo (Ca_even, ts_even, k2_lookup,...
 % simply resampling at the mid-frame times) and integrated across all
 % frames using flengths as dt.
 
+% $Id: findintconvo.m,v 1.16 1997-10-20 18:23:25 greg Rel $
+% $Name:  $
+
 % ----------------------------- MNI Header -----------------------------------
 % @NAME       : findintconvo
 % @INPUT      : 

@@ -3,6 +3,8 @@ function err = fit_b_curve (args, shifted_g_even, ts_even, A, fstart, flengths)
 %
 %
 
+% $Id: fit_b_curve.m,v 1.5 1997-10-20 18:23:25 greg Rel $
+% $Name:  $
 
 % ----------------------------- MNI Header -----------------------------------
 % @NAME       : fit_b_curve

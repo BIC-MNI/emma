@@ -16,6 +16,9 @@ function rcbfanalysis (infile, K1file, V0file, slices, progress, ...
 % specify [] for the file name.
 %
 
+% $Id: rcbfanalysis.m,v 1.2 1997-10-20 18:23:25 greg Rel $
+% $Name:  $
+
 % ----------------------------- MNI Header -----------------------------------
 % @NAME       : rcbfanalysis
 % @INPUT      : 

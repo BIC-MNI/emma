@@ -14,6 +14,8 @@ function img = blurimage (InputImage, FWHM)
 %  matrix containing an image.
 %
 
+% $Id: blurimage.m,v 1.2 1997-10-20 18:23:20 greg Rel $
+% $Name:  $
 
 %  Copyright 1994 Mark Wolforth, McConnell Brain Imaging Centre, Montreal
 %  Neurological Institute, McGill University.

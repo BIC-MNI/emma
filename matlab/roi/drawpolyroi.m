@@ -21,6 +21,9 @@ function [roiHandle,Xi,Yi,lineHandle] = drawpolyroi (line_color, fig)
 %    lineHandle - The MATLAB handle for the created line.
 %
 
+% $Id: drawpolyroi.m,v 1.2 1997-10-20 18:23:27 greg Rel $
+% $Name:  $
+
 % @COPYRIGHT  :
 %             Copyright 1993,1994 Mark Wolforth and Greg Ward, McConnell
 %             Brain Imaging Centre, Montreal Neurological Institute, McGill

@@ -17,6 +17,9 @@ function [new_g, new_ts] = resampleblood (handle, type, samples)
 %  to take.  If it is not supplied, resampleblood will resample the
 %  blood data at roughly 0.5 second intervals.
 
+% $Id: resampleblood.m,v 1.7 1997-10-20 18:23:21 greg Rel $
+% $Name:  $
+
 if (nargin < 2) | (nargin > 3)
    help resampleblood
    error('Incorrect number of arguments');

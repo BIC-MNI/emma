@@ -9,6 +9,9 @@ function integral = b_curve (args, shifted_g_even, ts_even, A, fstart, flengths)
 % two-compartment rCBF model used for fitting the blood
 % curve data to the head curve data.
 
+% $Id: b_curve.m,v 1.10 1997-10-20 18:23:25 greg Rel $
+% $Name:  $
+
 % ----------------------------- MNI Header -----------------------------------
 % @NAME       : b_curve
 % @INPUT      : 

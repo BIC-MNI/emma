@@ -26,6 +26,9 @@ function values = gettaggedregion (volume, tags, progress)
 % If the optional argument progress is one, then gettaggedregion will
 % print out progress information as it goes.
 
+% $Id: gettaggedregion.m,v 1.3 1997-10-20 18:23:24 greg Rel $
+% $Name:  $
+
 % by Greg Ward 95/11/9
 
 err = nargchk (2, 3, nargin);

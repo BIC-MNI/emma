@@ -68,6 +68,8 @@ function [new_ts_even, Ca_even, delta] = correctblood ...
 %@CALLS      : deriv, lookup, delaycorrect, fit_b_curve
 %@CREATED    : 93/7/21, Greg Ward
 %@MODIFIED   : Lots.  See rcs log.
+%@VERSION    : $Id: correctblood.m,v 1.24 1997-10-20 18:23:25 greg Rel $
+%              $Name:  $
 %-----------------------------------------------------------------------------
 
 

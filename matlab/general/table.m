@@ -6,6 +6,9 @@ function [y,failures] = table(tab,x0)
 %       returns a table of linearly interpolated rows from
 %	table TAB, looking up X0 in the first column of TAB.
 
+% $Id: table.m,v 1.3 1997-10-20 18:23:21 greg Rel $
+% $Name:  $
+
 %       NOTE:  TAB's 1st column is checked for monotonicity.
 %       When a requested value is outside the range of the first
 %       column of TAB for X0, a warning message is printed and 

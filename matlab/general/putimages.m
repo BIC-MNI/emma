@@ -33,7 +33,6 @@ function putimages (handle, images, slices, frames)
 %
 %  SEE ALSO  newimage, openimage, getimages
 
-
 % ------------------------------ MNI Header ----------------------------------
 %@NAME       : putimages
 %@INPUT      : handle - to an already-created image in MATLAB
@@ -55,6 +54,8 @@ function putimages (handle, images, slices, frames)
 %@CREATED    : June 1993, Greg Ward & Mark Wolforth
 %@MODIFIED   : 93-7-5, Greg Ward: foisted most of the work onto miwriteimages
 %              (the .m file, not the CMEX routine).
+%@VERSION    : $Id: putimages.m,v 1.8 1997-10-20 18:23:22 greg Rel $
+%              $Name:  $
 %-----------------------------------------------------------------------------
 
 

@@ -26,6 +26,8 @@ function [K1,k2] = rcbf1 (filename, slice, progress)
 % standard mL_blood / (100 g_tissue * min).  k2 is similarly converted
 % to 1/min.
 
+% $Id: rcbf1.m,v 1.25 1997-10-20 18:23:25 greg Rel $
+% $Name:  $
 
 % ----------------------------- MNI Header -----------------------------------
 % @NAME       : rcbf1

@@ -21,7 +21,6 @@ function [activity, mid_times] = getblooddata (study)
 %  find the blood activity data in either the MINC or BNC file, it will
 %  print a warning message and return nothing (ie. empty matrices).
 
-
 % ------------------------------ MNI Header ----------------------------------
 %@NAME       : getblooddata
 %@INPUT      : study - either a handle to an already opened image, or the
@@ -59,6 +58,8 @@ function [activity, mid_times] = getblooddata (study)
 %@CREATED    : June 1993, Greg Ward & Mark Wolforth
 %@MODIFIED   : 6 July 1993, Greg Ward: greater flexibility wrt. handling
 %              both MINC and BNC files
+%@VERSION    : $Id: getblooddata.m,v 1.7 1997-10-20 18:23:21 greg Rel $
+%              $Name:  $
 %-----------------------------------------------------------------------------
 
 

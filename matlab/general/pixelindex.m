@@ -29,6 +29,9 @@ function index = pixelindex (img,col,row)
 % works out to index 1; the last pixel (in the above example) has
 % coordinates (128,128), which works out to index 128*127+128 = 16384.
 
+% $Id: pixelindex.m,v 1.4 1997-10-20 18:23:19 greg Rel $
+% $Name:  $
+
 % by Greg Ward 95/3/16 (from the obsolete calpix.m)
 
 error (nargchk (3, 3, nargin));

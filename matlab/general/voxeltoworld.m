@@ -66,6 +66,9 @@ function [out] = voxeltoworld (volume, in, options)
 % SEE ALSO
 %   worldtovoxel, getvoxeltoworld
 
+% $Id: voxeltoworld.m,v 1.4 1997-10-20 18:23:24 greg Rel $
+% $Name:  $
+
 % by Greg Ward 95/3/12
 
 % Copyright 1995 Greg Ward, McConnell Brain Imaging Centre,

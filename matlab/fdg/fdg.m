@@ -30,6 +30,8 @@ function [K1_image, K_image, CMRglc_image] = fdg (filename, slices, glucose, ...
 % function will attempt to retrieve them from the BNC file
 % associated with the image.
 
+% $Id: fdg.m,v 1.6 1997-10-20 18:23:26 greg Rel $
+% $Name:  $
 
 %  Copyright 1994 Mark Wolforth, McConnell Brain Imaging Centre,
 %  Montreal Neurological Institute, McGill University.

@@ -34,6 +34,9 @@ function mask = makeroimask (wantedROIs, fig, dim)
 %           mask = makeroimask ([]);
 %
 
+% $Id: makeroimask.m,v 1.3 1997-10-20 18:23:27 greg Rel $
+% $Name:  $
+
 % @COPYRIGHT  :
 %             Copyright 1993,1994 Mark Wolforth and Greg Ward, McConnell
 %             Brain Imaging Centre, Montreal Neurological Institute, McGill

@@ -144,6 +144,8 @@ function info = getimageinfo (handle, whatinfo)
 %              other info item -- so they too are now case insensitive!
 %              95-09-21, Greg Ward: added MinMax, AllMin, and AllMax
 %              95-11-07, Greg Ward: added Steps, Starts, DirCosines
+%@VERSION    : $Id: getimageinfo.m,v 1.15 1997-10-20 18:23:19 greg Rel $
+%              $Name:  $
 %-----------------------------------------------------------------------------
 
 if nargin ~= 2

@@ -22,6 +22,9 @@ function msg = check_sf (handle, slices, frames)
 %
 %  If there are no problems, then the empty matrix is returned.
 
+% $Id: check_sf.m,v 1.7 1997-10-20 18:23:20 greg Rel $
+% $Name:  $
+
 msg = [];
 
 % First retrieve the number of frames and slices from the global workspace

@@ -11,6 +11,9 @@ function [points1, points2] = loadtagfile(tagfile);
 % The tag points are returned as homogeneous coordinates (ie. of the
 % form [x y z 1]) in columns.
 
+% $Id: loadtagfile.m,v 1.4 1997-10-20 18:23:24 greg Rel $
+% $Name:  $
+
 % originally by Peter Neelin; rewritten 95/3/20 Greg Ward.
 
 error (nargchk (1, 1, nargin));

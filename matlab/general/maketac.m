@@ -42,6 +42,9 @@ function tac = maketac (x,y,pet)
 %    tacs = maketac (find (mask)', pet);
 %
 
+% $Id: maketac.m,v 1.5 1997-10-20 18:23:20 greg Rel $
+% $Name:  $
+
 if (nargin < 2 | nargin > 3)
   help maketac
   error ('Incorrect number of input arguments');

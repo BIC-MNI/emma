@@ -7,6 +7,9 @@ function rcbfdemo(slice_number, frame_number)
 % file, but allows input of a slice and
 % frame to display.
 
+% $Id: rcbfdemo.m,v 1.8 1997-10-20 18:23:25 greg Exp $
+% $Name:  $
+
 % ----------------------------- MNI Header -----------------------------------
 % @NAME       : rcbfdemo
 % @INPUT      : 

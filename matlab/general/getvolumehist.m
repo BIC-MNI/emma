@@ -6,6 +6,8 @@ function [no,xo] = getvolumehist (handle,bins)
 %
 %
 
+% $Id: getvolumehist.m,v 1.3 1997-10-20 18:23:22 greg Rel $
+% $Name:  $
 
 % @COPYRIGHT  :
 %             Copyright 1994 Mark Wolforth, McConnell Brain Imaging Centre,

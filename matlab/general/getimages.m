@@ -98,6 +98,8 @@ function images = getimages (handle, slices, frames, old_matrix, start_row, num_
 %@MODIFIED   : 6 July 1993, Greg Ward: 
 %             30 May 1994, Greg Ward: added start_row and num_rows, 
 %                          completely rewrote help section
+%@VERSION    : $Id: getimages.m,v 1.13 1997-10-20 18:23:19 greg Rel $
+%              $Name:  $
 %-----------------------------------------------------------------------------
 
 

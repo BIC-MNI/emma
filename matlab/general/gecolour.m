@@ -14,6 +14,9 @@ function s = gecolour(m)
 % See also HSV, GRAY, PINK, HOT, COOL, BONE, COPPER, FLAG,
 %          COLORMAP, RGBPLOT.
 
+% $Id: gecolour.m,v 1.2 1997-10-20 18:23:23 greg Rel $
+% $Name:  $
+
 %         Copyright (c) 1984-92 by The MathWorks, Inc.
 %         gecolour version made by Mark Wolforth, McBIC, MNI (c) 1993
 

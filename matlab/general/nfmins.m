@@ -24,3 +24,6 @@
 %       faster).
 %
 %	See also FMINS, FMIN.
+
+% $Id: nfmins.m,v 1.2 1997-10-20 18:23:23 greg Rel $
+% $Name:  $

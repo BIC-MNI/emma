@@ -13,6 +13,9 @@ function s = spectral(m)
 % See also HSV, GRAY, PINK, HOT, COOL, BONE, COPPER, FLAG,
 %          COLORMAP, RGBPLOT.
 
+% $Id: spectral.m,v 1.4 1997-10-20 18:23:22 greg Rel $
+% $Name:  $
+
 %         Copyright (c) 1984-92 by The MathWorks, Inc.
 %         Spectral version made by Gabriel Leger, MBIC, MNI (c) 1993
 

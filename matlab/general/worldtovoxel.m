@@ -68,6 +68,9 @@ function out = worldtovoxel (volume, in, options)
 % SEE ALSO
 %   getvoxeltoworld, voxeltoworld, gettaggedregion
 
+% $Id: worldtovoxel.m,v 1.6 1997-10-20 18:23:24 greg Rel $
+% $Name:  $
+
 % by Mark Wolforth; rewritten 95/3/10-12 by Greg Ward, and then
 % again 95/11/3-9 by GW (sigh)
 

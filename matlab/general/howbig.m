@@ -8,6 +8,9 @@ function sizes = howbig
 % Both numbers are as parsed from 'ps -l', except multipled by 4 to
 % give the sizes in kilobytes.
 
+% $Id: howbig.m,v 1.2 1997-10-20 18:23:22 greg Rel $
+% $Name:  $
+
 [res, out] = unix ('ps -l | grep matlab | nawk ''{ split ($10, sizes, ":"); print sizes [1], sizes[2] }''');
 sizes = sscanf (out, '%d %d');
 sizes = sizes * 4;              % pages -> kbytes

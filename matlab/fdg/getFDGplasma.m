@@ -11,6 +11,9 @@ function [ts_new, plasma_new] = getFDGplasma(ts_plasma, plasma, eft)
 %  eft       =  A column vecter of end-frame time.  Units are minutes.
 %
 
+% $Id: getFDGplasma.m,v 1.2 1997-10-20 18:23:26 greg Rel $
+% $Name:  $
+
 %  Copyright 1994 Mark Wolforth and Hiroto Kuwabara, McConnell Brain Imaging
 %  Centre, Montreal Neurological Institute, McGill University.
 %  Permission to use, copy, modify, and distribute this software and its

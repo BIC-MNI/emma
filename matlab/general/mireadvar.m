@@ -41,4 +41,7 @@
 %  Mireadimages, however, does all that work for you given just slice
 %  and frame numbers.
 
+% $Id: mireadvar.m,v 1.3 1997-10-20 18:23:22 greg Rel $
+% $Name:  $
+
 %  MIREADVAR by Greg Ward.  See mireadvar.c for more illumination.

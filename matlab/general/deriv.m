@@ -10,6 +10,9 @@ function [yfit, z] = deriv (nn, npts, y, dt)
 %  Significance from Biological Signals."
 %
 
+% $Id: deriv.m,v 1.2 1997-10-20 18:23:19 greg Rel $
+% $Name:  $
+
 caa = 3 / (4 * nn * (nn^2 - 4));
 cbb = 12 / (nn * (nn^2 - 1));
 jbeg = ((nn+1)/2);

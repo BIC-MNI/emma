@@ -6,6 +6,9 @@ function fname = tempfilename
 %
 % Requires that a directory /tmp/ exists on the current machine.
 
+% $Id: tempfilename.m,v 1.6 1997-10-20 18:23:22 greg Rel $
+% $Name:  $
+
 rand ('seed', sum (100*clock));
 
 timestring = sprintf ('%02d', fix (clock));

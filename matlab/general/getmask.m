@@ -11,6 +11,9 @@ function mask = getmask (image)
 % threshold.  It then displays image as masked by that threshold value, so
 % the user can refine the threshold to his/her satisfaction.
 
+% $Id: getmask.m,v 1.8 1997-10-20 18:23:20 greg Rel $
+% $Name:  $
+
 %  Copyright 1993,1994 Mark Wolforth and Greg Ward, McConnell Brain
 %  Imaging Centre, Montreal Neurological Institute, McGill
 %  University.

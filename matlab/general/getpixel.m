@@ -9,6 +9,9 @@ function [x,y] = getpixel(n)
 % exists before calling ginput.  The functionality of this
 % function is exactly the same as MATLAB's ginput.
 
+% $Id: getpixel.m,v 1.3 1997-10-20 18:23:19 greg Rel $
+% $Name:  $
+
 if (get(0,'ScreenSize') == [0 0 1 1])
    disp('getpixel: Unknown display, cannot get a pixel');
    return;

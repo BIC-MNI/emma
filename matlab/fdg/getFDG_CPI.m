@@ -8,6 +8,9 @@ function [ts_new, plasma_new] = getFDG_CPI(ts_plasma, plasma, eft)
 %
 % eft  =  a column vecter of end-frame time. 
 
+% $Id: getFDG_CPI.m,v 1.3 1997-10-20 18:23:26 greg Rel $
+% $Name:  $
+
 %  Copyright 1994 Mark Wolforth and Hiroto Kuwabara, McConnell Brain Imaging
 %  Centre, Montreal Neurological Institute, McGill University.
 %  Permission to use, copy, modify, and distribute this software and its

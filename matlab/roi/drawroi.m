@@ -13,6 +13,9 @@ function lineHandle = drawroi (Xi,Yi,line_color,fig,roiNumber)
 %  of the created line.
 %
 
+% $Id: drawroi.m,v 1.4 1997-10-20 18:23:27 greg Rel $
+% $Name:  $
+
 % @COPYRIGHT  :
 %             Copyright 1993,1994 Mark Wolforth and Greg Ward, McConnell
 %             Brain Imaging Centre, Montreal Neurological Institute, McGill

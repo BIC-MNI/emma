@@ -9,6 +9,9 @@ function xfm = loadxfmfile(xfmfile);
 % types (eg. thin-plate spline, displacement grid, etc.) are not
 % supported.
 
+% $Id: loadxfmfile.m,v 1.3 1997-10-20 18:23:24 greg Rel $
+% $Name:  $
+
 % by Greg Ward
 
 error (nargchk (1, 1, nargin));

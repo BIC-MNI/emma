@@ -109,6 +109,9 @@ function xfm = getvoxeltoworld (volume)
 % SEE ALSO
 %   voxeltoworld, worldtovoxel
 
+% $Id: getvoxeltoworld.m,v 1.4 1997-10-20 18:23:24 greg Rel $
+% $Name:  $
+
 % by Greg Ward 95/3/10
 
 %

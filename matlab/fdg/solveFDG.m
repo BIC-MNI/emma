@@ -38,6 +38,8 @@ function [K1_image, K_image, CMRglc_image] = ...
 %  which make Q2=0 and Q3=0. Give wtf=[n11 n12 n21 n22].
 %  So far, the best weighting combination found is wtf = [1 3 1 10];
 
+% $Id: solveFDG.m,v 1.5 1997-10-20 18:23:26 greg Rel $
+% $Name:  $
 
 %  Copyright 1994 Mark Wolforth and Hiroto Kuwabara, McConnell Brain Imaging
 %  Centre, Montreal Neurological Institute, McGill University.

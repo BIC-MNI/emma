@@ -8,6 +8,8 @@ function threshimage (upper, lower, map, overcolour, undercolour)
 %  map may either be the name of a colormap (eg. spectral, hotmetal, etc)
 %      or an nx3 table of RGB values
 
+% $Id: threshimage.m,v 1.2 1997-10-20 18:23:20 greg Rel $
+% $Name:  $
 
 %
 % Check the input arguments

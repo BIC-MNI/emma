@@ -60,6 +60,8 @@ function [K1,k2,V0,delta] = rcbf2 (filename, slices, progress, ...
 % standard mL_blood / (100 g_tissue * min).  k2 and V0 are similarly 
 % converted to 1/min and mL_blood / (100 g_tissue).
 
+% $Id: rcbf2.m,v 1.36 1997-10-20 18:23:26 greg Rel $
+% $Name:  $
 
 % ----------------------------- MNI Header -----------------------------------
 % @NAME       : rcbf2

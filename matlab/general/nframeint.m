@@ -30,5 +30,8 @@
 % be divided not by the length of the frame but by the width of the interval
 % across which y is known.
 
+% $Id: nframeint.m,v 1.3 1997-10-20 18:23:21 greg Rel $
+% $Name:  $
+
 % (NFRAMEINT is a CMEX version of frameint.m.  nframeint.c written
 % by Mark Wolforth, 93/8/12; modified by Greg Ward, 93/8/12 - 93/8/13.)

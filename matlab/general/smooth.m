@@ -13,6 +13,9 @@ function new_data = smooth (old_data)
 % conv2 (part of the MATLAB Image Processing Toolbox), to perform a
 % fast 2-D convolution.
 
+% $Id: smooth.m,v 1.7 1997-10-20 18:23:22 greg Rel $
+% $Name:  $
+
 if (nargin ~= 1)
    help smooth
    error ('Incorrect number of input arguments.');

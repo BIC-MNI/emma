@@ -13,6 +13,9 @@ function s = hotmetal(m)
 % See also HSV, GRAY, PINK, HOT, COOL, BONE, COPPER, FLAG,
 %          COLORMAP, RGBPLOT, SPECTRAL.
 
+% $Id: hotmetal.m,v 1.2 1997-10-20 18:23:20 greg Rel $
+% $Name:  $
+
 %         Copyright (c) 1984-92 by The MathWorks, Inc.
 %         Hotmetal version made by Mark Wolforth, MBIC, MNI (c) 1993
 

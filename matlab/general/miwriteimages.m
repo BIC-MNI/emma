@@ -19,6 +19,9 @@ function miwriteimages (filename, images, slices, frames)
 %  is called by miwriteimages.m via a shell escape.  Neither of these
 %  programs are meant for everyday use by the end user.
 
+% $Id: miwriteimages.m,v 1.14 1997-10-20 18:23:23 greg Rel $
+% $Name:  $
+
 if (nargin < 2) | (nargin > 4)
    help miwriteimages
    error ('Incorrect number of arguments');
