@@ -84,12 +84,12 @@ function handle = newimage (NewFile, DimSizes, ParentFile, ...
 %              associated MINC file.
 %@METHOD     : 
 %@GLOBALS    : reads/increments: ImageCount
-%              creates: Filename#, NumFrames#, NumSlices#, ImageSize#,
-%              PETimages#, FrameTimes#, FrameLengths#, AvailFrames#,
-%              AvailSlices#, CurLine#
+%              creates: Filename#, DimSizes#, FrameTimes#, FrameLengths#
+%              (with the latter two empty)
 %@CALLS      : (if a MINC filename is supplied) micreate, micreateimage
 %@CREATED    : June 1993, Greg Ward & Mark Wolforth
 %@MODIFIED   : 6-17 Aug 1993 - totally overhauled (GPW).
+%              18 Aug 1993   - fixed up argument parsing code
 %-----------------------------------------------------------------------------
 
 
@@ -99,17 +99,67 @@ if (nargin < 2)
    error ('You must supply at least a new filename and dimension sizes');
 end
 
-% If none of the optional arguments are supplied, assign all defaults
-% Otherwise, at least ParentFile was given, so open it for future querying.
-if (nargin < 3)
-   ParentFile = '-';                % "-" alone means NO parent file
-   ImageType = 'byte';
-   ValidRange = [0 255];
-   DimOrder = 'transverse';
-else
+if (nargin > 6)
+   error ('Too many input arguments');
+end
+
+% If at least the parent file was given, let's open it so we can override
+% the defaults on the other arguments with values from the parent file.
+
+if (nargin >= 3)
    Parent = openimage (ParentFile);
-   ImageType = 'byte';              % these should (somehow) be taken from 
-   ValidRange = [0 255];            % the parent file !!!!
+else
+   ParentFile = '-';           % indicates that no parent file opened
+   Parent = -1;                % so does this 
+end
+
+
+% Now check all the other arguments, in descending order.  If any are
+% not supplied, use the defaults.  NOTE!!!  This code should check if
+% ParentFile was opened, and if so use the orientation (could be tricky),
+% valid range, and image type from it!!
+
+if (nargin <= 6)
+   % Do nothing -- all arguments are supplied
+end
+
+if (nargin <= 5)                  % DimOrder not supplied, set to default
+   DimOrder = 'transverse';
+end
+
+if (nargin <= 4)                  % ValidRange not supplied either
+   ValidRange = [];                   % will be set after we know the type
+end
+
+if (nargin <= 3)                  % ImageType not supplied
+   ImageType = 'byte';
+end
+
+% Now go through all the optional arguments (except ParentFile) and if 
+% they were empty, give them defaults.  Again, this should let ParentFile
+% override the defaults.
+
+if (isempty (ImageType))
+   ImageType = 'byte';
+end
+
+if (isempty (ValidRange))
+   if (strcmp (ImageType, 'byte'))
+      ValidRange = [0 255];
+   elseif (strcmp (ImageType, 'short'))
+      ValidRange = [-32768 32767];
+   elseif (strcmp (ImageType, 'long'))
+      ValidRange = [-2147483648 2147483647];
+   elseif (strcmp (ImageType, 'float'))
+      ValidRange = [1.17549435e-38 3.40282347e+38];
+   elseif (strcmp (ImageType, 'double'))
+      ValidRange = [2.2250738585072014e-308 1.7976931348623157e+308];
+   else
+      error (['Invalid image type: ' ImageType]);
+   end
+end
+
+if (isempty (DimOrder))
    DimOrder = 'transverse';
 end
 
@@ -133,14 +183,14 @@ end
 % set.  So let's create the new MINC file, copying the patient, study
 % and acquisition variables if possible.
 
-%disp (['New file: ' NewFile]);
-%disp (['Old file: ' ParentFile]);    % will be set to '' if none given by caller
-%disp ('DimSizes: ');
-%disp (DimSizes);
-%disp (['Image type: ' ImageType]);
-%disp ('Valid range:');
-%disp (ValidRange);
-%disp (['Orientation: ', DimOrder]);
+disp (['New file: ' NewFile]);
+disp (['Old file: ' ParentFile]);    % will be set to '' if none given by caller
+disp ('DimSizes: ');
+disp (DimSizes);
+disp (['Image type: ' ImageType]);
+disp ('Valid range:');
+disp (ValidRange);
+disp (['Orientation: ', DimOrder]);
 
 execstr = sprintf ('micreate %s %s patient study acquisition', ...
                    ParentFile, NewFile);
@@ -177,22 +227,13 @@ end
 % MATLAB variables that will be used by putimages
 
 eval(['global Filename'     int2str(ImageCount)]);
-eval(['global NumFrames',   int2str(ImageCount)]);
-eval(['global NumSlices',   int2str(ImageCount)]);
-eval(['global ImageSize',   int2str(ImageCount)]);
-eval(['global PETimages'    int2str(ImageCount)]);
+eval(['global DimSizes'     int2str(ImageCount)]);
 eval(['global FrameTimes'   int2str(ImageCount)]);
 eval(['global FrameLengths',int2str(ImageCount)]);
-eval(['global AvailFrames', int2str(ImageCount)]);
-eval(['global AvailSlices', int2str(ImageCount)]);
-eval(['global CurLine',    int2str(ImageCount)]);
 
 eval(['Filename'     int2str(ImageCount) ' = NewFile;']);
-eval(['NumFrames'    int2str(ImageCount) ' = DimSizes(1);']);
-eval(['NumSlices'    int2str(ImageCount) ' = DimSizes(2);']);
-eval(['ImageSize'    int2str(ImageCount) ' = DimSizes(3);']);
-eval(['FrameTimes'   int2str(ImageCount) ' = zeros(DimSizes(1), 1);']);
-eval(['FrameLengths' int2str(ImageCount) ' = zeros(DimSizes(1), 1);']);
-eval(['CurLine'      int2str(ImageCount) ' = 1;']);
+eval(['DimSizes'     int2str(ImageCount) ' = DimSizes;']);
+eval(['FrameTimes'   int2str(ImageCount) ' = [];']);
+eval(['FrameLengths' int2str(ImageCount) ' = [];']);
 
 handle = ImageCount;
