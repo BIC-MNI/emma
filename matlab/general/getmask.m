@@ -11,6 +11,18 @@ function mask = getmask (image)
 % threshold.  It then displays image as masked by that threshold value, so
 % the user can refine the threshold to his/her satisfaction.
 
+%  Copyright 1993,1994 Mark Wolforth and Greg Ward, McConnell Brain
+%  Imaging Centre, Montreal Neurological Institute, McGill
+%  University.
+%  Permission to use, copy, modify, and distribute this
+%  software and its documentation for any purpose and without
+%  fee is hereby granted, provided that the above copyright
+%  notice appear in all copies.  The authors and McGill University
+%  make no representations about the suitability of this
+%  software for any purpose.  It is provided "as is" without
+%  express or implied warranty.
+
+
 if (nargin ~= 1)
    help getmask;
    error ('Incorrect number of input arguments.');
@@ -23,16 +35,18 @@ temp = img > threshold * mu; 		% "binary" temp - all 1's and 0's
 [fh, iah] = viewimage (temp .* img); 	% returns handles: figure, image axes
 
 pos = get (iah, 'Position');
-pos (2) = pos(2) + 1.05*pos (4);	% assuming normalised units
+pos (2) = pos(2) + 1.09*pos (4);	% assuming normalised units
 pos (4) = .05;
 
-tobj = text('units', 'normal', 'position', [.5 1.15], 'string', num2str(threshold));
+% Couldn't get this to display in the right place, and so commented the
+% sucker out.  I'll figure it out one day, but not today.....
+% tobj = text('units', 'normal', 'position', [1.05 1.12], 'string', num2str(threshold));
 
 slider_cmd = ['global slider mu tobj temp img threshold;'...
               'threshold = get (slider, ''value'');'...
               'temp = img > threshold*mu;'...
-	      'viewimage (img .* temp, 0);'...
-	      'tobj = text(''units'', ''normal'', ''position'', [.5, 1.15], ''string'', num2str(threshold));'];
+	      'viewimage (img .* temp, 1);'...
+	      'tobj = text(''units'', ''normal'', ''position'', [1.05, 1.12], ''string'', num2str(threshold));'];
 slider = uicontrol ('Style', 'slider', 'units', 'normal', 'Position', pos,...
       'min', 1, 'max', 3, 'value', threshold, 'CallBack', slider_cmd);
 
