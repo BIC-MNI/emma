@@ -1,18 +1,25 @@
-function [eK1, eK, eGM] = solveFDG(imaM,cpx,c_Time,glucose,v0,wtf,MMC)
+function [K1_image, K_image, CMRglc_image] = solveFDG(PET,ts_Ca,Ca,eft,...
+    c_Time,glucose,v0,wtf,MMC)
 
 % solveFDG - perform FDG analysis using weighted integration
 %
 %
-%      [eK1, eK, eGM] = solveFDG(imaM,cpx,c_Time,Cp,v0,wtf,MMC)
+%     [K1_image, K_image, CMRglc_image] = solveFDG(PET,ts_Ca,Ca,eft, ...
+%                                             c_Time,glucose,v0,wtf,MMC)
 %
 %
-%  imaM      =  image matrix [image column vectors vs. frames]
-%  cpx       =  [time Ca(t), ICa(u)dt, originFLG] 
-%               Units should be nCi/ml.
-%  c_Time    =  circulation (analysis) time in minutes
-%  glucose   =  plasma glucose concentration (umol/ml)
-%  v0        =  assumed value of v0
-%  wtf       =  choice of weighting functions in numerical form
+%  PET     =  image matrix [image column vectors vs. frames]
+%  ts_Ca   =  The times used for expressing the blood data.  The times
+%             should include the end-frame times.  This can be done using
+%             the getFDGplasma function.  Units are minutes.
+%  Ca      =  The blood data.  Units are nCi/ml.
+%  eft     =  The end-frame times.  Units are minutes.
+%  c_Time  =  circulation (analysis) time in minutes
+%  glucose =  plasma glucose concentration Units are umol/ml.
+%  v0      =  assumed value of v0
+%  wtf     =  choice of weighting functions in numerical form
+%  MMC     =  A vector containing values for the parameters.  This vector
+%             should be in the form: [tau phi Kt Vd]
 %
 %  At the moment, 10 weighting functions are available:
 %     w1=1
@@ -43,9 +50,8 @@ function [eK1, eK, eGM] = solveFDG(imaM,cpx,c_Time,glucose,v0,wtf,MMC)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Check the input arguments
-%
 
-if nargin~=7
+if nargin~=9
   help solveFDG
   error('Incorrect number of input arguments.');
 end;
@@ -58,15 +64,6 @@ tau=MMC(1);
 phi=MMC(2);
 Kt=MMC(3);
 Vd=MMC(4);
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Get the end frame times.  They are found be looking
-% for zeros in the originFLG column of cpx.
-
-ts_Ca=cpx(:,1);
-s=size(cpx);
-eft=ts_Ca(find(cpx(:,s(2))==0));
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -91,10 +88,10 @@ dt=eft-shift_1(eft);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Resample blood data to a new time frame
 
-ts_new=sort([cpx(:,1); [min(cpx(:,1)):0.5:max(eft)]']);
+ts_new=sort([ts_Ca; [min(ts_Ca):0.5:max(eft)]']);
 ts_new=ts_new(find(ts_new-shift_1(ts_new)~=0));
 ts_new=ts_new(find(ts_new<=max(eft)));
-plasma=lookup(cpx(:,1),cpx(:,2),ts_new);
+Ca_new=lookup(ts_Ca,Ca,ts_new);
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -155,7 +152,7 @@ end;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Create integrated and weighted plasma data
 
-C1=igrate(ts_new,plasma);
+C1=igrate(ts_new,Ca_new);
 C1Index=C1(FrameIndex);
 q1=((C1Index-shift_1(C1Index))*ones(1,wNo)).*X;
 sq1=sum(q1);
@@ -197,7 +194,7 @@ Q22b=(sq2(Wt(3:4))*p2)';
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Get the number of lines, assuming a square image
 
-s=size(imaM(:,1));
+s=size(PET(:,1));
 lines=sqrt(s(1)); 
 
 
@@ -208,9 +205,16 @@ wima=zeros(lines,3);
 Kd=zeros(Lb,lines);
 K=Kd;
 K1=Kd;
-eK=zeros(s(1),1);
-eK1=eK;
-eGM=eK;
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% I'm not entirely sure if this is necessary, since the
+% variables are initialized to zero in the calling
+% function, but it doesn't seem to hurt any.....
+
+K_image=zeros(s(1),1);
+K1_image=K_image;
+CMRglc_image=K_image;
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -220,19 +224,19 @@ eGM=eK;
 for i=1:lines
   is=(i-1)*lines+1;
   ie=is+lines-1;
-  wima(:,:)=imaM(is:ie,1:NumFrames)*(X.*(dt*ones(1,wNo)));              % in nCi/ml
+  wima(:,:)=PET(is:ie,1:NumFrames)*(X.*(dt*ones(1,wNo)));              % in nCi/ml
   Kd(:,:)=(ones(Lb,1)*(wima(:,Wt(1:2))*p1-v0*(sq1(Wt(1:2))*p1))')./ ...
       (Q13b*ones(1,lines));
   K(:,:)=(wima(:,Wt(3:4))*p2)'./(Q22b*ones(1,lines));
   K1=Kd+K; 
   [mb,ib]=min(abs((K1./Kd).*(K1+glucose*tau*K./(phi+(tau-phi)*(K./K1))/Kt)/Vd ...
       -b*ones(1,lines)));
-  eK(is:ie)=sum(triu(tril(K(ib',[1:lines]'))))';
-  eK1(is:ie)=sum(triu(tril(K1(ib',[1:lines]'))))';
+  K_image(is:ie)=sum(triu(tril(K(ib',[1:lines]'))))';
+  K1_image(is:ie)=sum(triu(tril(K1(ib',[1:lines]'))))';
 end;
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Calculate the CMRglc image from the K and K1 images
 
-eGM=glucose*100./(phi./eK+(tau-phi)./eK1);
+CMRglc_image=glucose*100./(phi./K_image+(tau-phi)./K1_image);
