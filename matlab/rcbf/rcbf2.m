@@ -71,7 +71,7 @@ w2 = MidFTimes;
 w3 = sqrt (MidFTimes);
 
 ImLen = size(PET,1);
-PET_int1 = C_trapz( MidFTimes, PET')';
+PET_int1 = C_trapz (MidFTimes, PET')';
 PET_int2 = C_trapz (MidFTimes, PET' .* (w2 * ones(1,ImLen)))';
 PET_int3 = C_trapz (MidFTimes, PET' .* (w3 * ones(1,ImLen)))';
 
@@ -94,7 +94,7 @@ g_even = g_even*XCAL*37;              % units are decay / (g_tissue * sec)
 if (correction)
    mask = getmask (PET_int1);
    A = (mean (PET (find(mask),:)))';
-   [Ca_even, delta] = correctblood ...
+   [ts_even, Ca_even, delta] = correctblood ...
                        (A, FrameTimes, FrameLengths, g_even, ts_even, progress);
 else
    Ca_even = g_even;
