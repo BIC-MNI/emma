@@ -1,4 +1,4 @@
-function [K1,k2,V0,delta] = rcbf2_slice (filename, slices, progress, ...
+function [K1,k2,V0,delta] = rcbf2 (filename, slices, progress, ...
                                          correction, batch)
 
 % RCBF2 a two-compartment (triple-weighted integral) rCBF model.
@@ -206,9 +206,13 @@ for current_slice = 1:total_slices
        
     A = (mean (PET (find(mask),:)))';
     clear mask;
-
+    
+    % Perform the actual correction.  The magic numbers here are 
+    % tau (4), default delta (unused), and do_delay (1=true).
+    
     [ts_even, Ca_even, delta(:,current_slice)] = correctblood ...
-        (A, FrameTimes, FrameLengths, g_even, ts_even, progress);
+	  (A, FrameTimes, FrameLengths, g_even, ts_even, ...
+	  4, [], 1, progress);
   else
     if (progress)
       disp ('Skipping delay correction.');
@@ -241,18 +245,18 @@ for current_slice = 1:total_slices
   select = ~isnan(Ca_mft);
 
   if (sum(select) ~= length(FrameTimes))
-       disp('Warning: Blood data does not span frames.');
+       disp('Warning: blood data does not span frames.');
   end
   
-  Ca_int1 = ntrapz(MidFTimes(select), (w1(select) .* Ca_mft(select)));
-  Ca_int2 = ntrapz(MidFTimes(select), (w2(select) .* Ca_mft(select)));
-  Ca_int3 = ntrapz(MidFTimes(select), (w3(select) .* Ca_mft(select)));
-  
-  % Find the values of rL and rR (LHS and RHS of Eq. 10) for every pixel
-  % of the slice.
+  Ca_int1 = ntrapz(MidFTimes(select), Ca_mft(select), w1(select));
+  Ca_int2 = ntrapz(MidFTimes(select), Ca_mft(select), w2(select));
+  Ca_int3 = ntrapz(MidFTimes(select), Ca_mft(select), w3(select));
 
-  rL = ((Ca_int3 .* PET_int1) - (Ca_int1 .* PET_int3)) ./ ...
-      ((Ca_int3 .* PET_int2) - (Ca_int2 .* PET_int3));
+  % Find the value of rL (LHS of Eq. 10) for every pixel, and the value
+  % of rR (RHS of Eq. 10) for every value of k2 in k2_lookup.
+  
+  rL = ((Ca_int3 * PET_int1) - (Ca_int1 * PET_int3)) ./ ...
+	((Ca_int3 * PET_int2) - (Ca_int2 * PET_int3));
   
   rR = ((Ca_int3 * conv_int1) - (Ca_int1 * conv_int3)) ./ ...
       ((Ca_int3 * conv_int2) - (Ca_int2 * conv_int3));
