@@ -117,7 +117,7 @@ used to access the MINC file with \code{getimages},
 
 \item \code{getimages} - Gets images from a MINC file.  If the
 file has no frame dimension, the parameter \verb|frames| should be
-empty or not provided.  The \verb|slices| parameter is similiarly
+empty or not provided.  The \verb|slices| parameter is similarly
 handled, although files with no slice dimension are less commonly
 encountered.  Also, \code{getimages} can read several frames from a
 single slice or several slices from a single frame---but it can not
@@ -456,6 +456,9 @@ reading functions are written as CMEX programs.
 
 \subsection {Stand-alone C Programs}
 
+The following programs are used by various EMMA functions and are not
+normally needed by the user.  
+
 \begin {itemize}
 
 \item \code{miwriteimages} - Writes images to a MINC file.  The images
@@ -463,39 +466,54 @@ are taken from the specified temporary file, whose data is expected to
 be stored as doubles.  MINC file must exist, and contain an image
 structure (create with micreate and then micreateimage).
 \begin{verbatim}
-     int miwriteimages <MINC file> <slices> <frames> <temp file>
+miwriteimages <MINC file> <slices> <frames> <temp file>
 \end{verbatim}
 
-\item \code{micreateimage} - Create the MIimage variable in an existing MINC file.
-    Also updates the file hierarchy (MIimage is a child of MIrootvariable).
+\item \code{micreateimage} - Create the MIimage variable in an existing 
+MINC file.  Also updates the file hierarchy (MIimage is a child of
+MIrootvariable).  The sizes of all four image dimensions are required;
+if any of them are zero the corresponding dimension will not be created.
+Note that the MINC standard requires that at least an image height and
+image width dimension exist; \verb|micreateimage| currently does not
+verify that the user is conforming to this requirement.  Orientation
+(also sometimes referred to as dimension order) is one of either
+``transverse'', ``sagittal'', or ``coronal''.  Orientation determines
+the order of \verb|zspace|, \verb|yspace|, and \verb|xspace| in the
+MINC file.
 \begin{verbatim}
-     int micreateimage <MINC file> <size> <number of slices> <number of frames>
+micreateimage <MINC file> <number of frames> <number of slices> 
+              <height> <width> [orientation]
 \end{verbatim}
 
-\item \code{miwritevar} - Writes values to a variable in a MINC file.  Values are
-    taken from the specified temporary file, whose data is
-    expected to be stored as doubles.
+\item \code{miwritevar} - Writes values to a variable in a MINC file.  
+Values are taken from the specified temporary file, whose data is
+expected to be stored as doubles.
 \begin{verbatim}
-     int miwritevar <MINC file> <var name> <start vector> <length vector> <temp file>
+miwritevar <MINC file> <var name> <start vector> <length
+vector> <temp file>
 \end{verbatim}
 
 \item \code{micreatevar} - Create a variable in a MINC file.
 \begin{verbatim}
-     int micreatevar <MINC file> <var name> <data type> <num dims> <dim names>
+micreatevar <MINC file> <var name> <data type> <num dims> <dim names>
 \end{verbatim}
 
 \item \code{micreatedim} - Create a dimension in a MINC file.
 \begin{verbatim}
-     int micreatedim <MINC file> <dim name> <length>
+micreatedim <MINC file> <dim name> <length>
 \end{verbatim}
 
-
-\item \code{micreate} - Create a new MINC file by copying the global attributes
-    and root variable from another MINC file.  Will also copy 
-    the specified variables, and update the file hierarchy.  Adds 
-    a time stamp to the "history" global variable.
+\item \code{micreate} - Create a new MINC file by copying the global 
+attributes and root variable from another MINC file.  If <parent file>
+is a single ``-'' (hyphen), then no parent file will be used.
+\verb|micreate| will also copy the variables specified by <variable
+list>, and update the MINC file hierarchy, and add an entry to the
+"history" global attribute.  Note that the ``MINC'' file created by
+micreate is not actually a true MINC file, because it has no image
+variable.  This will most likely eventually be corrected by merging
+\verb|micreate| and \verb|micreateimage| into one program.
 \begin{verbatim}
-     micreate <parent file> <new file> [<variable list>]
+micreate <parent file> <new file> [<variable list>]
 \end{verbatim}
 
 \end{itemize}
