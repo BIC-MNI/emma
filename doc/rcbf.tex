@@ -283,6 +283,10 @@ implemented numerically in MATLAB.
 
 \subsection{Annotated Program Listings}
 
+This section contains listings of all of the matlab programs
+comprising the rCBF package.  Each program is broken into functional
+sections, which are then annotated.
+
 \subsubsection{RCBF1}
 
 \begin{enumerate}
@@ -386,7 +390,7 @@ k2_conv_ints = lookup (k2_lookup, conv_int1, k2);
 K1 = PET_int1 ./ k2_conv_ints;
 \end{verbatim}
 
-\item Clean up the $K_1$ image by setting any NaN's or infinities to
+\item Clean up the $K_1$ image by setting any NaN's and infinities to
 zero, and close the image data set.
 \begin{verbatim}
 nuke = find (isnan (K1) | isinf (K1));
