@@ -49,18 +49,16 @@ typedef struct BLOOD_DATA
 
 
 /* ----------------------------- MNI Header -----------------------------------
-@NAME       : 
-@INPUT      : 
-@OUTPUT     : 
-@RETURNS    : 
-@DESCRIPTION: 
-@METHOD     : 
-@GLOBALS    : 
-@CALLS      : 
-@CREATED    : 
+@NAME       : usage
+@INPUT      : void
+@OUTPUT     : none
+@RETURNS    : void
+@DESCRIPTION: Prints the usage information for bloodtonc
+@GLOBALS    : none
+@CALLS      : printf
+@CREATED    : October 1993 by MW
 @MODIFIED   : 
 ---------------------------------------------------------------------------- */
-
 void usage (void)
 {
     printf ("\nUsage:\n");
@@ -69,7 +67,7 @@ void usage (void)
 
 
 /* ----------------------------- MNI Header -----------------------------------
-@NAME       : 
+@NAME       : GetRecord
 @INPUT      : 
 @OUTPUT     : 
 @RETURNS    : 
@@ -80,8 +78,7 @@ void usage (void)
 @CREATED    : 
 @MODIFIED   : 
 ---------------------------------------------------------------------------- */
-
-Boolean GetRecord (FILE *input_stream, char record[])
+int GetRecord (FILE *input_stream, char record[])
 {
     int character;
     int i;
@@ -91,22 +88,23 @@ Boolean GetRecord (FILE *input_stream, char record[])
     character = fgetc(input_stream);
     if (character == EOF) 
     {
-	return (FALSE);
+	return (0);
     }
 
-    while ((character != EOF) && ((char)character != '\n'))
+    while ((character != EOF) && ((char)character != '\n') &&
+	   ((char)character != 0))
     {
 	record[i] = (char)character;
         character = fgetc(input_stream);
 	i++;
     }
 
-    return (TRUE);
+    return (i);
 }
 
 
 /* ----------------------------- MNI Header -----------------------------------
-@NAME       : 
+@NAME       : TokenizeRecord
 @INPUT      : 
 @OUTPUT     : 
 @RETURNS    : 
@@ -117,24 +115,23 @@ Boolean GetRecord (FILE *input_stream, char record[])
 @CREATED    : 
 @MODIFIED   : 
 ---------------------------------------------------------------------------- */
-
 int TokenizeRecord (char record[], char *tokens[])
 {
     int counter;
 
     counter = 0;
     
-    tokens[counter] = strtok (record, " ,:");
+    tokens[counter] = strtok (record, " \r,:");
     while (tokens[counter] != NULL)
     {
-	tokens[++counter] = strtok (NULL, " ,:");
+	tokens[++counter] = strtok (NULL, " \r,:");
     }
     return (counter);
 }
 
 
 /* ----------------------------- MNI Header -----------------------------------
-@NAME       : 
+@NAME       : CreateBloodCDF
 @INPUT      : 
 @OUTPUT     : 
 @RETURNS    : 
@@ -145,7 +142,6 @@ int TokenizeRecord (char record[], char *tokens[])
 @CREATED    : 
 @MODIFIED   : 
 ---------------------------------------------------------------------------- */
-
 int CreateBloodCDF (char name[], header *cnt_header)
 {
     int file_CDF;
@@ -183,7 +179,8 @@ int CreateBloodCDF (char name[], header *cnt_header)
     counts_id        = ncvardef (file_CDF, MIcounts, NC_DOUBLE, 1, dim_id);
     empty_weight_id  = ncvardef (file_CDF, MIemptyweight, NC_DOUBLE, 1, dim_id);
     full_weight_id   = ncvardef (file_CDF, MIfullweight, NC_DOUBLE, 1, dim_id);
-    corrected_activity_id = ncvardef (file_CDF, MIcorrectedactivity, NC_DOUBLE, 1, dim_id);
+    corrected_activity_id = ncvardef (file_CDF, MIcorrectedactivity, NC_DOUBLE,
+				      1, dim_id);
     activity_id      = ncvardef (file_CDF, MIactivity, NC_DOUBLE, 1, dim_id);
     
     /* Create variable attributes */
@@ -202,14 +199,21 @@ int CreateBloodCDF (char name[], header *cnt_header)
     /* Make a root for the blood analysis info */
 
     parent_id = ncvardef (file_CDF, MIbloodroot, NC_LONG, 0, NULL);
-    (void) miattputstr (file_CDF, parent_id, MIbloodfirstname, cnt_header->first_name);
-    (void) miattputstr (file_CDF, parent_id, MIbloodlastname, cnt_header->last_name);
-    (void) ncattput (file_CDF, parent_id, MIbloodrunnumber, NC_LONG, 1, &(cnt_header->run_number));
-    (void) miattputstr (file_CDF, parent_id, MIbloodstarttime, cnt_header->start_time);
+    (void) miattputstr (file_CDF, parent_id, MIbloodfirstname,
+			cnt_header->first_name);
+    (void) miattputstr (file_CDF, parent_id, MIbloodlastname,
+			cnt_header->last_name);
+    (void) ncattput (file_CDF, parent_id, MIbloodrunnumber, NC_LONG, 1,
+		     &(cnt_header->run_number));
+    (void) miattputstr (file_CDF, parent_id, MIbloodstarttime,
+			cnt_header->start_time);
     (void) miattputstr (file_CDF, parent_id, MIblooddate, cnt_header->date);
-    (void) miattputstr (file_CDF, parent_id, MIbloodisotope, cnt_header->isotope);
-    (void) miattputstr (file_CDF, parent_id, MIbloodstudytype, cnt_header->study_type);
-    (void) miattputint (file_CDF, parent_id, MIbloodbackground, cnt_header->background);
+    (void) miattputstr (file_CDF, parent_id, MIbloodisotope,
+			cnt_header->isotope);
+    (void) miattputstr (file_CDF, parent_id, MIbloodstudytype,
+			cnt_header->study_type);
+    (void) miattputint (file_CDF, parent_id, MIbloodbackground, 
+			cnt_header->background);
     (void) miattputstr (file_CDF, parent_id, MIbloodcomplete, "false");
     
     /* Set up the hierarchy */
@@ -248,7 +252,6 @@ int CreateBloodCDF (char name[], header *cnt_header)
 @CREATED    : 
 @MODIFIED   : 
 ---------------------------------------------------------------------------- */
-
 void GetCNT (FILE *in_file, header *cnt_header, blood_data *data)
 {
     int counter;
@@ -259,7 +262,7 @@ void GetCNT (FILE *in_file, header *cnt_header, blood_data *data)
     cnt_header->num_samples = 0;
 
     counter = 0;
-    while (GetRecord (in_file, buffer))
+    while (GetRecord (in_file, buffer) > 10)
     {
 	total_tokens = TokenizeRecord (buffer, tokens);
 	switch (counter)
@@ -269,7 +272,11 @@ void GetCNT (FILE *in_file, header *cnt_header, blood_data *data)
 		strcpy (cnt_header->last_name, tokens[4]);
 		cnt_header->run_number = atol (tokens[6]);
 		strcpy (cnt_header->start_time, tokens[7]);
-		strcpy (cnt_header->date, tokens[8]);
+		strcat (cnt_header->start_time, ":");
+		strcat (cnt_header->start_time, tokens[8]);
+		strcat (cnt_header->start_time, ":");
+		strcat (cnt_header->start_time, tokens[9]);
+		strcpy (cnt_header->date, tokens[10]);
 		break;
 	    case SECOND_LINE:
 		strcpy (cnt_header->isotope, tokens[1]);
@@ -320,7 +327,6 @@ void GetCNT (FILE *in_file, header *cnt_header, blood_data *data)
 @CREATED    : June 4, 1993 by MW
 @MODIFIED   : 
 ---------------------------------------------------------------------------- */
-
 int mivarsetdouble (int file_CDF, char *name, long num_values, double values[])
 {
     int varid;
@@ -358,7 +364,6 @@ int mivarsetdouble (int file_CDF, char *name, long num_values, double values[])
 @CREATED    : June 4, 1993 by MW
 @MODIFIED   : 
 ---------------------------------------------------------------------------- */
-
 void FillBloodCDF (int file_CDF, header *cnt_header, blood_data *data)
 {
     long samples;
@@ -393,7 +398,6 @@ void FillBloodCDF (int file_CDF, header *cnt_header, blood_data *data)
 @CREATED    : June 4, 1993 by MW
 @MODIFIED   : 
 ---------------------------------------------------------------------------- */
-
 void DoneBloodCDF (int file_CDF) 
 {
     int parent_id;
@@ -421,7 +425,6 @@ void DoneBloodCDF (int file_CDF)
 @CREATED    : 
 @MODIFIED   : 
 ---------------------------------------------------------------------------- */
-
 void main (int argc, char *argv[])
 {
     int file_CDF;
