@@ -1,5 +1,6 @@
-function [K1_image, K_image, CMRglc_image] = solveFDG(handle,slices,ts_Ca,Ca,...
-    eft,c_Time,glucose,v0,wtf,MMC,progress)
+function [K1_image, K_image, CMRglc_image] = ...
+      solveFDG(handle, slices, ts_Ca, Ca, eft, c_Time, ...
+               glucose,v0,wtf,MMC,progress)
 
 % solveFDG - perform FDG analysis using weighted integration
 %
@@ -88,8 +89,10 @@ mft=(eft+shift_1(eft))/2;
 dt=eft-shift_1(eft); 
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Resample blood data to a new time frame
+% (i.e., points every half second, as well as at the
+% real sample and end-frame times)
 
 ts_new=sort([ts_Ca; [min(ts_Ca):0.5:max(eft)]']);
 ts_new=ts_new(find(ts_new-shift_1(ts_new)~=0));
@@ -242,7 +245,7 @@ for current_slice = 1:total_slices
     
     is=(i-1)*lines+1;
     ie=is+lines-1;
-    wima(:,:)=PET(is:ie,1:NumFrames)*(X.*(dt*ones(1,wNo))); % in nCi/ml
+    wima(:,:)=PET(is:ie,:)*(X.*(dt*ones(1,wNo))); % in nCi/ml
     Kd(:,:)=(ones(Lb,1)*(wima(:,Wt(1:2))*p1-v0*(sq1(Wt(1:2))*p1))')./ ...
 	(Q13b*ones(1,lines));
     K(:,:)=(wima(:,Wt(3:4))*p2)'./(Q22b*ones(1,lines));
