@@ -74,5 +74,5 @@ char *NCErrMsg (int);
 int OpenFile (char *Filename, int *CDF, int Mode);
 int GetVarInfo (int CDF, char vName[], VarInfoRec *vInfo);
 int GetImageInfo (int CDF, ImageInfoRec *Image);
-int OpenImage (char Filename[], ImageInfoRec *Image, int mode);
+int OpenImage (char Filename[], ImageInfoRec *Image, int mode, double NaN);
 void CloseImage (ImageInfoRec *Image);
