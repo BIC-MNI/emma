@@ -11,7 +11,7 @@
 @CREATED    : 93-6-8, Greg Ward
 @MODIFIED   : 93-7-26 to 93-7-29, greatly expanded to allow for general 
               options, and added code for 'dimlength' option.  (GPW)
-	      93-9-29 to 93-9-30, added orientation and finished attvalue (GPW)
+              93-9-29 to 93-9-30, added orientation and finished attvalue (GPW)
 ---------------------------------------------------------------------------- */
 
 
@@ -148,27 +148,27 @@ int GeneralInfo (int CDF, Matrix **NumDims, Matrix **NumGAtts, Matrix **NumVars)
 @NAME       : GetDimLength
 @INPUT      : CDF - handle to open NetCDF file
               nargin, InArgs, nargout, OutArgs - input/output argument lists
-	         and counts, exactly as passed to mexFunction
-	      CurInArg - index into InArgs: points to the option string that
-	         initiated this call to GetDimLength (presumably "dimlength")
-		 and will be incremented to point to the element immediately
-		 following the last item processed by GetDimLength (ie.,
-		 either to the next option string or past the end of InArgs)
-	      CurOutArg - similar index into OutArgs: points to the element
-	         of OutArgs at which GetDimLength can start depositing its
-		 output; will be incremented to point to the next element
-		 of OutArgs after GetDimLength is done
+                 and counts, exactly as passed to mexFunction
+              CurInArg - index into InArgs: points to the option string that
+                 initiated this call to GetDimLength (presumably "dimlength")
+                 and will be incremented to point to the element immediately
+                 following the last item processed by GetDimLength (ie.,
+                 either to the next option string or past the end of InArgs)
+              CurOutArg - similar index into OutArgs: points to the element
+                 of OutArgs at which GetDimLength can start depositing its
+                 output; will be incremented to point to the next element
+                 of OutArgs after GetDimLength is done
 @OUTPUT     : CurInArg, CurOutArg - incremented as described under INPUT
               OutArgs[] - various members (from OutArgs[CurOutArg]) will point
-	         to newly created matrices holding the output from GetDimLength
+                 to newly created matrices holding the output from GetDimLength
 @RETURNS    : ERR_NONE if all went well.
               ERR_ARGS (with ErrMsg set) if not input or output arguments given
 @DESCRIPTION: Get the length of a NetCDF dimension, and return it as a
               MATLAB Matrix.  If the dimension does not exist, the "size"
-	      will be returned as an empty matrix.  The only error condition
-	      is if not enough input or output arguments are given (ie. no 
-	      dimension name is supplied, or no output argument was given
-	      corresponding to that dimension).
+              will be returned as an empty matrix.  The only error condition
+              is if not enough input or output arguments are given (ie. no 
+              dimension name is supplied, or no output argument was given
+              corresponding to that dimension).
 @METHOD     : 
 @GLOBALS    : 
 @CALLS      : 
@@ -176,16 +176,16 @@ int GeneralInfo (int CDF, Matrix **NumDims, Matrix **NumGAtts, Matrix **NumVars)
 @MODIFIED   : 93/8/19 Greg Ward:
 ---------------------------------------------------------------------------- */
 int GetDimLength (int CDF, int nargin, Matrix *InArgs[], int *CurInArg,
-		           int nargout, Matrix *OutArgs[], int *CurOutArg)
+                           int nargout, Matrix *OutArgs[], int *CurOutArg)
 {
-   Matrix  *mDimName;		/* the input and output as MATLAB Matrices */
+   Matrix  *mDimName;           /* the input and output as MATLAB Matrices */
    Matrix  *mDimLength; 
 
-   char    *DimName;		/* parsed from InArgs[] */
-   int      DimID;		/* returned by ncdimid */
-   long     DimLength;		/* returned by ncdiminq and put into OutArgs[] */
+   char    *DimName;            /* parsed from InArgs[] */
+   int      DimID;              /* returned by ncdimid */
+   long     DimLength;          /* returned by ncdiminq and put into OutArgs[] */
 
-   (*CurInArg)++;		/* point to the dimension name */
+   (*CurInArg)++;               /* point to the dimension name */
 
    /* 
     * *CurInArg now points to the dimension name in InArgs[]; check to make 
@@ -196,7 +196,7 @@ int GetDimLength (int CDF, int nargin, Matrix *InArgs[], int *CurInArg,
    if (*CurInArg >= nargin)
    {
       sprintf (ErrMsg, "dimlength: not enough input arguments "
-	       "(no dimension name found)");
+               "(no dimension name found)");
       return (ERR_ARGS);
    }
    mDimName = InArgs [*CurInArg];
@@ -226,12 +226,12 @@ int GetDimLength (int CDF, int nargin, Matrix *InArgs[], int *CurInArg,
    if (*CurOutArg >= nargout)
    {
       sprintf (ErrMsg, "dimlength: not enough output arguments "
-	       "(no room for length of dimension %s)", DimName);
+               "(no room for length of dimension %s)", DimName);
       return (ERR_ARGS);
    }
 
    OutArgs [*CurOutArg] = mDimLength;   /* return dim length to caller */
-   (*CurOutArg)++;		        /* point to the next input */
+   (*CurOutArg)++;                      /* point to the next input */
    (*CurInArg)++;                       /* and output arguments */
 
    return (ERR_NONE);
@@ -246,12 +246,12 @@ int GetDimLength (int CDF, int nargin, Matrix *InArgs[], int *CurInArg,
 @OUTPUT     : (see GetDimLength)
 @RETURNS    : ERR_NONE if all went well
               ERR_ARGS if not enough output arguments were supplied
-	      ERR_NO_VAR or ERR_BAD_MINC may be returned if GetImageInfo
-	      fails
+              ERR_NO_VAR or ERR_BAD_MINC may be returned if GetImageInfo
+              fails
 @DESCRIPTION: Get the lengths of the four image dimensions (time, zspace, 
               yspace, xspace) and return them in the order in which they 
-	      appear in the MINC file: frames, slices, height, width.  Any
-	      missing dimensions will have 0 as their length.
+              appear in the MINC file: frames, slices, height, width.  Any
+              missing dimensions will have 0 as their length.
 @METHOD     : 
 @GLOBALS    : 
 @CALLS      : GetImageInfo () [from mincutil.c]
@@ -259,12 +259,12 @@ int GetDimLength (int CDF, int nargin, Matrix *InArgs[], int *CurInArg,
 @MODIFIED   : 
 ---------------------------------------------------------------------------- */
 int GetImageSize (int CDF, int nargin, Matrix *InArgs[], int *CurInArg,
-		           int nargout, Matrix *OutArgs[], int *CurOutArg)
+                           int nargout, Matrix *OutArgs[], int *CurOutArg)
 {
-   ImageInfoRec	Image;
-   int		Result;
-   Matrix	*mSizes;
-   double	*Sizes;                /* pointer to real part of *mSizes */
+   ImageInfoRec Image;
+   int          Result;
+   Matrix       *mSizes;
+   double       *Sizes;                /* pointer to real part of *mSizes */
 
 
    /* Get all the image dimension sizes */
@@ -292,7 +292,7 @@ int GetImageSize (int CDF, int nargin, Matrix *InArgs[], int *CurInArg,
    }
 
    OutArgs [*CurOutArg] = mSizes;
-   (*CurOutArg)++;		        /* point to the next output */
+   (*CurOutArg)++;                      /* point to the next output */
    (*CurInArg)++;                       /* and input arguments */
 
    return (ERR_NONE);
@@ -305,12 +305,12 @@ int GetImageSize (int CDF, int nargin, Matrix *InArgs[], int *CurInArg,
 @OUTPUT     : (see GetDimLength)
 @RETURNS    : ERR_NONE if all went well
               ERR_ARGS if not enough arguments or badly-formed dimension name
-	      ErrMsg is set in the case of a parse error.
+              ErrMsg is set in the case of a parse error.
 @DESCRIPTION: Get the type of a NetCDF variable, as a MATLAB character 
               string (currently one of the type_names[] array, ie. byte,
-	      char, short, long, float, or double).  Currently does not
-	      say anything about signed/unsigned (which would have to
-	      come from a MINC attribute, I believe).
+              char, short, long, float, or double).  Currently does not
+              say anything about signed/unsigned (which would have to
+              come from a MINC attribute, I believe).
 @METHOD     : 
 @GLOBALS    : ErrMsg
 @CALLS      : CMEX, NetCDF libraries
@@ -318,21 +318,21 @@ int GetImageSize (int CDF, int nargin, Matrix *InArgs[], int *CurInArg,
 @MODIFIED   : 
 ---------------------------------------------------------------------------- */
 int GetVarType (int CDF, int nargin, Matrix *InArgs[], int *CurInArg,
-		         int nargout, Matrix *OutArgs[], int *CurOutArg)
+                         int nargout, Matrix *OutArgs[], int *CurOutArg)
 {
    Matrix  *mVarName;
    Matrix  *mVarTypeStr;
 
    char    *VarName;
-   int	    VarID;
+   int      VarID;
    nc_type  VarType;
    char    *VarTypeStr;
 
-   (*CurInArg)++;		/* point to the variable name */
+   (*CurInArg)++;               /* point to the variable name */
    if (*CurInArg >= nargin)
    {
       sprintf (ErrMsg, "vartype: not enough input arguments "
-	       "(no variable name found)");
+               "(no variable name found)");
       return (ERR_ARGS);
    }
 
@@ -370,11 +370,11 @@ int GetVarType (int CDF, int nargin, Matrix *InArgs[], int *CurInArg,
 @OUTPUT     : (see GetDimLength)
 @RETURNS    : ERR_NONE if all went well
               ERR_ARGS if not enough arguments (ie. need both a variable
-	      and attribute name) found
+              and attribute name) found
 @DESCRIPTION: Get the value of a NetCDF attribute to a MATLAB Matrix.  
               Handles numeric attributes with multiple values (returned
-	      as a row vector) and character attributes (returned as
-	      a MATLAB character string).
+              as a row vector) and character attributes (returned as
+              a MATLAB character string).
 @METHOD     : 
 @GLOBALS    : ErrMsg
 @CALLS      : CMEX, NetCDF, MINC libraries
@@ -382,19 +382,19 @@ int GetVarType (int CDF, int nargin, Matrix *InArgs[], int *CurInArg,
 @MODIFIED   : 
 ---------------------------------------------------------------------------- */
 int GetAttValue (int CDF, int nargin, Matrix *InArgs[], int *CurInArg,
-		         int nargout, Matrix *OutArgs[], int *CurOutArg)
+                         int nargout, Matrix *OutArgs[], int *CurOutArg)
 {
-   Matrix  *mVarName;		      /* name of desired variable */
-   Matrix  *mAttName;		      /* name of desired attribute */
-   char    *VarName;		      /* translation of mVarName */
-   char    *AttName;		      /* translation of mAttName */
-   int	    VarID;                    /* ID of the desired variable */
-   nc_type  AttType;		      /* type and length from ncattinq */
-   int	    AttLen;
-   Matrix  *mAttValue;		      /* the value(s) of the attribute, */
+   Matrix  *mVarName;                 /* name of desired variable */
+   Matrix  *mAttName;                 /* name of desired attribute */
+   char    *VarName;                  /* translation of mVarName */
+   char    *AttName;                  /* translation of mAttName */
+   int      VarID;                    /* ID of the desired variable */
+   nc_type  AttType;                  /* type and length from ncattinq */
+   int      AttLen;
+   Matrix  *mAttValue;                /* the value(s) of the attribute, */
                                       /* for returning to MATLAB */
-   double  *AttValue;		      /* pointer to real part of mAttValue */
-   char	   *AttStr;		      /* store a string attribute here */
+   double  *AttValue;                 /* pointer to real part of mAttValue */
+   char    *AttStr;                   /* store a string attribute here */
                                       /* for converting to MATLAB format */
 
    /* Make sure we have enough input parameters (variable and attribute name)*/
@@ -403,7 +403,7 @@ int GetAttValue (int CDF, int nargin, Matrix *InArgs[], int *CurInArg,
    if (*CurInArg > nargin-2)
    {
       sprintf (ErrMsg, "attvalue: not enough input arguments "
-	       "(need both variable and attribute name)");
+               "(need both variable and attribute name)");
       return (ERR_ARGS);
    }
 
@@ -412,7 +412,7 @@ int GetAttValue (int CDF, int nargin, Matrix *InArgs[], int *CurInArg,
    if (*CurOutArg > nargout-1)
    {
       sprintf (ErrMsg, "attvalue: not enough output arguments "
-	       "(no room for attribute value)\n");
+               "(no room for attribute value)\n");
       return (ERR_ARGS);
    }
 
@@ -435,8 +435,8 @@ int GetAttValue (int CDF, int nargin, Matrix *InArgs[], int *CurInArg,
    /* Get the variable ID; return empty matrix if variable not found */
 
    VarID = ncvarid (CDF, VarName);
-   if (VarID == MI_ERROR)	/* variable not found */
-   {				/* so return empty matrix */
+   if (VarID == MI_ERROR)       /* variable not found */
+   {                            /* so return empty matrix */
       OutArgs [*CurOutArg] = mxCreateFull (0, 0, REAL); 
       return (ERR_NONE);
    }
@@ -483,14 +483,14 @@ int GetAttValue (int CDF, int nargin, Matrix *InArgs[], int *CurInArg,
 @OUTPUT     : (see GetDimLength)
 @RETURNS    : ERR_NONE if no errors
               ERR_BAD_MINC if any of the NetCDF functions return an error,
-	      ie. if the image variable or one of the expected image
-	      dimensions are missing
-	      ErrMsg is set on error
+              ie. if the image variable or one of the expected image
+              dimensions are missing
+              ErrMsg is set on error
 @DESCRIPTION: Examines the correspondence between the image dimensions
               and the MIzspace/MIyspace/MIxspace dimensions in a MINC
-	      file to determine the image orientation.  The "image 
-	      dimensions" are just the dimension ID's returned by ncvarinq
-	      on MIimage.  The correspondence is as follows:
+              file to determine the image orientation.  The "image 
+              dimensions" are just the dimension ID's returned by ncvarinq
+              on MIimage.  The correspondence is as follows:
 
                     Orientation  Slice dim    Height dim   Width dim
                      transverse   MIzspace     MIyspace     MIxspace
@@ -504,18 +504,18 @@ int GetAttValue (int CDF, int nargin, Matrix *InArgs[], int *CurInArg,
 @MODIFIED   : 
 ---------------------------------------------------------------------------- */
 int GetOrientation (int CDF, int nargin, Matrix *InArgs[], int *CurInArg,
-		    int nargout, Matrix *OutArgs[], int *CurOutArg)
+                    int nargout, Matrix *OutArgs[], int *CurOutArg)
 {
-   int	     Result;
-   char	     Orient [11];  	        /* transverse, coronal, or sagittal */
-   Matrix   *mOrient;		        /* cOrient converted to MATLAB form */
-   int	     NumDims;	                /* number of image dimensions */
-   int	     DimIDs [MAX_NC_DIMS];	/* dimension *id*'s for MIimage */
-   int	     SliceDim;			/* just copied from various members */
-   int	     HeightDim;			/* of DimIDs - these three only */
-   int	     WidthDim;			/* exist to improve code clarity! */
-   int	     zdim, ydim, xdim;		/* NetCDF dimension ID's corresponding
-					/* to MIzspace, ... */
+   int       Result;
+   char      Orient [11];               /* transverse, coronal, or sagittal */
+   Matrix   *mOrient;                   /* cOrient converted to MATLAB form */
+   int       NumDims;                   /* number of image dimensions */
+   int       DimIDs [MAX_NC_DIMS];      /* dimension *id*'s for MIimage */
+   int       SliceDim;                  /* just copied from various members */
+   int       HeightDim;                 /* of DimIDs - these three only */
+   int       WidthDim;                  /* exist to improve code clarity! */
+   int       zdim, ydim, xdim;          /* NetCDF dimension ID's corresponding
+                                        /* to MIzspace, ... */
 
    /* Find the dimension *id*'s for the image variable -- these are NOT
     * (I think) necessarily the dimension numbers, which are relative
@@ -605,7 +605,7 @@ void mexFunction (int nargout, Matrix *outargs [],      /* output args */
    char     *Filename;
    char     *Option;
    int      CDF;
-   int      Result;		   /* return value from various functions */
+   int      Result;                /* return value from various functions */
    int      cur_outarg, cur_inarg; /* indeces into *outargs and *inargs arrays */
 
    ncopts = 0;
@@ -637,7 +637,7 @@ void mexFunction (int nargout, Matrix *outargs [],      /* output args */
       Result = GeneralInfo (CDF, &NUM_DIMS, &NUM_GATTS, &NUM_VARS);
       if (Result < 0)
       {
-	 ncclose (CDF);
+         ncclose (CDF);
          ErrAbort (ErrMsg, TRUE, Result);
       }
       return;
@@ -660,17 +660,17 @@ void mexFunction (int nargout, Matrix *outargs [],      /* output args */
     * the input arguments from inargs [cur_inarg] on...
     */
    
-   cur_inarg = 1;			/* point right after the filename */
-   cur_outarg = 0;			/* point to the very first output arg */
+   cur_inarg = 1;                       /* point right after the filename */
+   cur_outarg = 0;                      /* point to the very first output arg */
 
    while (cur_inarg < nargin)
    {
       
 #if 1+1==3
-      if (cur_outarg >= nargout)		/* eg. if cur_outarg==0 we must have >= 1 output arg */
+      if (cur_outarg >= nargout)                /* eg. if cur_outarg==0 we must have >= 1 output arg */
       {
-	 ncclose (CDF);
-	 ErrAbort ("Not enough output arguments", TRUE, ERR_ARGS);
+         ncclose (CDF);
+         ErrAbort ("Not enough output arguments", TRUE, ERR_ARGS);
       }
 #endif
       
@@ -679,63 +679,64 @@ void mexFunction (int nargout, Matrix *outargs [],      /* output args */
       if (debug) printf ("Parsing inargs[%d]...", cur_inarg);
       if (ParseStringArg (inargs[cur_inarg], &Option) == NULL)
       {
-	 ncclose (CDF);
-	 ErrAbort ("Option argument must be a string", TRUE, ERR_ARGS);
+         ncclose (CDF);
+         ErrAbort ("Option argument must be a string", TRUE, ERR_ARGS);
       }
       if (debug) printf ("it's %s\n", Option);
       
 
       if (debug) printf ("Passing inargs[%d] and outargs[%d] on\n", 
-			 cur_inarg, cur_outarg);
+                         cur_inarg, cur_outarg);
       
       /* Now take action based on value of string Option */
       
       if (strcasecmp (Option, "dimlength") == 0)
       {
-	 Result = GetDimLength(CDF, nargin, inargs, &cur_inarg, 
-			            nargout,outargs,&cur_outarg);
+         Result = GetDimLength(CDF, nargin, inargs, &cur_inarg, 
+                                    nargout,outargs,&cur_outarg);
       } 
       else if (strcasecmp (Option, "imagesize") == 0)
       {
-	 Result = GetImageSize(CDF, nargin, inargs, &cur_inarg, 
-			            nargout,outargs,&cur_outarg);
+         Result = GetImageSize(CDF, nargin, inargs, &cur_inarg, 
+                                    nargout,outargs,&cur_outarg);
       }
       else if (strcasecmp (Option, "vartype") == 0)
       {
-	 Result = GetVarType (CDF, nargin, inargs, &cur_inarg,
-			           nargout,outargs,&cur_outarg);
+         Result = GetVarType (CDF, nargin, inargs, &cur_inarg,
+                                   nargout,outargs,&cur_outarg);
       }
       else if (strcasecmp (Option, "attvalue") == 0)
       {
-	 Result = GetAttValue (CDF, nargin, inargs, &cur_inarg,
-	                            nargout,outargs,&cur_outarg);
+         Result = GetAttValue (CDF, nargin, inargs, &cur_inarg,
+                                    nargout,outargs,&cur_outarg);
       }
       else if (strcasecmp (Option, "orientation") == 0)
       {
-	 Result = GetOrientation (CDF, nargin, inargs, &cur_inarg,
-				  nargout,outargs,&cur_outarg);
+         Result = GetOrientation (CDF, nargin, inargs, &cur_inarg,
+                                  nargout,outargs,&cur_outarg);
       }
       else if ((strcasecmp (Option, "dimnames") == 0)
-	       ||(strcasecmp (Option, "varnames") == 0)
-	       ||(strcasecmp (Option, "vardims") == 0)
-	       ||(strcasecmp (Option, "varatts") == 0)
-	       ||(strcasecmp (Option, "varvalues") == 0)
-	       ||(strcasecmp (Option, "atttype") == 0))
+               ||(strcasecmp (Option, "varnames") == 0)
+               ||(strcasecmp (Option, "vardims") == 0)
+               ||(strcasecmp (Option, "varatts") == 0)
+               ||(strcasecmp (Option, "varvalues") == 0)
+               ||(strcasecmp (Option, "atttype") == 0))
       { 
-	 printf ("Sorry, option %s not yet supported.\n", Option);
-	 cur_inarg++;
+         printf ("Sorry, option %s not yet supported.\n", Option);
+         cur_inarg++;
       }
       else
       {
-	 sprintf (ErrMsg, "Unknown option: %s", Option);
-	 ErrAbort (ErrMsg, TRUE, ERR_ARGS);
+         ncclose (CDF);
+         sprintf (ErrMsg, "Unknown option: %s", Option);
+         ErrAbort (ErrMsg, TRUE, ERR_ARGS);
       }
       
       /* If ANY of the option-based calls above resulted in an error, BOMB! */
       if (Result != ERR_NONE)
       {
-	 ncclose (CDF);
-	 ErrAbort (ErrMsg, TRUE, Result);
+         ncclose (CDF);
+         ErrAbort (ErrMsg, TRUE, Result);
       }
       
    }
