@@ -68,7 +68,9 @@ if (colourbar)
   image((1:num_colors)');
   axis('xy');
   set(gca,'Xticklabels', []);
-  set(gca,'Ytick',0:8:64);
+  yticks = linspace (0, num_colors, 9);
+  set(gca,'Ytick',yticks);
+
   lab = linspace(lo, hi, 9);
   for i=1:9, labels = str2mat(labels,num2str(lab(i))); end;
   labels(1,:)=[];
