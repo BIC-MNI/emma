@@ -82,7 +82,35 @@ char *minc_err_msg_list [] =
    "Imagemax/min variables vary over image dimensions",
    "Not able to uncompress file"		/* error code 1349 */
 };
-   
+
+
+/* ----------------------------- MNI Header -----------------------------------
+@NAME       : strerror
+@INPUT      : 
+@OUTPUT     : 
+@RETURNS    : 
+@DESCRIPTION: Prints a system error message (only needed on systems with
+              non-ANSI C libraries, such as SunOS 4.1.x).
+@METHOD     : 
+@GLOBALS    : sys_nerr, sys_errlist
+@CALLS      : 
+@CREATED    : 1997/05/25, Greg Ward (stolen from David MacDonald's code)
+@MODIFIED   : 
+---------------------------------------------------------------------------- */
+#ifdef NO_STRERROR
+static char *strerror (int errnum)
+{
+   extern int  sys_nerr;
+   extern char *sys_errlist[];
+
+   if (errnum < 0 || errnum >= sys_nerr)
+   {
+      return( "" );
+   }
+
+   return( sys_errlist[errnum] );
+}
+#endif
 
 
 /* ----------------------------- MNI Header -----------------------------------
