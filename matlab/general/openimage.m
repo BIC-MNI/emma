@@ -134,7 +134,11 @@ if (strcmp (filename(len-2:len), '.gz') | ...
    dots = find (filename == '.');
    lastdot = dots (length (dots));
    slashes = find (filename == '/');
-   lastslash = slashes (length (slashes));
+   if (isempty(slashes))
+      lastslash = 0;
+   else
+      lastslash = slashes (length (slashes));
+   end
 
    newname = [tempdir filename((lastslash+1):(lastdot-1))];
    if (exist (newname) ~= 2)
