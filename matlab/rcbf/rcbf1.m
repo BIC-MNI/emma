@@ -89,8 +89,8 @@ g_even = g_even*XCAL*37/1.05;           % units are decay / (g_blood * sec)
 Ca_even = g_even; 			% no delay/dispersion correction!!!
 
 PET = getimages (img, slice, 1:length(FrameTimes));
-PET = PET * 37 / 1.05;                  % convert to decay / (g_tissue * sec)
-PET = PET .* (PET > 0);			% set all negative values to zero
+rescale (PET, 37 / 1.05);               % convert to decay / (g_tissue * sec)
+rescale (PET, PET > 0);                 % set all negative values to zero
 ImLen = size (PET, 1);                  % num of rows = length of image
 
 if (progress); disp ('Calculating mask and rL image'); end
@@ -98,12 +98,9 @@ if (progress); disp ('Calculating mask and rL image'); end
 PET_int1 = trapz (MidFTimes, PET')';
 PET_int2 = trapz (MidFTimes, PET' .* (MidFTimes * ones(1,ImLen)))';
 
-%PET_int1 = PET * FrameLengths;
-%PET_int2 = PET * (MidFTimes .* FrameLengths);
-
 mask = PET_int1 > mean (PET_int1);
-PET_int1 = PET_int1 .* mask;
-PET_int2 = PET_int2 .* mask;
+rescale (PET_int1, mask);
+rescale (PET_int2, mask);
 
 rL = PET_int1 ./ PET_int2;
 
