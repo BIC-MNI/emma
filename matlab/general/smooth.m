@@ -1,10 +1,11 @@
 function new_data = smooth (old_data)
 
-% SMOOTH  do a simple spatial smoothing on a vector image
+% SMOOTH  do a simple spatial smoothing on an image
 %
 %        new_data = smooth (old_data)
 %
-%
+% Smooths a two-dimensional image by averaging over a circle with a
+% diameter of 5 pixels.
 
 
 if (nargin ~= 1)
