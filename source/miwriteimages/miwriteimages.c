@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <ctype.h>
 #include <float.h>
 #include "minc.h"
 #include "emmageneral.h"
@@ -98,7 +99,7 @@ int GetVector (char vector_string[], long vector[], int max_elements)
     * vector is empty (0 members) if string is empty OR starts with a -
     */
 
-   if ((strlen (vector_string) == 0) || vector_string[0] == '-')
+   if ((strlen (vector_string) == 0) || vector_string[0] == (char) '-')
    {
       return (0);
    }
