@@ -18,7 +18,7 @@ function [fig_handle, image_handle, bar_handle] = viewimage (img, colourbar)
 
 [x,y] = size (img);
 
-if (x==y)
+if ((x > 1) & (y > 1))
     xsize = x;
 else
     xsize= x^.5;
@@ -52,8 +52,8 @@ else
 end
 
 
-% img is now square, xsize by xsize.  Set the colourmap, and 
-% shift/scale img so that it maps onto 1..length(colourmap)
+% Set the colourmap, and shift/scale img so that it maps onto
+% 1..length(colourmap)
 
 if (strcmp (get (0, 'BlackAndWhite'), 'off'))
    colormap (spectral);
