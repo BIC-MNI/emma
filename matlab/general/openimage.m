@@ -13,11 +13,24 @@ else
    ImageCount = 1;
 end
 
+if exist (filename) ~= 2
+	error ([filename ': file not found']);
+end
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Get the frame times and lengths for all frames.
 
-FrameTimes = mireadvar (filename, 'time');
-FrameLengths = mireadvar (filename, 'time-width');
+[tmp, ImageSize] = mcdinq (filename, 'xspace');		% assumes square images!!!
+[tmp, NumSlices] = mcdinq (filename, 'zspace');
+[tmp, NumFrames] = mcdinq (filename, 'time');
+
+if isempty (NumFrames)
+	NumFrames = 0;
+	disp ('Study is non-dynamic');
+else
+	FrameTimes = mireadvar (filename, 'time');
+	FrameLengths = mireadvar (filename, 'time-width');
+end
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -26,20 +39,8 @@ FrameLengths = mireadvar (filename, 'time-width');
 % referred and possibly added to by getnextline.)
 CurLine = 1;
 
-AvailFrames = [1];
-AvailSlices = [1];
-[tmp, ImageSize] = mcdinq (filename, 'xspace');		% assumes square images!!!
-[tmp, NumSlices] = mcdinq (filename, 'zspace');
-[tmp, NumFrames] = mcdinq (filename, 'time');
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Assume that we want to start at the beginning, so read first frame
-% of the first slice.  Note the "-1" because we will do everything in
-% MATLAB with 1-based array indeces, but the CMEX functions want
-% things 0-based.
-
-PETimages = mireadimages (filename, AvailSlices-1, AvailFrames-1, 0);
-
+AvailFrames = [];
+AvailSlices = [];
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Now make "numbered" copies of the six variables we just created; the
@@ -68,6 +69,6 @@ eval(['FrameLengths' int2str(ImageCount) ' = FrameLengths;']);
 eval(['CurLine'      int2str(ImageCount) ' = CurLine;']);
 eval(['AvailFrames'  int2str(ImageCount) ' = AvailFrames;']);
 eval(['AvailSlices'  int2str(ImageCount) ' = AvailSlices;']);
-eval(['PETimages'    int2str(ImageCount) ' = PETimages;']);
+eval(['PETimages'    int2str(ImageCount) ' = [];']);
 
 ImHandle = ImageCount;
