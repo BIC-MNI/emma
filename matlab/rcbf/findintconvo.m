@@ -137,10 +137,9 @@ for i = 1:TableSize
 
    % w3 given, and not empty?
    
-   if (nargin == 8)
+   if (nargin >= 8)
       if (~isempty (w3))
          int3 (i) = ntrapz(midftimes(select), integrand(select), w3(select));
       end
    end
 end
-
