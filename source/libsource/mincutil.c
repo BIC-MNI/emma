@@ -418,7 +418,8 @@ int OpenImage (char Filename[], ImageInfoRec *Image, int mode)
    (void) miicv_setint (Image->ICV, MI_ICV_TYPE, NC_DOUBLE);
    (void) miicv_setint (Image->ICV, MI_ICV_DO_RANGE, TRUE);
    (void) miicv_setint (Image->ICV, MI_ICV_DO_NORM, TRUE);
-/* (void) miicv_setint (Image->ICV, MI_ICV_USER_NORM, TRUE);  */
+   (void) miicv_setint (Image->ICV, MI_ICV_DO_DIM_CONV, TRUE);
+   (void) miicv_setint (Image->ICV, MI_ICV_DO_SCALAR, FALSE);
    (void) miicv_attach (Image->ICV, Image->CDF, Image->ID);
 
    return (ERR_NONE);
