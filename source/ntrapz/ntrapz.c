@@ -1,5 +1,5 @@
 /* ----------------------------- MNI Header -----------------------------------
-@NAME       : C_trapz.c (CMEX)
+@NAME       : trapint.c (CMEX)
 @INPUT      : 
               
 @OUTPUT     : 
@@ -22,7 +22,7 @@
 typedef int Boolean;
 
 
-#define PROGNAME "C_trapz"
+#define PROGNAME "ntrapz"
 
 
 #define TIMES   prhs[0]
@@ -36,6 +36,10 @@ typedef int Boolean;
 
 #define min(A, B) ((A) < (B) ? (A) : (B))
 #define max(A, B) ((A) > (B) ? (A) : (B))
+
+
+extern void TrapInt (int num_bins, double *times, double *values,
+		     double *bin_lengths, double *area);
 
 
 void usage (void)
@@ -122,44 +126,6 @@ Boolean CheckInputs (Matrix *X, Matrix *Y, int *InputRows, int *InputCols)
 }       /* end CheckInputs */
 
 
-/* ----------------------------- MNI Header -----------------------------------
-@NAME       : C_trapz
-@INPUT      : 
-@OUTPUT     : 
-@RETURNS    : 
-@DESCRIPTION: Performs a trapezoidal integration.
-@METHOD     : 
-@GLOBALS    : 
-@CALLS      : 
-@CREATED    : 
-@MODIFIED   : 
----------------------------------------------------------------------------- */
-void C_trapz (int num_bins, double *times, double *values,
-	      double *bin_lengths, double *area)
-{
-    int current_bin;
-
-#ifdef DEBUG
-    printf ("Now starting C_trapz function\n");
-    printf ("num_bins = %d\n", num_bins);
-#endif
-    
-    *area = 0;
-
-    for (current_bin=0; current_bin<(num_bins-1); current_bin++)
-    {
-#ifdef DEBUG
-        printf ("  Doing bin %d\n", current_bin);
-	printf ("  Average value = %lg\n", (values[current_bin]+values[current_bin+1])/2);
-	printf ("      Bin width = %lg\n", (times[current_bin+1]-times[current_bin]));
-#endif
-	
-
-	*area = *area + ((values[current_bin]+values[current_bin+1])/2*
-			 (times[current_bin+1]-times[current_bin]));
-
-    }
-}
 
 
 /* ----------------------------- MNI Header -----------------------------------
@@ -224,7 +190,7 @@ void mexFunction (int nlhs, Matrix *plhs [],
 	for (i=0; i<ycols; i++)
 	{
 	    CurColumn = Y + (i*xrows);
-	    C_trapz (xrows, X, CurColumn, Lengths, &(Area[i]));
+	    TrapInt (xrows, X, CurColumn, Lengths, &(Area[i]));
 	}
     }
     else
@@ -232,7 +198,7 @@ void mexFunction (int nlhs, Matrix *plhs [],
 	for (i=0; i<ycols; i++)
 	{
 	    CurColumn = Y + (i*xrows);
-	    C_trapz (xrows, X, CurColumn, NULL, &(Area[i]));
+	    TrapInt (xrows, X, CurColumn, NULL, &(Area[i]));
 	}
     }
 }
