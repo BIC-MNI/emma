@@ -355,6 +355,7 @@ void mexFunction(int    nlhs,
    int          Result;
 
    debug = FALSE;
+   ncopts = 0;
    ErrMsg = (char *) mxCalloc (256, sizeof (char));
 
    /* First make sure a valid number of arguments was given. */

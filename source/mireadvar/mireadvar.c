@@ -361,6 +361,7 @@ void mexFunction (int nlhs, Matrix *plhs [],
    int      NumCount;
    
    debug = FALSE;             /* default: can be overridden by caller */
+   ncopts = 0;
    ErrMsg = (char *) mxCalloc (256, sizeof (char));
 
    /*
