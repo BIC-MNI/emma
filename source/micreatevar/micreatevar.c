@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "minc.h"
+#include "emmageneral.h"
 
 #define PROGNAME "micreatevar"
 
@@ -11,8 +12,6 @@
 #define NUM_DIMS  argv[4]
 #define DIM_LIST(index)  argv[(index)+5]
 
-
-typedef int Boolean;
 
 
 /* ----------------------------- MNI Header -----------------------------------
