@@ -233,8 +233,8 @@ Boolean OpenFiles (char parent_file[], char child_file[],
       if (*parent_CDF == MI_ERROR)
       {
          sprintf (ErrMsg, "Error opening input file %s: %s\n", 
-                  parent_file, NCErrMsg (ncerr));
-         return (FALSE);
+		  parent_file, NCErrMsg (ncerr, errno));
+	 return (FALSE);
       }
    }
    else
@@ -254,19 +254,8 @@ Boolean OpenFiles (char parent_file[], char child_file[],
    *child_CDF = nccreate (child_file, NC_NOCLOBBER);
    if (*child_CDF == MI_ERROR) 
    {
-      char *errmsg;
-      
-      if (ncerr == NC_NOERR || ncerr == NC_SYSERR)
-      {
-	 errmsg = strerror (errno);
-      }
-      else
-      {
-	 errmsg = NCErrMsg (ncerr);
-      }
-      
       sprintf (ErrMsg, "Error creating file %s: %s\n",
-               child_file, errmsg);
+               child_file, NCErrMsg (ncerr, errno));
       ncclose (*parent_CDF);
       return (FALSE);
    }
@@ -302,13 +291,6 @@ Boolean OpenFiles (char parent_file[], char child_file[],
    /* The parent file is now open for reading, and the child file is */
    /* created and opened for definition.                             */
    
-   /* Create the root variable */
-/*   
-   child_root = micreate_group_variable (*child_CDF, MIrootvariable);
-   if (child_root == MI_ERROR)
-   {
-      sprintf (ErrMsg
-*/
    return (TRUE);
 }      /* OpenFiles () */
 
@@ -532,7 +514,7 @@ Boolean CreateImageVars (int CDF, int NumDim, int DimIDs[],
    if ((max_id == MI_ERROR) || (min_id == MI_ERROR))
    {  
       sprintf (ErrMsg, "Error creating image max/min variables: %s\n",
-               NCErrMsg (ncerr));
+               NCErrMsg (ncerr, errno));
       return (FALSE);
    }
 
@@ -620,7 +602,7 @@ Boolean CopyOthers (int ParentCDF, int ChildCDF,
    if (micopy_all_var_defs(ParentCDF, ChildCDF, NumExclude, Exclude) == MI_ERROR)
    {
       sprintf (ErrMsg, "Error %d copying variable definitions: %s", 
-	       ncerr, NCErrMsg (ncerr));
+	       ncerr, NCErrMsg (ncerr, errno));
       ncclose (ChildCDF);
       return (FALSE);
    }
@@ -639,7 +621,7 @@ Boolean CopyOthers (int ParentCDF, int ChildCDF,
    if (micopy_all_var_values(ParentCDF, ChildCDF, NumExclude, Exclude) == MI_ERROR)
    {
       sprintf (ErrMsg, "Error %d copying variable values: %s", 
-	       ncerr, NCErrMsg (ncerr));
+	       ncerr, NCErrMsg (ncerr, errno));
       ncclose (ChildCDF);
       return (FALSE);
    }
