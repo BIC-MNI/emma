@@ -93,7 +93,7 @@ function handle = newimage (NewFile, DimSizes, ParentFile, ...
 %                              image type/valid range/orientation;
 %                              a few more fixes to the argument handling code
 %              27 May 1997   - Modified to work with Matlab 5 (MW)
-%@VERSION    : $Id: newimage.m,v 2.12 1997-10-20 18:23:23 greg Rel $
+%@VERSION    : $Id: newimage.m,v 2.13 1999-06-09 18:35:20 neelin Exp $
 %              $Name:  $
 %-----------------------------------------------------------------------------
 
@@ -205,9 +205,9 @@ if (isempty (ValidRange))
       elseif (strcmp (ImageType, 'long'))
          ValidRange = [-2147483648 2147483647];
       elseif (strcmp (ImageType, 'float'))
-         ValidRange = [1.17549435e-38 3.40282347e+38];
+         ValidRange = [-3.40282347e+38 3.40282347e+38];
       elseif (strcmp (ImageType, 'double'))
-         ValidRange = [2.2250738585072014e-308 1.7976931348623157e+308];
+         ValidRange = [-1.7976931348623157e+308 1.7976931348623157e+308];
       else
          error (['Invalid image type: ' ImageType]);
       end
