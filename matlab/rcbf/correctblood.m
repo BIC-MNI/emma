@@ -1,15 +1,16 @@
-function [Ca_even, delta] = correctblood (A, startftimes, flengths, g_even, ts_even, progress)
+function [Ca_even, delta] = correctblood (A, FrameTimes, FrameLengths, g_even, ts_even, progress)
 
 % CORRECTBLOOD  perform delay and dispersion corrections on blood curve
 %
-%  [Ca_even, delta] = correctblood (A, startftimes, flengths, ...
+%  [Ca_even, delta] = correctblood (A, FrameTimes, FrameLengths, ...
 %                                   g_even, ts_even, progress)
 %
 %  The required input parameters are: 
 %      A - brain activity, averaged over all gray matter in a slice.  This
-%          should be in units of decay / (gram-tissue * sec).
-%      startftimes - the start time of every frame, in seconds
-%      flengths - the length of every frame, in seconds
+%          should be in units of decay / (gram-tissue * sec), and should
+%          just be a vector - one value per frame.
+%      FrameTimes - the start time of every frame, in seconds
+%      FrameLengths - the length of every frame, in seconds
 %      g_even - the (uncorrected) arterial input function, resampled at
 %               some *evenly spaced* time domain.  Should be in units
 %               of decay / (mL-blood * sec)
@@ -17,21 +18,16 @@ function [Ca_even, delta] = correctblood (A, startftimes, flengths, g_even, ts_e
 %
 %  The returned variables are:
 %      Ca_even - g_even with dispersion and delay hopefully corrected,
-%                in units of decay / (mL-blood * sec).  Ca_even will
-%                be one element smaller than g_even because the last
-%                point is lost in differentiating.
+%                in units of decay / (mL-blood * sec).  
 %      delay - the delay time (ie. shift) in seconds
 %
-%  A, startftimes, and flengths must all be vectors with the number
-%  of elements (presumably the number of frames in the study).  g_even 
-%  and ts_even must also be vectors with the same number of elements,
-%  but their size is generally an integer multiple of the number of
-%  blood samples taken.  (resampleblood should be used to find g_even
-%  and ts_even, and it defaults to doubling the sampling frequency, 
-%  so that the number of elements in g_even and ts_even will be twice
-%  the number of blood samples taken.
-%
-%  correctblood attempts to correct for dispersion in blood activity by 
+%  A, FrameTimes, and FrameLengths must all be vectors with the same
+%  number of elements (presumably the number of frames in the study).
+%  g_even and ts_even must also be vectors with the same number of
+%  elements, but their size should be much larger, due to the
+%  resampling at half-second intervals performed by resampleblood.
+%  
+%  correctblood corrects for dispersion in blood activity by
 %  calculating g(t) + tau * dg/dt, where tau (the dispersion time
 %  constant) is taken to be 4.0 seconds.
 %
@@ -39,15 +35,10 @@ function [Ca_even, delta] = correctblood (A, startftimes, flengths, g_even, ts_e
 %  curve to the observed brain activity A(t).  This curve depends
 %  on the parameters alpha, beta, gamma (these correspond to K1, k2,
 %  and V0, although for the entire slice rather than pixel-by-pixel) and
-%  gamma (which is the delay time).  correctblood steps through a series
+%  delta (which is the delay time).  correctblood steps through a series
 %  of delta values (currently -5 to +10 sec), and performs a three-
 %  parameter fit with respect to alpha, beta, and gamma; the value of
 %  delta that results in the best fit is chosen as the delay time.
-%
-%  Currently, the delay correction appears to be fairly effective
-%  alone.  However, when the dispersion correction is performed, it
-%  shifts the blood activity curve quite significantly, and completely
-%  screws up delay correction.  (Or so it would seem.)
 
 if ((nargin < 5) | (nargin > 6))
    help correctblood
@@ -58,9 +49,9 @@ if (nargin < 6), progress = 0; end
 
 if (progress) disp ('Showing progress'), end
 
-midftimes = startftimes + flengths/2;
-first60 = find (startftimes < 60);	      % all frames in first minute only
-numframes = length(startftimes);
+MidFTimes = FrameTimes + FrameLengths/2;
+first60 = find (FrameTimes < 60);	      % all frames in first minute only
+numframes = length(FrameTimes);
 
 tau = 4;                                      % assumed dispersion time constant
 
@@ -90,10 +81,10 @@ if (progress)
 end
 
 A = A (first60); 			% chop off stuff after 60 seconds
-midftimes = midftimes (first60);	% first minute again
+MidFTimes = MidFTimes (first60);	% first minute again
 
 if (progress)
-   plot (midftimes, A, 'or');
+   plot (MidFTimes, A, 'or');
    hold on
    title ('Average activity across gray matter');
    old_fig = gcf;
@@ -138,22 +129,22 @@ for i = 1:length(deltas)
 
 %   options(5) = 1;
 %   [final,options,f] = leastsq ('fit_b_curve', init, options, [], ...
-%                       shifted_g_even(g_select), ts_even(g_select), A, startftimes, flengths);
+%                       shifted_g_even(g_select), ts_even(g_select), A, FrameTimes, FrameLengths);
    final = fmins ('fit_b_curve', init, options, [], ...
-                   shifted_g_even (g_select), ts_even (g_select), A, startftimes, flengths);
+                   shifted_g_even (g_select), ts_even (g_select), A, FrameTimes, FrameLengths);
 
    params (i,:) = final;
 %   rss (i) = sum (f .^ 2) ;            % if using leastsq
    rss(i) = fit_b_curve (final, shifted_g_even(g_select), ts_even(g_select), ...
-                         A, startftimes, flengths);
+                         A, FrameTimes, FrameLengths);
 
    init = final;
    if (progress)
       fprintf ('; final = [%g %g %g]; error = %g\n', ...
 	    final, rss (i));
-      plot (midftimes, ...
+      plot (MidFTimes, ...
             b_curve(final, shifted_g_even(g_select), ts_even(g_select), ...
-		A, startftimes, flengths));
+		A, FrameTimes, FrameLengths));
       drawnow
    end
 end
