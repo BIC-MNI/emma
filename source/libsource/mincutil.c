@@ -199,7 +199,7 @@ int GetVarInfo (int CDF, char vName[], VarInfoRec *vInfo)
               only MIimage) were not found in the file.
               ERR_BAD_MINC if the order of dimensions is invalid
 @DESCRIPTION: Gets gobs of information about a MINC image variable.  See
-              ImageInfoRec in myminc.h for details.
+              ImageInfoRec in mincutil.h for details.
 @METHOD     : 
 @GLOBALS    : ErrMsg
 @CALLS      : standard MINC, NetCDF, library functions
