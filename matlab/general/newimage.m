@@ -31,6 +31,37 @@ function handle = newimage (new_file, parent_image, numslices, numframes)
 %  non-dynamic image or MINC file (ie. no time dimension), simply make
 %  numframes 0.
 
+% ------------------------------ MNI Header ----------------------------------
+%@NAME       : newimage
+%@INPUT      : new_file - string for name of new MINC file, or empty
+%					if no MINC file is to be created
+%					parent_image - either a handle for an already open image,
+%					or name of an already existing MINC file.  The size of the
+%					new image will in either case be inherited from the parent
+%					image, and if there is a MINC file associated with the handle
+%					or the name of a MINC file is given, then the new image 
+%					will inherit the parent MINC file's  history attribute
+%					and patient, study, and acquisition variables.
+%					numslices - number of slices to go in the new image
+%					numframes - number of frames for the new image.  Note that
+%					numslices and numframes must be supplied, but they currently
+%					have no effect if a MINC file is not created for the image.
+%@OUTPUT     : 
+%@RETURNS    : handle - a handle to the new image created in MATLAB
+%@DESCRIPTION: Creates the appropriate variables for accessing an image
+%					data set from within MATLAB, and optionally creates an 
+%					associated MINC file.
+%@METHOD     : 
+%@GLOBALS    : reads/increments: ImageCount
+%					creates: Filename#, NumFrames#, NumSlices#, ImageSize#,
+%					PETimages#, FrameTimes#, FrameLengths#, AvailFrames#,
+%					AvailSlices#, CurLine#
+%@CALLS      : (if a MINC filename is supplied) micreate, micreateimage
+%@CREATED    : June 1993, Greg Ward & Mark Wolforth
+%@MODIFIED   : 
+%-----------------------------------------------------------------------------
+
+
 % Check validity of input arguments
 
 if (nargin ~= 4)
