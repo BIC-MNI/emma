@@ -98,9 +98,21 @@ if isempty (w1)
    w1 = ones (size(NumFrames));
 end
 
+[status, num_cols] = unix ('tput cols');
+update_limit = ceil(TableSize/str2num(num_cols));
+
 for i = 1:TableSize
 
-   if (progress); fprintf('.'); end;
+   if (progress)
+
+     %
+     % Print some status dots if necessary
+     %
+    
+     if (rem(i,update_limit) == 0)
+       fprintf ('.');
+     end
+   end
 
    exp_fun = exp(-k2_lookup(i) * ts_even);
    convo = nconv(Ca_even, exp_fun, ts_even(2) - ts_even(1));
