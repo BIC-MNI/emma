@@ -38,7 +38,7 @@ error (nargchk (6, 8, nargin));
 NumEvenTimes = length(ts_even);
 NumFrames = length(midftimes);
 
-% Now we need to calculate the function to convolve with EvenActivity
+% Now we need to calculate the function to convolve with Ca_even
 % [a/k/a Ca(t)].  A note on the variables: exp_fun and integrand
 % represent, respectively, the functions exp (-k2 * t) and [Ca(t) (*)
 % exp (-k2 * t)] where (*) represents convolution.  (The t here is
@@ -48,17 +48,16 @@ NumFrames = length(midftimes);
 % the k2 vector to create a table of possible k2's and the two
 % integrated convolutions conv_int1 and conv_int2 as described above.
 
-TableSize = length (k2_table);
+TableSize = length (k2_lookup);
 integrand = zeros (NumFrames, 1);		% this is integrated across frames
 
 if (nargin >= 6); int1 = zeros (1, TableSize); end;
 if (nargin >= 7); int2 = zeros (1, TableSize); end;
 if (nargin == 8); int3 = zeros (1, TableSize); end;
-conv_int2 = zeros (1, TableSize);
 
 for i = 1:TableSize
-   exp_fun = exp(-k2_table(i) * ts_even);
-   convo = conv(EvenActivity, exp_fun);
+   exp_fun = exp(-k2_lookup(i) * ts_even);
+   convo = conv(Ca_even, exp_fun);
    integrand = lookup (ts_even, convo(1:NumEvenTimes), midftimes);
 
    if (nargin >= 6)                    % w1 present?
