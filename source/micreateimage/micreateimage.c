@@ -749,7 +749,7 @@ Boolean FillImage (int CDF, int NumDim, int DimIDs[], double Value)
    for (i = 0; i < image_elt; i++)
       values[i] = Value;
    
-   /* Put the values into the image variable */
+   /* Put the values into the image variable in the MINC file */
    
    var_id = ncvarid (CDF, MIimage);
    if (var_id == MI_ERROR)
@@ -758,22 +758,12 @@ Boolean FillImage (int CDF, int NumDim, int DimIDs[], double Value)
       return (FALSE);
    }
 
-   ncopts = NC_VERBOSE;
-   printf ("Trying to put a single value:\n");
-   if (mivarput1 (CDF, var_id, start, NC_DOUBLE, NULL, values)
-       == MI_ERROR)
-   {
-      fprintf (stderr, "Error writing image values to %s: %s\n",
-	       gChildFile, NCErrMsg(ncerr, errno));
-   }
-   
-   printf ("Trying a whole hyperslab:\n");
    if (mivarput (CDF, var_id, start, count, NC_DOUBLE, NULL, values)
        == MI_ERROR)
    {
       fprintf (stderr, "Error writing image values to %s: %s\n",
 	       gChildFile, NCErrMsg(ncerr, errno));
-/*      return (FALSE);*/
+      return (FALSE);
    }
 
    /* 
@@ -886,7 +876,6 @@ int main (int argc, char *argv[])
 
    if (ParentCDF != -1)
    {
-
       FinishExclusionLists (ParentCDF, NumDim, DimNames, &NumExclude, Exclude);
 
       ERROR_CHECK
@@ -904,4 +893,3 @@ int main (int argc, char *argv[])
    return (0);
 
 }
-
