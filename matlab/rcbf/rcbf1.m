@@ -35,7 +35,7 @@ Ca_even = g_even;                       % no delay/dispersion correction!!!
 
 % Apply the cross-calibration factor.
 XCAL = 0.11;
-Ca_even = Ca_even*XCAL;
+Ca_even = Ca_even/XCAL;
 
 PET = getimages (img, slice, 1:length(FrameTimes));
 PET = PET * 37 / 1.05;                  % convert to decay / (g_tissue * sec)

@@ -72,7 +72,7 @@ A = (mean (PET (find(mask),:)))' * 37 / 1.05;
 
 % Apply the cross-calibration factor.
 XCAL = 0.11;
-Ca_even = Ca_even*XCAL;
+Ca_even = Ca_even/XCAL;
 
 % Initialise the weighting functions w3 and w2; 
 % w3=sqrt(midftimes) and w2=midftimes. 
