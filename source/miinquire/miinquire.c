@@ -35,7 +35,6 @@
 #include "emmageneral.h"
 
 
-
 #define PROGNAME "miinquire"
 
 
@@ -617,9 +616,17 @@ void mexFunction (int nargout, Matrix *outargs [],      /* output args */
    int      Result;                /* return value from various functions */
    int      cur_outarg, cur_inarg; /* indeces into *outargs and *inargs arrays */
 
+#ifdef DEBUG
+   printf ("Starting miinquire.\n");
+#endif
+
    ncopts = 0;
    ErrMsg = (char *) mxCalloc (256, sizeof(char));
    if (nargin == 0) ErrAbort ("Not enough arguments", TRUE, ERR_ARGS);
+
+#ifdef DEBUG
+   printf ("Parsing the filename.\n");
+#endif
 
    /* Parse filename and open MINC file */
 
@@ -639,7 +646,7 @@ void mexFunction (int nargout, Matrix *outargs [],      /* output args */
    }
 
 #ifdef DEBUG
-   printf ("CDF ID for file: %d\n", CDF);n
+   printf ("CDF ID for file: %d\n", CDF);
 #endif
 
 
