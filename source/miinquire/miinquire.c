@@ -14,7 +14,7 @@
               93-9-29 to 93-9-30, added orientation and finished attvalue (GPW)
 	      94-3-10, changed if (debug) to #ifdef DEBUG everywhere
                        removed "gpw.h" because Boolean is defined in mexutils.h
-@VERSION    : $Id: miinquire.c,v 1.18 1997-10-20 18:30:43 greg Rel $
+@VERSION    : $Id: miinquire.c,v 1.19 2004-03-11 15:42:43 bert Exp $
               $Name:  $
 ---------------------------------------------------------------------------- */
 
@@ -120,7 +120,7 @@ void ErrAbort (char msg[], Boolean PrintUsage, int ExitCode)
 @CREATED    : 93-7-26, Greg Ward
 @MODIFIED   : 
 ---------------------------------------------------------------------------- */
-int GeneralInfo (int CDF, Matrix **NumDims, Matrix **NumGAtts, Matrix **NumVars)
+int GeneralInfo (int CDF, mxArray **NumDims, mxArray **NumGAtts, mxArray **NumVars)
 {
    int  nDims, nVars, nGAtts;
 
@@ -135,9 +135,9 @@ int GeneralInfo (int CDF, Matrix **NumDims, Matrix **NumGAtts, Matrix **NumVars)
 
    /* Create the MATLAB Matrices for returning to caller */
 
-   *NumDims = mxCreateFull (1, 1, REAL);
-   *NumGAtts = mxCreateFull (1, 1, REAL);
-   *NumVars = mxCreateFull (1, 1, REAL);
+   *NumDims = mxCreateDoubleMatrix (1, 1, mxREAL);
+   *NumGAtts = mxCreateDoubleMatrix (1, 1, mxREAL);
+   *NumVars = mxCreateDoubleMatrix (1, 1, mxREAL);
 
    /* Copy the ncinquire() results into MATLAB Matrices */
 
@@ -181,11 +181,11 @@ int GeneralInfo (int CDF, Matrix **NumDims, Matrix **NumGAtts, Matrix **NumVars)
 @CREATED    : 93/8/3 Greg Ward
 @MODIFIED   : 93/8/19 Greg Ward:
 ---------------------------------------------------------------------------- */
-int GetDimLength (int CDF, int nargin, Matrix *InArgs[], int *CurInArg,
-                           int nargout, Matrix *OutArgs[], int *CurOutArg)
+int GetDimLength (int CDF, int nargin, const mxArray *InArgs[], int *CurInArg,
+                           int nargout, mxArray *OutArgs[], int *CurOutArg)
 {
-   Matrix  *mDimName;           /* the input and output as MATLAB Matrices */
-   Matrix  *mDimLength; 
+   const mxArray *mDimName; /* the input and output as MATLAB Matrices */
+   mxArray  *mDimLength; 
 
    char    *DimName;            /* parsed from InArgs[] */
    int      DimID;              /* returned by ncdimid */
@@ -218,12 +218,12 @@ int GetDimLength (int CDF, int nargin, Matrix *InArgs[], int *CurInArg,
    DimID = ncdimid (CDF, DimName);
    if (DimID == MI_ERROR)               /* not found? then return an */
    {                                    /* empty Matrix */
-      mDimLength = mxCreateFull (0, 0, REAL);
+      mDimLength = mxCreateDoubleMatrix(0, 0, mxREAL);
    }
    else                                 /* dimension was there, so get */
    {                                    /* the length and return it */
       ncdiminq (CDF, DimID, NULL, &DimLength);
-      mDimLength = mxCreateFull (1, 1, REAL);
+      mDimLength = mxCreateDoubleMatrix(1, 1, mxREAL);
       *(mxGetPr(mDimLength)) = (double) DimLength;
    }
 
@@ -265,12 +265,12 @@ int GetDimLength (int CDF, int nargin, Matrix *InArgs[], int *CurInArg,
 @MODIFIED   : 
 ---------------------------------------------------------------------------- */
 /* ARGSUSED */
-int GetImageSize (int CDF, int nargin, Matrix *InArgs[], int *CurInArg,
-                           int nargout, Matrix *OutArgs[], int *CurOutArg)
+int GetImageSize (int CDF, int nargin, const mxArray *InArgs[], int *CurInArg,
+                           int nargout, mxArray *OutArgs[], int *CurOutArg)
 {
    ImageInfoRec Image;
    int          Result;
-   Matrix       *mSizes;
+   mxArray       *mSizes;
    double       *Sizes;                /* pointer to real part of *mSizes */
 
 
@@ -285,7 +285,7 @@ int GetImageSize (int CDF, int nargin, Matrix *InArgs[], int *CurInArg,
 
    /* Create the MATLAB Matrix (really a vector) to hold the image sizes */
 
-   mSizes = mxCreateFull (4, 1, REAL);
+   mSizes = mxCreateDoubleMatrix(4, 1, mxREAL);
    Sizes = mxGetPr (mSizes);
    Sizes [0] = Image.Frames;
    Sizes [1] = Image.Slices;
@@ -325,11 +325,11 @@ int GetImageSize (int CDF, int nargin, Matrix *InArgs[], int *CurInArg,
 @MODIFIED   : 
 ---------------------------------------------------------------------------- */
 /* ARGSUSED */
-int GetVarType (int CDF, int nargin, Matrix *InArgs[], int *CurInArg,
-                         int nargout, Matrix *OutArgs[], int *CurOutArg)
+int GetVarType (int CDF, int nargin, const mxArray *InArgs[], int *CurInArg,
+                         int nargout, mxArray *OutArgs[], int *CurOutArg)
 {
-   Matrix  *mVarName;
-   Matrix  *mVarTypeStr;
+   const mxArray  *mVarName;
+   mxArray  *mVarTypeStr;
 
    char    *VarName;
    int      VarID;
@@ -389,17 +389,17 @@ int GetVarType (int CDF, int nargin, Matrix *InArgs[], int *CurInArg,
 @CREATED    : Aug 93 (but not finished until 30 Sep), Greg Ward
 @MODIFIED   : 94/7/15, GW: removed a spurious increment of *CurInArg
 ---------------------------------------------------------------------------- */
-int GetAttValue (int CDF, int nargin, Matrix *InArgs[], int *CurInArg,
-                         int nargout, Matrix *OutArgs[], int *CurOutArg)
+int GetAttValue (int CDF, int nargin, const mxArray *InArgs[], int *CurInArg,
+                         int nargout, mxArray *OutArgs[], int *CurOutArg)
 {
-   Matrix  *mVarName;                 /* name of desired variable */
-   Matrix  *mAttName;                 /* name of desired attribute */
+   const mxArray  *mVarName;    /* name of desired variable */
+   const mxArray  *mAttName;    /* name of desired attribute */
    char    *VarName;                  /* translation of mVarName */
    char    *AttName;                  /* translation of mAttName */
    int      VarID;                    /* ID of the desired variable */
    nc_type  AttType;                  /* type and length from ncattinq */
    int      AttLen;
-   Matrix  *mAttValue;                /* the value(s) of the attribute, */
+   mxArray  *mAttValue;                /* the value(s) of the attribute, */
                                       /* for returning to MATLAB */
    char    *AttStr;                   /* store a string attribute here */
                                       /* for converting to MATLAB format */
@@ -458,7 +458,7 @@ int GetAttValue (int CDF, int nargin, Matrix *InArgs[], int *CurInArg,
    VarID = ncvarid (CDF, VarName);
    if (VarID == MI_ERROR)       /* variable not found */
    {                            /* so return empty matrix */
-      OutArgs [*CurOutArg] = mxCreateFull (0, 0, REAL); 
+      OutArgs [*CurOutArg] = mxCreateDoubleMatrix(0, 0, mxREAL); 
       (*CurOutArg)++;
       return (ERR_NONE);
    }
@@ -472,7 +472,7 @@ int GetAttValue (int CDF, int nargin, Matrix *InArgs[], int *CurInArg,
 
    if (ncattinq (CDF, VarID, AttName, &AttType, &AttLen) == MI_ERROR)
    {
-      OutArgs [*CurOutArg] = mxCreateFull (0, 0, REAL);  
+      OutArgs [*CurOutArg] = mxCreateDoubleMatrix(0, 0, mxREAL);  
       (*CurOutArg)++;
       return (ERR_NONE);
    }  
@@ -497,7 +497,7 @@ int GetAttValue (int CDF, int nargin, Matrix *InArgs[], int *CurInArg,
    }
    else
    {
-      mAttValue = mxCreateFull (1, AttLen, REAL);
+      mAttValue = mxCreateDoubleMatrix(1, AttLen, mxREAL);
       miattget (CDF, VarID, AttName, NC_DOUBLE, AttLen, mxGetPr (mAttValue), NULL);
    }
 
@@ -623,12 +623,12 @@ int get_dimension_info (int CDF, int *num_dims, int dim_ids[],
                  moved a big chunk of code into get_dimension_info
 ---------------------------------------------------------------------------- */
 /* ARGSUSED */
-int GetOrientation (int CDF, int nargin, Matrix *InArgs[], int *CurInArg,
-                    int nargout, Matrix *OutArgs[], int *CurOutArg)
+int GetOrientation (int CDF, int nargin, const mxArray *InArgs[], int *CurInArg,
+                    int nargout, mxArray *OutArgs[], int *CurOutArg)
 {
    int       Result;
    char      Orient [11];               /* transverse, coronal, or sagittal */
-   Matrix   *mOrient;                   /* cOrient converted to MATLAB form */
+   mxArray   *mOrient;                   /* cOrient converted to MATLAB form */
    int       NumDims;                   /* number of image dimensions */
    int       DimIDs [MAX_NC_DIMS];      /* dimension *id*'s for MIimage */
    int       HeightDim;                 /* of DimIDs - these three only */
@@ -699,8 +699,8 @@ int GetOrientation (int CDF, int nargin, Matrix *InArgs[], int *CurInArg,
 @CREATED    : Aug 95, Greg Ward
 @MODIFIED   : 
 ---------------------------------------------------------------------------- */
-int GetDimNames (int CDF, int nargin, Matrix *InArgs[], int *CurInArg,
-		 int nargout, Matrix *OutArgs[], int *CurOutArg)
+int GetDimNames (int CDF, int nargin, const mxArray *InArgs[], int *CurInArg,
+		 int nargout, mxArray *OutArgs[], int *CurOutArg)
 {
    int       Result;
    int       NumDims;                   /* number of image dimensions */
@@ -786,8 +786,8 @@ int std_dim_offset (char *dimname)
 @CREATED    : 95/09/01, Greg Ward
 @MODIFIED   : 
 ---------------------------------------------------------------------------- */
-int GetPermutation (int CDF, int nargin, Matrix *InArgs[], int *CurInArg,
-		       int nargout, Matrix *OutArgs[], int *CurOutArg)
+int GetPermutation (int CDF, int nargin, const mxArray *InArgs[], int *CurInArg,
+		       int nargout, mxArray *OutArgs[], int *CurOutArg)
 {
    int       i, j;
    int       Result;
@@ -796,7 +796,7 @@ int GetPermutation (int CDF, int nargin, Matrix *InArgs[], int *CurInArg,
    char      DimName [MAX_NC_NAME];
    int       xdim, ydim, zdim;          /* NetCDF dimension ID's */
    int       PermVec [3];	        /* map vector to world coords */
-   Matrix   *PermMatrix;
+   mxArray   *PermMatrix;
    double   *RawPerm;
 
    Result = get_dimension_info (CDF, &NumDims, DimIDs, &xdim, &ydim, &zdim);
@@ -844,7 +844,7 @@ int GetPermutation (int CDF, int nargin, Matrix *InArgs[], int *CurInArg,
     * to one just so this can be used on homogeneous coordinates.)
     */
 
-   PermMatrix = mxCreateFull (4, 4, FALSE);
+   PermMatrix = mxCreateDoubleMatrix(4, 4, mxREAL);
    RawPerm = mxGetPr (PermMatrix);
 
    for (i = 0; i < 3; i++)
@@ -884,8 +884,8 @@ int GetPermutation (int CDF, int nargin, Matrix *InArgs[], int *CurInArg,
 @CREATED    : 
 @MODIFIED   : 
 ---------------------------------------------------------------------------- */
-void mexFunction (int nargout, Matrix *outargs [],      /* output args */
-                  int nargin, Matrix *inargs [])        /* input args */
+void mexFunction (int nargout, mxArray *outargs [],      /* output args */
+                  int nargin, const mxArray *inargs [])        /* input args */
 {
    char     *Filename;
    char     *Option;

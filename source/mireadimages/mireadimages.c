@@ -18,7 +18,7 @@
                  the memory needed for the image(s), it is reused.  This
                  reduces the risk of memory fragmentation.
 @COMMENTS   : For full usage documentation, see mireadimages.m
-@VERSION    : $Id: mireadimages.c,v 1.20 1997-10-20 18:30:43 greg Rel $
+@VERSION    : $Id: mireadimages.c,v 1.21 2004-03-11 15:42:43 bert Exp $
               $Name:  $
 ---------------------------------------------------------------------------- */
 
@@ -261,7 +261,7 @@ int ReadImages (ImageInfoRec *Image,
                 long    NumFrames,
                 long    StartRow,
                 long    NumRows,
-                Matrix  **Mimages)
+                mxArray  **Mimages)
 {
    long     slice, frame;
    long     Start [MAX_NC_DIMS], Count [MAX_NC_DIMS];
@@ -352,7 +352,7 @@ int ReadImages (ImageInfoRec *Image,
        printf ("Allocating new memory for return value.\n");
 #endif
 
-       *Mimages = mxCreateFull(Size, NumSlices*NumFrames, REAL);
+       *Mimages = mxCreateDoubleMatrix(Size, NumSlices*NumFrames, mxREAL);
        if (*Mimages == NULL)
        {
            sprintf (ErrMsg, "Error allocating %ld x %ld image matrix!\n", 
@@ -460,9 +460,9 @@ int ReadImages (ImageInfoRec *Image,
                  problems by forcing MATLAB to reuse old memory.
 ---------------------------------------------------------------------------- */
 void mexFunction(int    nlhs,
-                 Matrix *plhs[],
+                 mxArray *plhs[],
                  int    nrhs,
-                 Matrix *prhs[])
+                 const mxArray *prhs[])
 {
    char        *Filename;
    ImageInfoRec ImInfo;
@@ -683,7 +683,7 @@ void mexFunction(int    nlhs,
             * the size later.
             */
 
-           VECTOR_IMAGES = mxCreateFull(1,1,REAL);
+           VECTOR_IMAGES = mxCreateDoubleMatrix(1,1,mxREAL);
            if (VECTOR_IMAGES == NULL)
            {
                ErrAbort("Could not allocate memory!\n", FALSE, -1);

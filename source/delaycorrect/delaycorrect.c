@@ -16,7 +16,7 @@
               make no representations about the suitability of this
               software for any purpose.  It is provided "as is" without
               express or implied warranty.
-@VERSION    : $Id: delaycorrect.c,v 1.7 2001-09-25 20:12:27 neelin Exp $
+@VERSION    : $Id: delaycorrect.c,v 1.8 2004-03-11 15:42:43 bert Exp $
               $Name:  $
 ---------------------------------------------------------------------------- */
 
@@ -416,7 +416,7 @@ void PrintSimplex (double **simplex, int numvars)
 void GetStartingSimplex(double start[], int numvars, BloodData *data,
                         double **simplex)
 {
-    Matrix *answer[1];
+    mxArray *answer[1];
     int i;
 
     if (progress)
@@ -424,7 +424,7 @@ void GetStartingSimplex(double start[], int numvars, BloodData *data,
         printf ("Creating a matrix for the function return.\n");
     }
     
-    answer[0] = mxCreateFull(1,1,REAL);
+    answer[0] = mxCreateDoubleMatrix(1,1,mxREAL);
 
     if (progress)
     {
@@ -549,7 +549,7 @@ void MinimizeSimplex (double **simplex, BloodData *data, int numvars,
                       int maxiter, double tol, double tol2,
                       double minimum[], double *finalvalue)
 {
-    Matrix *answer[1];
+    mxArray *answer[1];
     char how[256];
     int i,j;
     int count;
@@ -568,7 +568,7 @@ void MinimizeSimplex (double **simplex, BloodData *data, int numvars,
     double fc;
     
 
-    answer[0] = mxCreateFull(1,1,REAL);
+    answer[0] = mxCreateDoubleMatrix(1,1,mxREAL);
     temp_vector = (double *) mxCalloc (numvars, sizeof (double));
     vbar = (double *) mxCalloc (numvars, sizeof (double));
     vr = (double *) mxCalloc (numvars, sizeof (double));
@@ -738,9 +738,9 @@ void MinimizeSimplex (double **simplex, BloodData *data, int numvars,
 @MODIFIED   : 
 ---------------------------------------------------------------------------- */
 void mexFunction(int    nlhs,
-                 Matrix *plhs[],
+                 mxArray *plhs[],
                  int    nrhs,
-                 Matrix *prhs[])
+                 const mxArray *prhs[])
 {
     int numvars;
     int maxiter;
@@ -805,7 +805,7 @@ void mexFunction(int    nlhs,
     MinimizeSimplex (simplex, &data, numvars, maxiter,
                      tol, tol2, minimum, &finalvalue);
 
-    plhs[0] = mxCreateFull(1, numvars, REAL);
+    plhs[0] = mxCreateDoubleMatrix(1, numvars, mxREAL);
     return_argument = mxGetPr (plhs[0]);
 
     CopyVector (return_argument, minimum, numvars);

@@ -10,7 +10,7 @@
 @CALLS      : 
 @CREATED    : October 29, 1993 by Mark Wolforth
 @MODIFIED   : 
-@VERSION    : $Id: nfmins.c,v 1.6 1997-10-20 18:30:46 greg Rel $
+@VERSION    : $Id: nfmins.c,v 1.7 2004-03-11 15:42:43 bert Exp $
               $Name:  $
 ---------------------------------------------------------------------------- */
 
@@ -128,7 +128,7 @@ double **CreateLocalMatrix(int rows, int cols)
 @CREATED    : 
 @MODIFIED   : 
 ---------------------------------------------------------------------------- */
-void GetArguments(Matrix *Start, Matrix *Options, int nrhs, int *numvars,
+void GetArguments(const mxArray *Start, const mxArray *Options, int nrhs, int *numvars,
                   Boolean *progress, int *maxiter, double *tol,
                   double *tol2)
 {
@@ -291,10 +291,10 @@ void PrintSimplex (double **simplex, int numvars)
 @MODIFIED   : 
 ---------------------------------------------------------------------------- */
 void GetStartingSimplex(double start[], int numvars,
-                        char *funfcn, Matrix *arguments[], int numargs,
+                        char *funfcn, mxArray *arguments[], int numargs,
                         double **simplex)
 {
-    Matrix *answer[1];
+    mxArray *answer[1];
     int i;
 
     if (progress)
@@ -302,7 +302,7 @@ void GetStartingSimplex(double start[], int numvars,
 	printf ("Creating a matrix for the function return.\n");
     }
     
-    answer[0] = mxCreateFull(1,1,REAL);
+    answer[0] = mxCreateDoubleMatrix(1,1,mxREAL);
 
     if (progress)
     {
@@ -426,11 +426,11 @@ Boolean Terminated (double **simplex, int numvars, double tol, double tol2)
 @CREATED    : 
 @MODIFIED   : 
 ---------------------------------------------------------------------------- */
-void MinimizeSimplex (double **simplex, char *funfcn, Matrix *arguments[],
+void MinimizeSimplex (double **simplex, char *funfcn, mxArray *arguments[],
                       int numargs, int numvars, int maxiter, double tol,
 		      double tol2, double minimum[], double *finalvalue)
 {
-    Matrix *answer[1];
+    mxArray *answer[1];
     char how[256];
     int i,j;
     int count;
@@ -449,7 +449,7 @@ void MinimizeSimplex (double **simplex, char *funfcn, Matrix *arguments[],
     double fc;
     
 
-    answer[0] = mxCreateFull(1,1,REAL);
+    answer[0] = mxCreateDoubleMatrix(1,1,mxREAL);
     temp_vector = (double *) mxCalloc (numvars, sizeof (double));
     vbar = (double *) mxCalloc (numvars, sizeof (double));
     vr = (double *) mxCalloc (numvars, sizeof (double));
@@ -628,16 +628,16 @@ void MinimizeSimplex (double **simplex, char *funfcn, Matrix *arguments[],
 @MODIFIED   : 
 ---------------------------------------------------------------------------- */
 void mexFunction(int    nlhs,
-                 Matrix *plhs[],
+                 mxArray *plhs[],
                  int    nrhs,
-                 Matrix *prhs[])
+                 const mxArray *prhs[])
 {
     int numvars;
     int numargs;
     int maxiter;
     int i;
     char *funfcn;
-    Matrix *arguments[20];
+    mxArray *arguments[20];
     double tol;
     double tol2;
     double *start;
@@ -704,10 +704,10 @@ void mexFunction(int    nlhs,
     {
         for (i=1; i<(nrhs-4+1); i++)
         {
-            arguments[i] = prhs[i+3];
+            arguments[i] = (mxArray *) prhs[i+3];
         }
     }
-    arguments[0] = mxCreateFull (1,1,REAL);
+    arguments[0] = mxCreateDoubleMatrix (1,1,mxREAL);
     mxSetM (arguments[0], 1);
     mxSetN (arguments[0], numvars);
 
@@ -736,7 +736,7 @@ void mexFunction(int    nlhs,
     MinimizeSimplex (simplex, funfcn, arguments, numargs, numvars, maxiter,
                      tol, tol2, minimum, &finalvalue);
 
-    plhs[0] = mxCreateFull(1, numvars, REAL);
+    plhs[0] = mxCreateDoubleMatrix(1, numvars, mxREAL);
     return_argument = mxGetPr (plhs[0]);
 
     CopyVector (return_argument, minimum, numvars);

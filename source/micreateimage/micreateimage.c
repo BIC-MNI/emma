@@ -24,7 +24,7 @@
               various functions in args.c and dimensions.c
 @CREATED    : September - November 1993, Greg Ward.
 @MODIFIED   : 
-@VERSION    : $Id: micreateimage.c,v 1.18 1997-10-20 18:30:42 greg Rel $
+@VERSION    : $Id: micreateimage.c,v 1.19 2004-03-11 15:42:43 bert Exp $
               $Name:  $
 ---------------------------------------------------------------------------- */
 #include <sys/types.h>
@@ -47,7 +47,12 @@
 #undef DEBUG
 #define ERROR_CHECK(success) { if (!(success)) { ErrAbort (ErrMsg, FALSE, 1); }}
 
-
+char *NCErrMsg(int a, int b)
+{
+  static char tmp[128];
+  sprintf(tmp, "%d %d: ", a, b);
+  return (tmp);
+}
 
 /* Global variables */
 

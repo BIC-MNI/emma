@@ -11,7 +11,7 @@
 @CALLS      : 
 @CREATED    : Oct 1993, Mark Wolforth
 @MODIFIED   : 
-@VERSION    : $Id: rescale.c,v 1.4 1997-10-20 17:49:34 greg Rel $
+@VERSION    : $Id: rescale.c,v 1.5 2004-03-11 15:42:44 bert Exp $
               $Name:  $
 ---------------------------------------------------------------------------- */
 
@@ -92,9 +92,9 @@ void ErrAbort (char msg[], Boolean PrintUsage, int ExitCode)
 @MODIFIED   : 
 ---------------------------------------------------------------------------- */
 void mexFunction(int    nlhs,
-                 Matrix *plhs[],
+                 mxArray *plhs[],
                  int    nrhs,
-                 Matrix *prhs[])
+                 const mxArray *prhs[])
 {
 
     double *old_matrix;

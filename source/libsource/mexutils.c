@@ -4,14 +4,13 @@
 @GLOBALS    : 
 @CREATED    : June 1993, Greg Ward and Mark Wolforth
 @MODIFIED   : 
-@VERSION    : $Id: mexutils.c,v 1.5 1997-10-21 15:42:28 greg Rel $
+@VERSION    : $Id: mexutils.c,v 1.6 2004-03-11 15:42:43 bert Exp $
               $Name:  $
 ---------------------------------------------------------------------------- */
 
 #include <stdlib.h>  
 #include <stdio.h>
 
-#define V4_COMPAT                       /* for compiling with MATLAB 5 */
 #include "mex.h"
 #include "mexutils.h"
 
@@ -37,7 +36,7 @@
               single Boolean.  Could either do it with varargs or just 
               pass an array of Booleans.
 ---------------------------------------------------------------------------- */
-int ParseOptions (Matrix *OptVector, int MaxOptions, Boolean *debug)
+int ParseOptions (const mxArray *OptVector, int MaxOptions, Boolean *debug)
 {
    int    m, n;                        /* dimensions of options vector */
 
@@ -48,7 +47,7 @@ int ParseOptions (Matrix *OptVector, int MaxOptions, Boolean *debug)
 
    if ((m != 1) ||
        (!mxIsNumeric (OptVector)) || (mxIsComplex (OptVector)) ||
-       (!mxIsFull (OptVector)))
+       ( mxIsSparse (OptVector)))
    {
       return (mexARGS_INVALID);
    }
@@ -92,14 +91,14 @@ int ParseOptions (Matrix *OptVector, int MaxOptions, Boolean *debug)
               in Cstr, with the terminating NULL.  However, it still returns 0.
               More investigation may be in order.  -GPW
 ---------------------------------------------------------------------------- */
-char *ParseStringArg (Matrix *Mstr, char *Cstr [])
+char *ParseStringArg (const mxArray *Mstr, char *Cstr [])
 {
    int   m, n;                /* require m == 1, so n will be length of str */
 
    m = mxGetM (Mstr);    n = mxGetN (Mstr);
 
 /* Require that Mstr is a "row strings" */
-   if (!mxIsString (Mstr) || (m != 1))
+   if (!mxIsChar (Mstr) || (m != 1))
    {
       return (NULL);
    }
@@ -145,7 +144,7 @@ char *ParseStringArg (Matrix *Mstr, char *Cstr [])
               elements of Mvector, so the caller *could* ignore the
               error condition, if the caller so desired.
 ---------------------------------------------------------------------------- */
-int ParseIntArg (Matrix *Mvector, int MaxSize, long Cvector[])
+int ParseIntArg (const mxArray *Mvector, int MaxSize, long Cvector[])
 {
    int      m, n, i;
    int      VecSize;

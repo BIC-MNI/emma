@@ -24,7 +24,7 @@
                           monotonicity checking, and Lookup2 for 
                           decreasing oldx.
               93-7-21, added NaN stuff.
-@VERSION    : $Id: lookup.c,v 1.9 1997-10-20 18:30:45 greg Rel $
+@VERSION    : $Id: lookup.c,v 1.10 2004-03-11 15:42:43 bert Exp $
               $Name:  $
 ---------------------------------------------------------------------------- */
 #include <stdio.h>
@@ -56,7 +56,7 @@ extern void Lookup2 (double *oldX, double *oldY,
 #define NEWY    plhs[0]
 
 
-Matrix	*mNaN;			/* NaN as a MATLAB Matrix */
+mxArray	*mNaN;			/* NaN as a MATLAB Matrix */
 double  NaN;			/* NaN in native C format */
 
 
@@ -84,9 +84,9 @@ void usage (void)
 @CREATED    : 93-6-28, Greg Ward
 @MODIFIED   : 
 ---------------------------------------------------------------------------- */
-int CheckInputs (Matrix *OldX,
-                 Matrix *OldY,
-                 Matrix *NewX,
+int CheckInputs (const mxArray *OldX,
+                 const mxArray *OldY,
+                 const mxArray *NewX,
                  int    *InputRows,
                  int    *OutputRows)
 {
@@ -158,8 +158,8 @@ int CheckInputs (Matrix *OldX,
 @MODIFIED   : 93-6-28, Greg Ward: took stuff out and made into CheckInputs
                                   and Lookup1/Lookup2 functions
 ---------------------------------------------------------------------------- */
-void mexFunction (int nlhs, Matrix *plhs [],
-                  int nrhs, Matrix *prhs [])
+void mexFunction (int nlhs, mxArray *plhs [],
+                  int nrhs, const mxArray *prhs [])
 {
     double *newX;               /* these just point to the real parts */
     double *newY;               /* of various MATLAB Matrix objects */
@@ -183,7 +183,7 @@ void mexFunction (int nlhs, Matrix *plhs [],
 #ifdef DEBUG
     if (nrhs == 1)
     {
-        plhs[0] = mxCreateFull (1,1, REAL);
+        plhs[0] = mxCreateDoubleMatrix(1,1, mxREAL);
         table_size = max (mxGetM (OLDX), mxGetN(OLDX));
         *(mxGetPr (plhs[0])) = Monotonic (mxGetPr (OLDX), table_size);
         return;
@@ -228,7 +228,7 @@ void mexFunction (int nlhs, Matrix *plhs [],
      * a pointer to its data
      */
 
-    NEWY = mxCreateFull (mxGetM (NEWX), mxGetN (NEWX), REAL);
+    NEWY = mxCreateDoubleMatrix(mxGetM (NEWX), mxGetN (NEWX), mxREAL);
     newY = mxGetPr (NEWY);
 
     if (Direction == 1)

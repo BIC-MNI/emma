@@ -12,7 +12,7 @@
 @CALLS      : 
 @CREATED    : August 9, 1993
 @MODIFIED   : 
-@VERSION    : $Id: nframeint.c,v 1.9 1997-10-20 18:30:45 greg Rel $
+@VERSION    : $Id: nframeint.c,v 1.10 2004-03-11 15:42:43 bert Exp $
               $Name:  $
 ---------------------------------------------------------------------------- */
 #include <stdio.h>
@@ -66,7 +66,7 @@ void usage (void)
 @CREATED    : 
 @MODIFIED   : 
 ---------------------------------------------------------------------------- */
-Boolean CheckInputs (Matrix *TS, Matrix *Y, Matrix *FStart, Matrix *FLengths,
+Boolean CheckInputs (const mxArray *TS, const mxArray *Y, const mxArray *FStart, const mxArray *FLengths,
                      int *NumFrames, int *TableSize)
 {
    int tsrows, tscols;                      /* used for TS */
@@ -151,10 +151,10 @@ Boolean CheckInputs (Matrix *TS, Matrix *Y, Matrix *FStart, Matrix *FLengths,
 @CREATED    : 
 @MODIFIED   : 
 ---------------------------------------------------------------------------- */
-void mexFunction (int nlhs, Matrix *plhs [],
-                  int nrhs, Matrix *prhs [])
+void mexFunction (int nlhs, mxArray *plhs [],
+                  int nrhs, const mxArray *prhs [])
 {
-   Matrix  *mNaN;		/* NaN as a MATLAB Matrix */
+   mxArray  *mNaN;		/* NaN as a MATLAB Matrix */
    double *X;			/* these just point to the real parts */
    double *Y;			/* of various MATLAB Matrix objects */
    double *FStarts;
@@ -198,7 +198,7 @@ void mexFunction (int nlhs, Matrix *plhs [],
     * to IntFrames (along with all the input args) for processing
     */
 
-   INTS = mxCreateFull (NumFrames, 1, REAL);
+   INTS = mxCreateDoubleMatrix (NumFrames, 1, mxREAL);
    IntFrames (Length, X, Y, NumFrames, 
 	      mxGetPr (START), mxGetPr (LENGTHS), mxGetPr (INTS));
    

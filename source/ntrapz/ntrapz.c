@@ -12,7 +12,7 @@
 @CALLS      : 
 @CREATED    : August 6, 1993
 @MODIFIED   : 
-@VERSION    : $Id: ntrapz.c,v 1.6 1997-10-20 18:30:45 greg Rel $
+@VERSION    : $Id: ntrapz.c,v 1.7 2004-03-11 15:42:43 bert Exp $
               $Name:  $
 ---------------------------------------------------------------------------- */
 #include <stdio.h>
@@ -52,7 +52,7 @@ void usage (void)
 @CREATED    : 
 @MODIFIED   : 
 ---------------------------------------------------------------------------- */
-Boolean CheckInputs (Matrix *X, Matrix *Y, Matrix *Weight,
+Boolean CheckInputs (const mxArray *X, const mxArray *Y, const mxArray *Weight,
                      int *InputRows, int *InputCols)
 {
     int     xrows, xcols;       /* used for X */
@@ -175,8 +175,8 @@ Boolean CheckInputs (Matrix *X, Matrix *Y, Matrix *Weight,
 @CREATED    : 
 @MODIFIED   : 
 ---------------------------------------------------------------------------- */
-void mexFunction (int nlhs, Matrix *plhs [],
-                  int nrhs, Matrix *prhs [])
+void mexFunction (int nlhs, mxArray *plhs [],
+                  int nrhs, const mxArray *prhs [])
 {
     double *X;               /* these just point to the real parts */
     double *Y;               /* of various MATLAB Matrix objects */
@@ -219,12 +219,12 @@ void mexFunction (int nlhs, Matrix *plhs [],
 
     if (ycols > 0)
     {
-        AREA = mxCreateFull (1, ycols, REAL);
+        AREA = mxCreateDoubleMatrix (1, ycols, mxREAL);
         Area = mxGetPr (AREA);
     }
     else 
     {
-        AREA = mxCreateFull (1,1,REAL);
+        AREA = mxCreateDoubleMatrix (1,1,mxREAL);
         Area = mxGetPr (AREA);
         *Area = 0;
         return;

@@ -25,7 +25,7 @@
 	         debug variable; removed OPTIONS argument; replaced
 		 gpw.h with direct inclusion of its contents
 @COMMENTS   : 
-@VERSION    : $Id: mireadvar.c,v 1.12 1997-10-20 18:30:43 greg Rel $
+@VERSION    : $Id: mireadvar.c,v 1.13 2004-03-11 15:42:43 bert Exp $
               $Name:  $
 ---------------------------------------------------------------------------- */
 
@@ -263,7 +263,7 @@ void MakeDefaultVectors (VarInfoRec *vInfo,
 ---------------------------------------------------------------------------- */
 int ReadValues (VarInfoRec *vInfo, 
                 long Start [], long Count [],
-                Matrix **Dest)
+                mxArray **Dest)
 {
    double      *TmpDest;
    long        TotSize;
@@ -289,7 +289,7 @@ int ReadValues (VarInfoRec *vInfo,
       return ERR_OTHER;
    }
 
-   *Dest = mxCreateFull (TotSize, 1, REAL);
+   *Dest = mxCreateDoubleMatrix (TotSize, 1, mxREAL);
    TmpDest = mxGetPr (*Dest);
    vgRet = mivarget (vInfo->CDF, vInfo->ID, 
                      Start, Count, 
@@ -338,8 +338,8 @@ int ReadValues (VarInfoRec *vInfo,
 @CREATED    : 93-5-31, Greg Ward.
 @MODIFIED   : 93-6-16, standardized error handling
 ---------------------------------------------------------------------------- */
-void mexFunction (int nlhs, Matrix *plhs [],
-                  int nrhs, Matrix *prhs [])
+void mexFunction (int nlhs, mxArray *plhs [],
+                  int nrhs, const mxArray *prhs [])
 {
    char     *Filename;
    char     *Varname;
@@ -393,7 +393,7 @@ void mexFunction (int nlhs, Matrix *plhs [],
    if (Result != ERR_NONE)       /* variable does not exist */
    {                             /* so return empty matrix */
       ncclose (CDFid);
-      RET_VECTOR = mxCreateFull (0, 0, REAL);
+      RET_VECTOR = mxCreateDoubleMatrix (0, 0, mxREAL);
       return;
    }
 

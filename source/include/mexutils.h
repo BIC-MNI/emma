@@ -4,7 +4,7 @@
               mexutils.c (part of the EMMA library).
 @CREATED    : 1993, Mark Wolforth
 @MODIFIED   : 
-@VERSION    : $Id: mexutils.h,v 1.8 1997-10-20 18:03:14 greg Rel $
+@VERSION    : $Id: mexutils.h,v 1.9 2004-03-11 15:42:43 bert Exp $
               $Name:  $
 ---------------------------------------------------------------------------- */
 
@@ -31,9 +31,9 @@
  * Function prototypes.  Details in mexutils.c
  */
 
-double CreateNaN     (void);
-int    ParseOptions   (Matrix *OptVector, int MaxOptions, Boolean *debug);
-char  *ParseStringArg (Matrix *Mstr, char *Cstr []);
-int    ParseIntArg    (Matrix *Mvector, int MaxSize, long Cvector[]);
+double CreateNaN (void);
+int ParseOptions (const mxArray *OptVector, int MaxOptions, Boolean *debug);
+char *ParseStringArg (const mxArray *Mstr, char *Cstr []);
+int ParseIntArg (const mxArray *Mvector, int MaxSize, long Cvector[]);
 
 #endif
