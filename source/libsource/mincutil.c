@@ -47,7 +47,7 @@ char *NCErrMsg (int NCErrCode)
 {
    switch (NCErrCode)
    {
-      case NC_SYSERR       : return ("System error (possible file or directory not found");
+      case NC_SYSERR       : return ("File or directory not found");
       case NC_NOERR        : return ("No Error");
       case NC_EBADID       : return ("Not a netcdf id");
       case NC_ENFILE       : return ("Too many netcdfs open");
