@@ -1,5 +1,17 @@
+/* ----------------------------- MNI Header -----------------------------------
+@NAME       : mexutils.c
+@DESCRIPTION: Various utility functions used by EMMA CMEX programs.
+@GLOBALS    : 
+@CREATED    : June 1993, Greg Ward and Mark Wolforth
+@MODIFIED   : 
+@VERSION    : $Id: mexutils.c,v 1.5 1997-10-21 15:42:28 greg Rel $
+              $Name:  $
+---------------------------------------------------------------------------- */
+
 #include <stdlib.h>  
 #include <stdio.h>
+
+#define V4_COMPAT                       /* for compiling with MATLAB 5 */
 #include "mex.h"
 #include "mexutils.h"
 
@@ -11,7 +23,7 @@
               MaxOptions - the maximum allowed number of options in OptVector
 @OUTPUT     : debug (and any other options I might want in future...)
 @RETURNS    : number of options successfully parsed (positive integer)
-              mexARGS_TOO_BIG if too many elements in OptVectos
+              mexARGS_TOO_BIG if too many elements in OptVectors
               mexARGS_INVALID if OptVectors is bad format
 @DESCRIPTION: Parses a "boolean vector" from MATLAB, assuming a correspondence
               between the elements of the vector and the Boolean arguments
