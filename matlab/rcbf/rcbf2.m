@@ -70,6 +70,10 @@ mask = (PET_int1>(1.8*mean(PET_int1)));
 A = (mean (PET (find(mask),:)))' * 37 / 1.05;
 [Ca_even, delta] = correctblood (A, FrameTimes, FrameLengths, g_even, ts_even, progress);
 
+% Apply the cross-calibration factor.
+XCAL = 0.11;
+Ca_even = Ca_even*XCAL;
+
 % Initialise the weighting functions w3 and w2; 
 % w3=sqrt(midftimes) and w2=midftimes. 
 
@@ -77,8 +81,8 @@ w2 = midftimes;
 w3 = sqrt (midftimes);
 
 ImLen = size(PET,1);
-PET_int2 = trapz (MidFTimes, PET' .* (w2 * ones(1,ImLen)))';
-PET_int3 = trapz (MidFTimes, PET' .* (w3 * ones(1,ImLen)))';
+PET_int2 = trapz (midftimes, PET' .* (w2 * ones(1,ImLen)))';
+PET_int3 = trapz (midftimes, PET' .* (w3 * ones(1,ImLen)))';
 
 % Apply a simple mask to eliminate data outside of the brain.
 
@@ -105,9 +109,9 @@ k2_lookup = (-10:0.05:10) / 60;
 Ca_mft = frameint (ts_even, Ca_even, FrameTimes, FrameLengths);      
       
       
-Ca_int1 = Ca_mft' * FrameLengths;
-Ca_int2 = (w2 .* Ca_mft)' * FrameLengths;
-Ca_int3 = (w3 .* Ca_mft)' * FrameLengths;
+Ca_int1 = trapz(midftimes, Ca_mft);
+Ca_int2 = trapz(midftimes, (w2 .* Ca_mft));
+Ca_int3 = trapz(midftimes, (w3 .* Ca_mft));
 
 % Find the value of rL for every pixel of the slice.
 rL = ((Ca_int3 .* PET_int1) - (Ca_int1 .* PET_int3)) ./ ...
@@ -158,8 +162,8 @@ if (progress); disp ('Calculating V0 image'); end
 % frames, so we need to use the resampled Ca(t) -- Ca_mft --
 % for the integral.
 
-V0 = ((PET_int1) - (K1 .* lookup(k2_lookup,conv_int1,k2))) / Ca_int1;
-% V0 = (PET_int1 - int_activity) / (Ca_mft' * FrameLengths);
+V0 = (PET_int1 - (K1 .* lookup(k2_lookup,conv_int1,k2))) / Ca_int1;
+
 
 nuke = find (isnan (K1));
 K1 (nuke) = zeros (size (nuke));
