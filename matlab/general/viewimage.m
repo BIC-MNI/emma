@@ -320,7 +320,7 @@ if (colourbar)
     bar_handle = subplot(1,2,2);
     image((1:num_colors)');
     axis('xy');
-    yticks = linspace (0, num_colors, 9);
+    yticks = linspace (1, num_colors, 9);
     set(bar_handle,'Xticklabels',[],'Ytick',yticks, ...
 	'Position',[.78,.1,.03,.8]);
   else
