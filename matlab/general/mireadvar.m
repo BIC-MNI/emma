@@ -1,3 +1,4 @@
+function data = mireadvar(minc_file, varname, start, count, options);
 %MIREADVAR  Read a hyperslab of data from any variable in a MINC file.
 %
 %  data = mireadvars ('MINC_file', 'var_name', [, start, count[, options]])
@@ -41,7 +42,37 @@
 %  Mireadimages, however, does all that work for you given just slice
 %  and frame numbers.
 
-% $Id: mireadvar.m,v 1.3 1997-10-20 18:23:22 greg Rel $
+% $Id: mireadvar.m,v 1.4 2000-04-10 16:08:15 neelin Exp $
 % $Name:  $
 
 %  MIREADVAR by Greg Ward.  See mireadvar.c for more illumination.
+
+% Check number of input arguments
+if (nargin < 2)
+  error('Too few arguments');
+end
+if (nargin > 2)
+  error('Too many arguments (start, count and options not implemented)');
+end
+if (length(varname) == 0)
+  error('Please specify a variable name')
+end
+
+% Check that the file exists and is readable
+fid=fopen(minc_file, 'r');
+if (fid < 0)
+  error(['Unable to read file ' minc_file]);
+end
+fclose(fid);
+
+% Call mincinfo
+[stat,out] = unix(['mincinfo -error "" -varvalues ' varname ' ' minc_file]);
+if (length(out) > 0)
+  ind=find(~isspace(out));
+  if (length(ind)==0); ind=1;end
+  out = out(1:max(ind));
+end
+    
+data = sscanf(out, '%f');
+
+

@@ -19,7 +19,7 @@ function miwriteimages (filename, images, slices, frames)
 %  is called by miwriteimages.m via a shell escape.  Neither of these
 %  programs are meant for everyday use by the end user.
 
-% $Id: miwriteimages.m,v 1.14 1997-10-20 18:23:23 greg Rel $
+% $Id: miwriteimages.m,v 1.15 2000-04-10 16:08:16 neelin Exp $
 % $Name:  $
 
 if (nargin < 2) | (nargin > 4)
@@ -93,13 +93,4 @@ execstr = sprintf ('miwriteimages %s %s %s %s', ...
    filename, slicelist, framelist, tempfile);
 [result, output] = unix (execstr);
 
-%output = mexec ('miwriteimages', filename, slicelist, ...
-%      framelist, tempfile);
-
-%if (result ~= 0)
-%   disp (['Command: ' execstr]);
-%   disp ([' Output: ' output]);
-%   error (['Error running miwriteimages to write to file ' filename]);
-%else
-   eval (['delete ' tempfile]);
-%end
+[result,output]=unix(['rm -f ' tempfile]);

@@ -1,3 +1,7 @@
+function [o1, o2, o3, o4, o5, o6, o7, o8, o9, o10] = ...
+    miinquire(minc_file, p1, p2, p3, p4, p5, p6, p7, p8, p9, ...
+    p10, p11, p12, p13, p14, p15, p16, p17, p18, p19, p20);
+%
 % MIINQUIRE   find out various things about a MINC file from MATLAB
 %
 %   info = miinquire ('minc_file' [, 'option' [, 'item']], ...)
@@ -90,5 +94,219 @@
 % 'attvalue') implies that there should be three MATLAB variables
 % to put the information in.
 
-% $Id: miinquire.m,v 1.5 1997-10-20 18:23:19 greg Rel $
+% $Id: miinquire.m,v 1.6 2000-04-10 16:08:14 neelin Exp $
 % $Name:  $
+
+% Check number of input arguments
+if (nargin < 2)
+  error('Too few arguments');
+end
+
+% Check the number of output arguments
+nout = nargout;
+if (nout == 0)
+  nout = 1;
+end
+
+% Check that the file exists and is readable
+fid=fopen(minc_file, 'r');
+if (fid < 0)
+  error(['Unable to read file ' minc_file]);
+end
+fclose(fid);
+
+% Loop over the input arguments, generating output ones
+iin=1;
+iout=1;
+command = 'mincinfo';
+nargs = nargin - 1;
+while (iin <= nargs)
+  
+  % Check that an output argument is given
+  if (iout > nout)
+    error('Not enough output arguments provided');
+  end
+
+  % Get the next argument
+  eval(['option = p' int2str(iin) ';']);
+  iin = iin+1;
+  
+  % Figure out what to do according to option string
+  % Handle special options first
+  if (strcmp(option, 'imagesize') | strcmp(option, 'orientation') | ...
+      strcmp(option, 'permutation'))
+    
+    % Get dimension names from file
+    [stat,out] = unix(['mincinfo -vardims image ' minc_file]);
+    if (stat ~= 0)
+      error(['Error getting image dimensions from file ' minc_file]);
+    end
+    
+    % Remove trailing whitespace (including newlines)
+    ind=find(~isspace(out));
+    if (length(ind)==0); ind=1;end
+    dimlist = out(1:max(ind));
+
+    % Get indices of word breaks
+    index=[0 find(isspace(dimlist)) length(dimlist)+1];
+    
+    % Loop over dimensions, finding spatial dimensions
+    dimcodes = '';
+    for i=1:length(index)-1,
+      
+      % Get dimension name
+      dimname = dimlist(index(i)+1:index(i+1)-1);
+      
+      % Save the spatial dimension code
+      code = dimname(1:1);
+      if (findstr('xyz', code) & (strcmp(dimname, [code 'space'])))
+        if (length(dimcodes) == 0)
+          dimcodes = code;
+        else
+          dimcodes = [dimcodes code];
+        end
+      end
+      
+    end
+    
+    % Check that there are enough spatial dimensions
+    if (length(dimcodes) ~= 3),
+      error(['Did not find 3 spatial dimensions in file ' minc_file]);
+    end
+    
+    % Do the appropriate thing
+    if (strcmp(option, 'imagesize'))
+      
+      % Get the image size
+      opts = '-error 0 -dimlength time ';
+      for i=1:length(dimcodes)
+        opts = [opts '-dimlength ' dimcodes(i) 'space '];
+      end
+      [stat,out] = unix(['mincinfo ' opts minc_file]);
+      result = sscanf(out, '            %d');
+      
+    elseif (strcmp(option, 'orientation'))
+      
+      % Get the orientation
+      if (strcmp(dimcodes, 'zyx'))
+        result = 'transverse';
+      elseif (strcmp(dimcodes, 'xzy'))
+        result = 'sagittal';
+      elseif (strcmp(dimcodes, 'yzx'))
+        result = 'coronal';
+      elseif (strcmp(dimcodes, 'xyz'))
+        result = dimcodes;
+      else
+        result = 'unknown';
+      end
+    
+    elseif (strcmp(option, 'permutation'))
+      
+      % Get a matrix giving the permutation
+      perm = [];
+      for i=1:length(dimcodes)
+        
+        % Add a vector according to the dimension code
+        code = dimcodes(i);
+        if (strcmp(code, 'x')), permvec = [1 0 0 0]';
+        elseif (strcmp(code, 'y')), permvec = [0 1 0 0]';
+        elseif (strcmp(code, 'z')), permvec = [0 0 1 0]';
+        else error('Internal error for getting permutation');
+        end
+        
+        % Add the vector to the matrix
+        if (isempty(perm))
+          perm = permvec;
+        else
+          perm = [perm permvec];
+        end
+        
+      end
+      perm = [perm [0 0 0 1]'];
+      
+      result = perm;
+      
+    end
+    
+  else
+    
+    % Handle simple options with an optional second argument
+  
+    extra_args = 1;
+    miopt = '';
+    if (strcmp(option, 'dimlength'))
+      miopt = '-dimlength';
+    elseif (strcmp(option, 'vartype'))
+      miopt = '-vartype';
+    elseif (strcmp(option, 'attvalue'))
+      extra_args = 2;
+      miopt = '-attvalue';
+    elseif (strcmp(option, 'dimnames'))
+      extra_args = 0;
+      miopt = '-vardims image';
+    else
+      error(['Unrecognized option ' option]);
+    end
+    
+    % Get the extra argument if it is needed
+    if (extra_args > 0)
+      
+      % Check that the extra argument is provided
+      if (iin+extra_args-1 > nargs)
+        error(['Option ' option ' requires extra arguments']);
+      end
+
+      % Check for 2 or 1 args
+      if (extra_args == 2)
+        eval(['arg1 = p' int2str(iin) ';']);
+        eval(['arg2 = p' int2str(iin+1) ';']);
+        arg = [arg1 ':' arg2];
+      else
+        eval(['arg = p' int2str(iin) ';']);
+      end
+      
+      % Update the counter and save the argument
+      iin = iin+extra_args;
+      miopt = [miopt ' ' arg];
+      
+    end
+    
+    % Call mincinfo
+    [stat,out] = unix(['mincinfo -error "" ' miopt ' ' minc_file]);
+    if (length(out) > 0)
+      ind=find(~isspace(out));
+      if (length(ind)==0); ind=1;end
+      out = out(1:max(ind));
+    end
+    
+    % Check the output for non-numeric arguments (excluding space)
+    numchars = '09.+-eE';
+    if (exist('OCTAVE_VERSION'))
+      ascval = toascii(out);
+      numchars = toascii(numchars);
+    else
+      ascval = out;
+    end
+    notnum = ~isspace(out);
+    notnum = notnum & ~((numchars(1) <= ascval) & (ascval <= numchars(2)));
+    for i=3:length(numchars)
+      notnum = notnum & ~(ascval == numchars(i));
+    end
+    if (length(find(notnum)) > 0)
+      result = out;
+    else
+      result = sscanf(out, '%f')';
+    end
+
+  end
+  
+  % Save the result
+  eval(['o' int2str(iout) '=result;']);
+  iout=iout+1;
+
+end
+
+% Check that no output arguments are left
+if (iout <= nout)
+  error('Too many output arguments provided');
+end
