@@ -47,7 +47,7 @@ function [Ca_even, delta] = correctblood (A, startftimes, flengths, g_even, ts_e
 %  Currently, the delay correction appears to be fairly effective
 %  alone.  However, when the dispersion correction is performed, it
 %  shifts the blood activity curve quite significantly, and completely
-%  screws up delay correction.  (Or so 'twould seem.)
+%  screws up delay correction.  (Or so it would seem.)
 
 if ((nargin < 5) | (nargin > 6))
    help correctblood
@@ -61,6 +61,8 @@ if (progress) disp ('Showing progress'), end
 midftimes = startftimes + flengths/2;
 first60 = find (startftimes < 60);	      % all frames in first minute only
 numframes = length(startftimes);
+
+tau = 4;                                      % assumed dispersion time constant
 
 if (progress)
    plot (ts_even, g_even, ':');
@@ -77,15 +79,11 @@ end
 % First let's do the dispersion correction: differentiate g (t) by
 % smoothing it and taking differences, and add tau * dg/dt to g.
 
-% smoothed will have length = length(g_even) + 4; want to lose first two
-% and last two values to make it "match up" to g_even.
-smoothed = conv (g_even, [-3 12 17 12 -3]); 
-smoothed = smoothed (3:length(smoothed)-2) / 35;
-deriv = diff (smoothed) ./ diff (ts_even);
-g_even = g_even(1:length(g_even)-1) + 4 * deriv;
-z = find (g_even < 0);                       % nuke negatives from g_even
-g_even (z) = zeros (size (z));
-ts_even = ts_even(1:length(ts_even)-1);      % cut ts_even down to size to
+%deriv = conv (g_even, 11:-1:-11);
+%deriv = deriv (12:length(deriv)-11) / 1012;
+%g_even = g_even + tau * deriv;
+%z = find (g_even < 0);                       % nuke negatives from g_even
+%g_even (z) = zeros (size (z));
                                              % match g_even
 if (progress)
    plot (ts_even, g_even, 'r');
@@ -96,17 +94,8 @@ end
 % Now g_even is shortened by one element, but has been corrected for
 % dispersion (assuming dispersion time constant tau = 4 sec).
 
-% Find a mask to get just gray matter.
-
-%summed = pet_images * flengths;
-%mask = summed>(1.8*mean(summed)); % dumb but quick
-%mask = getmask(summed);                % better but interactive
-%clf					% clear figure 
-
-%A = mean (pet_images (mask, :))' * (1.05^2) / 37;   % fix units
-
 A = A (first60); 			% chop off stuff frames after
-midftimes = midftimes (first60);	     % first minute again
+midftimes = midftimes (first60);	% first minute again
 
 if (progress)
    plot (midftimes, A, 'or');
@@ -122,7 +111,7 @@ end
 %  alpha = (mL blood) / ((g tissue) * sec)
 %   beta = 1/sec
 %  gamma = (mL blood) / (g tissue)
-% Note that these differ numerically from Hiroto's suggest initial 
+% Note that these differ numerically from Hiroto's suggested initial
 % values of [0.6, alpha/0.8, 0.03] only because of the different
 % units on alpha of (mL blood) / ((100 g tissue) * min).
 
