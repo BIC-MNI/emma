@@ -16,12 +16,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include "mex.h"
-
-#define TRUE 1
-#define FALSE 0
-
-#define min(A, B) ((A) < (B) ? (A) : (B))
-#define max(A, B) ((A) > (B) ? (A) : (B))
+#include "emmageneral.h"
 
 #define PROGNAME "rescale"
 
@@ -37,8 +32,6 @@
 
 #define OLD_MATRIX         prhs[0]
 #define CONSTANT           prhs[1]
-
-typedef int Boolean;
 
 
 /*
