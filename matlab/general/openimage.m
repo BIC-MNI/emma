@@ -17,49 +17,49 @@ function ImHandle = openimage (filename)
 %@INPUT      : filename - name of MINC file to open
 %@OUTPUT     : 
 %@RETURNS    : handle - for use with other image functions (eg. getimages,
-%					putimages, getimageinfo, etc.)
+%              putimages, getimageinfo, etc.)
 %@DESCRIPTION: Prepares for reading/writing a MINC file from within
-%					MATLAB by generating a handle and creating a number of
-%					global variables for use by getimages, putimages, etc.
+%              MATLAB by generating a handle and creating a number of
+%              global variables for use by getimages, putimages, etc.
 %@METHOD     : (Note: none of this needs to be known by the end user.  It
-%					is only here to document the inner workings of the
-%					open/get/put/close image functions.)  
+%              is only here to document the inner workings of the
+%              open/get/put/close image functions.)  
 %
-%					Increments the global variable ImageCount, and uses the
-%					new ImageCount as a handle to the image.  Handles are
-%					simply integers that are appended to various names to
-%					give the names of various global variables; eg., the
-%					global variable Filename3 is the name of the MINC file
-%					tagged by the handle 3.  This appending is universally
-%					done by the MATLAB string concatenation: eg., for
-%					handle=3, ['Filename' int2str(handle)] yields
-%					Filename3.  This is frequently combined with the eval
+%              Increments the global variable ImageCount, and uses the
+%              new ImageCount as a handle to the image.  Handles are
+%              simply integers that are appended to various names to
+%              give the names of various global variables; eg., the
+%              global variable Filename3 is the name of the MINC file
+%              tagged by the handle 3.  This appending is universally
+%              done by the MATLAB string concatenation: eg., for
+%              handle=3, ['Filename' int2str(handle)] yields
+%              Filename3.  This is frequently combined with the eval
 % 
-%					This convention is followed for the variables Filename,
-%					NumFrames, NumSlices, ImageSize, PETimages, FrameTimes,
-%					FrameLengths, AvailFrames, AvailSlices, and CurLine.
-%					Note that not all of these variables are currently
-%					used; some of them are meant for a line-by-line image
-%					retrieval/storage system (coming Real Soon Now), rather
-%					than the currently implemented and rather memory
-%					intensive image-by-image system.
+%              This convention is followed for the variables Filename,
+%              NumFrames, NumSlices, ImageSize, PETimages, FrameTimes,
+%              FrameLengths, AvailFrames, AvailSlices, and CurLine.
+%              Note that not all of these variables are currently
+%              used; some of them are meant for a line-by-line image
+%              retrieval/storage system (coming Real Soon Now), rather
+%              than the currently implemented and rather memory
+%              intensive image-by-image system.
 %
-%					The functions getimages, putimages, getimageinfo,
-%					viewimage, getblooddata, check_sf, and closeimage also
-%					follow this convention for retrieving/storing data in
-%					these global variables.
+%              The functions getimages, putimages, getimageinfo,
+%              viewimage, getblooddata, check_sf, and closeimage also
+%              follow this convention for retrieving/storing data in
+%              these global variables.
 %
-%					Note that in the documentation for all of these
-%					functions, we will use the convention Filename# or
-%					PETimages# to refer to the "instance" of those (or
-%					other) image variables associated with the current
-%					handle.
+%              Note that in the documentation for all of these
+%              functions, we will use the convention Filename# or
+%              PETimages# to refer to the "instance" of those (or
+%              other) image variables associated with the current
+%              handle.
 %@GLOBALS    : reads/increments: ImageCount
-%					creates: Filename#, NumFrames#, NumSlices#, ImageSize#,
-%					PETimages#, FrameTimes#, FrameLengths#, AvailFrames#,
-%					AvailSlices#, CurLine#
+%              creates: Filename#, NumFrames#, NumSlices#, ImageSize#,
+%              PETimages#, FrameTimes#, FrameLengths#, AvailFrames#,
+%              AvailSlices#, CurLine#
 %@CALLS      : mireadvar (CMEX)
-%					mincinfo (standalone, via unix function)
+%              mincinfo (standalone, via unix function)
 %@CREATED    : June 1993, Greg Ward & Mark Wolforth
 %@MODIFIED   : 
 %-----------------------------------------------------------------------------
@@ -70,21 +70,21 @@ global ImageCount MAX_FRAMES     % this does NOT create the variable if it
 MAX_FRAMES = 30;                 % Size of the cache expressed in images
 
 if (nargin ~= 1)
-	error ('Incorrect number of arguments');
+   error ('Incorrect number of arguments');
 end
 
 % Get the current directory if filename only has a relative path, tack
 % it onto filename, and make sure filename exists.
 
 if (filename (1) ~= '/')
-	curdir = pwd;
-	curdir (find (curdir == 10)) = [];			% strip out newline
-	filename = [curdir '/' filename];
+   curdir = pwd;
+   curdir (find (curdir == 10)) = [];        % strip out newline
+   filename = [curdir '/' filename];
 end
 
 % disp (['Looking for ' filename]);
 if exist (filename) ~= 2
-	error ([filename ': file not found']);
+   error ([filename ': file not found']);
 end
 
 % The file exists, so we will be opening it... so figure out the handle.
@@ -95,6 +95,21 @@ else
    ImageCount = 1;
 end
 
+% Get some dimension sizes.  NB. if any dimensions do not exist, 
+% the associated variable will be returned as empty.  
+
+NumFrames = miinquire (filename, 'dimlength', 'time');
+NumSlices = miinquire (filename, 'dimlength', 'zspace');
+ImageSize = miinquire (filename, 'dimlength', 'xspace');
+
+if (isempty (NumFrames))
+   NumFrames = 0;
+end
+
+if (isempty (NumSlices))
+   NumSlices = 0;
+end
+
 % Get the frame times and lengths for all frames.  Note that mireadvar
 % returns an empty matrix for non-existent variables, so we don't need
 % to check the dimensions of the file.
@@ -102,15 +117,6 @@ end
 FrameTimes = mireadvar (filename, 'time');
 FrameLengths = mireadvar (filename, 'time-width');
 Zspace = mireadvar (filename, 'zspace');
-
-NumFrames = length (FrameTimes);
-NumSlices = length (Zspace);
-
-% Now call mincinfo to get the image size, which is just the length
-% of the x (or y - assuming they're the same!!!) dimension
-
-[res, out] = unix (['mincinfo -dimlength xspace -error_string "" ' filename]);
-ImageSize = sscanf (out, '%d');
 
 % Now make "numbered" copies of the six variables we just created; the
 % number used is ImageCount, and the effect of the following
