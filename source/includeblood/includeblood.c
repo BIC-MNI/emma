@@ -1,3 +1,13 @@
+/* ----------------------------- MNI Header -----------------------------------
+@NAME       : includeblood.c (standalone program)
+@DESCRIPTION: Inserts blood data into an existing MINC file.
+@GLOBALS    : 
+@CREATED    : May 1995, Mark Wolforth
+@MODIFIED   : 
+@VERSION    : $Id: includeblood.c,v 1.5 1997-10-21 15:49:49 greg Rel $
+              $Name:  $
+---------------------------------------------------------------------------- */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -6,9 +16,7 @@
 #include "ncblood.h"
 
 
-
 #define PROGNAME "includeblood"
-
 
 
 /* ----------------------------- MNI Header -----------------------------------
