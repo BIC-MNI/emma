@@ -23,7 +23,7 @@
 
 /*
  * Define the valid command line arguments (-size, -type, -valid_range,
- * -orientation, and -help); what type of arguments should follow them;
+ * -orientation, and -value); what type of arguments should follow them;
  * and where to put those arguments when found.
  */
       
@@ -40,6 +40,11 @@ ArgvInfo ArgTable [] =
        "valid range of image data to be stored in the MINC file"},
    {"-orientation", ARGV_STRING, NULL, (char *) &gOrientation,
        "orientation of the image dimensions: transverse, coronal, or sagittal"},
+   {"-value", ARGV_FLOAT, (char *) 1, (char *) &gImageVal,
+       "value with which to fill the image" },
+   {"-clobber", ARGV_CONSTANT, (char *) TRUE, (char *) &gClobberFlag,
+       "overwrite child file if it already exists" },
+      
    {NULL, ARGV_END, NULL, NULL, NULL}
 };
 
