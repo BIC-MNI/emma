@@ -17,31 +17,33 @@
 \newpage
 \section{Introduction}
 
-This document is the user manual for PAMI (Package for the Analysis of Medical
-Images) developed at the Montreal Neurological Institute.  This package consists
-of a set of Matlab .m files and programs written in C, designed to ease the
-analysis of PET data.  The entire package runs under Matlab.
+This document is the user manual for PAMI (Package for the Analysis of
+Medical Images) developed at the Montreal Neurological Institute.
+This package consists of a set of Matlab .m files and programs written
+in C, designed to ease the analysis of PET data.  The entire package
+runs under Matlab.
 
-This document presumes that the reader is familiar with manipulation of PET
-images, and simply wishes to know how image manipulation is possible using
-PAMI and Matlab.
+This document presumes that the reader is familiar with manipulation
+of PET images, and simply wishes to know how image manipulation is
+possible using PAMI and Matlab.
 
 
 %--------------------------------------------------------------
 \newpage
 \section{Basic Concepts}
 
-To a programmer, the interface to PAMI should be very familiar.  Simply open
-a data set contained in a MINC file by calling openimage.  This returns a
-handle which is used in all subsequent calls to PAMI functions.  The user does
-not need to worry about the underlying mechanisms.  For example, to open
-an image file, read in the first line of the first frame of the second slice,
-and then close the image file, you could type:
+To a programmer, the interface to PAMI should be very familiar.
+Simply open a data set contained in a MINC file by calling openimage.
+This returns a handle which is used in all subsequent calls to PAMI
+functions.  The user does not need to worry about the underlying
+mechanisms.  For example, to open an image file, read in the the first
+frame of the second slice, and then close the image file, you could
+type:
 
 
 \begin{verbatim}
 data_handle = openimage ('arnaud_20547.mnc');
-image_line = getnextline (data_handle, 2, 1);
+image = getimages (data_handle, 2, 1);
 closeimage (data_handle);
 \end{verbatim}
 
