@@ -90,23 +90,31 @@ if (~update)
     default_colormap = ['colormap (spectral)'];
     
     b = ['colormap(spectral)'];
-    uicontrol('Units','normal','Position',[.12 0.87 .09 .04],'String','Spectral','callback',b)
+    uicontrol('Units','normal','Position',[.12 0.87 .09 .04], ...
+	'String','Spectral','callback',b)
     h = ['colormap(hotmetal)'];
-    uicontrol('Units','normal','Position',[.22 0.87 .09 .04],'String','Hot','callback',h)
+    uicontrol('Units','normal','Position',[.22 0.87 .09 .04], ...
+	'String','Hot','callback',h)
     g = ['colormap(gray)'];
-    uicontrol('Units','normal','Position',[.32 0.87 .09 .04],'String','Gray','callback',g)
+    uicontrol('Units','normal','Position',[.32 0.87 .09 .04], ...
+	'String','Gray','callback',g)
     u = ['brighten(0.3)'];
-    uicontrol('Units','normal','Position',[.42 0.87 .09 .04],'String','Bright','callback',u)
+    uicontrol('Units','normal','Position',[.42 0.87 .09 .04], ...
+	'String','Bright','callback',u)
     l = ['brighten(-0.3)'];
-    uicontrol('Units','normal','Position',[.52 0.87 .09 .04],'String','Dark','callback',l)
+    uicontrol('Units','normal','Position',[.52 0.87 .09 .04], ...
+	'String','Dark','callback',l)
   else
     default_colormap = ['colormap (gray .^ 1.5)'];
     
     u = ['brighten(0.3)'];
-    uicontrol('Units','normal','Position',[.12 0.87 .09 .04],'String','Bright','callback',u)
+    uicontrol('Units','normal','Position',[.12 0.87 .09 .04], ...
+	'String','Bright','callback',u)
     l = ['brighten(-0.3)'];
-    uicontrol('Units','normal','Position',[.22 0.87 .09 .04],'String','Dark','callback',l)
-    uicontrol('Units','normal','Position',[.32 0.87 .09 .04],'String','Default','callback',default_colormap)
+    uicontrol('Units','normal','Position',[.22 0.87 .09 .04], ...
+	'String','Dark','callback',l)
+    uicontrol('Units','normal','Position',[.32 0.87 .09 .04], ...
+	'String','Default','callback',default_colormap)
   end
   eval(default_colormap);
 end
@@ -127,7 +135,8 @@ if (colourbar)
     image((1:num_colors)');
     axis('xy');
     yticks = linspace (0, num_colors, 9);
-    set(bar_handle,'Xticklabels',[],'Ytick',yticks,'Position',[.85,.1,.1,.8],'UserData','ColourBar');
+    set(bar_handle,'Xticklabels',[],'Ytick',yticks, ...
+	'Position',[.85,.1,.1,.8],'UserData','ColourBar');
   else
     children = get (gcf,'children');
     for i=1:length(children)
