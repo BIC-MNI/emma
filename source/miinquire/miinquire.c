@@ -32,8 +32,13 @@
 #include "mierrors.h"
 #include "mincutil.h"
 #include "mexutils.h"
+#include "emmageneral.h"
+
+
 
 #define PROGNAME "miinquire"
+
+
 
 /* Borrowed from Peter's mincinfo */
 
@@ -161,6 +166,7 @@ int GeneralInfo (int CDF, Matrix **NumDims, Matrix **NumGAtts, Matrix **NumVars)
 @OUTPUT     : CurInArg, CurOutArg - incremented as described under INPUT
               OutArgs[] - various members (from OutArgs[CurOutArg]) will point
                  to newly created matrices holding the output from GetDimLength
+
 @RETURNS    : ERR_NONE if all went well.
               ERR_ARGS (with ErrMsg set) if not input or output arguments given
 @DESCRIPTION: Get the length of a NetCDF dimension, and return it as a
@@ -613,13 +619,13 @@ void mexFunction (int nargout, Matrix *outargs [],      /* output args */
 
    ncopts = 0;
    ErrMsg = (char *) mxCalloc (256, sizeof(char));
-   if (nargin == 0) ErrAbort ("Not enough arguments", true, ERR_ARGS);
+   if (nargin == 0) ErrAbort ("Not enough arguments", TRUE, ERR_ARGS);
 
    /* Parse filename and open MINC file */
 
    if (ParseStringArg (MINC_FILE, &Filename) == NULL)
    {
-      ErrAbort ("Filename argument must be a character string", true, ERR_ARGS);
+      ErrAbort ("Filename argument must be a character string", TRUE, ERR_ARGS);
    }
 
 #ifdef DEBUG
@@ -629,7 +635,7 @@ void mexFunction (int nargout, Matrix *outargs [],      /* output args */
    OpenFile (Filename, &CDF, NC_NOWRITE);
    if (CDF == MI_ERROR)
    {
-      ErrAbort (ErrMsg, true, ERR_IN_MINC );
+      ErrAbort (ErrMsg, TRUE, ERR_IN_MINC );
    }
 
 #ifdef DEBUG
@@ -648,7 +654,7 @@ void mexFunction (int nargout, Matrix *outargs [],      /* output args */
       if (Result < 0)
       {
          ncclose (CDF);
-         ErrAbort (ErrMsg, true, Result);
+         ErrAbort (ErrMsg, TRUE, Result);
       }
       return;
    }
@@ -680,7 +686,7 @@ void mexFunction (int nargout, Matrix *outargs [],      /* output args */
       if (cur_outarg >= nargout)                /* eg. if cur_outarg==0 we must have >= 1 output arg */
       {
          ncclose (CDF);
-         ErrAbort ("Not enough output arguments", true, ERR_ARGS);
+         ErrAbort ("Not enough output arguments", TRUE, ERR_ARGS);
       }
 #endif
       
@@ -692,7 +698,7 @@ void mexFunction (int nargout, Matrix *outargs [],      /* output args */
       if (ParseStringArg (inargs[cur_inarg], &Option) == NULL)
       {
          ncclose (CDF);
-         ErrAbort ("Option argument must be a string", true, ERR_ARGS);
+         ErrAbort ("Option argument must be a string", TRUE, ERR_ARGS);
       }
 #ifdef DEBUG
       printf ("it's %s\n", Option);
@@ -741,14 +747,14 @@ void mexFunction (int nargout, Matrix *outargs [],      /* output args */
       {
          ncclose (CDF);
          sprintf (ErrMsg, "Unknown option: %s", Option);
-         ErrAbort (ErrMsg, true, ERR_ARGS);
+         ErrAbort (ErrMsg, TRUE, ERR_ARGS);
       }
       
       /* If ANY of the option-based calls above resulted in an error, BOMB! */
       if (Result != ERR_NONE)
       {
          ncclose (CDF);
-         ErrAbort (ErrMsg, true, Result);
+         ErrAbort (ErrMsg, TRUE, Result);
       }
       
    }
