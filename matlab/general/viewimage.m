@@ -126,11 +126,8 @@ if (colourbar)
     bar_handle = subplot(1,2,2);
     image((1:num_colors)');
     axis('xy');
-    set(bar_handle,'Xticklabels', []);
     yticks = linspace (0, num_colors, 9);
-    set(bar_handle,'Ytick',yticks);
-    set(bar_handle,'Position', [.85, .1, .1, .8]);
-    set(bar_handle, 'UserData', 'ColourBar');
+    set(bar_handle,'Xticklabels',[],'Ytick',yticks,'Position',[.85,.1,.1,.8],'UserData','ColourBar');
   else
     children = get (gcf,'children');
     for i=1:length(children)
