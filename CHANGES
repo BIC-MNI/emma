@@ -1,3 +1,19 @@
+Release 0.9.5 (25 September, 2001)
+-------------
+ * Removed memory re-use feature of getimages for matlab 5 and later since
+   it causes crashes
+ * Fixed handling of float and double files on output, so that valid_range
+   gets set properly
+ * Modified tempfilename to generate a filename based on time for the
+   first call and then add a counter for subsequent calls - this prevents
+   conflicts within one matlab run and keeps the likelihood of conflict
+   between matlab runs low.
+ * Small syntax modifications for compatibility with matlab 5 and 6
+ * Added crude hack to delaycorrect.c to only include nan.h under irix
+ * Modified openimage to use tempfilename to get name of temp dir
+ * Added Makefile.irix6
+ * Modified MEX_EXT for linux from mexlx to mexglx
+
 Release 0.9.4 (14 October, 1997)
 -------------
  * Added Linux to list of known supported platforms
