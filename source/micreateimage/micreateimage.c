@@ -24,6 +24,8 @@
               various functions in args.c and dimensions.c
 @CREATED    : September - November 1993, Greg Ward.
 @MODIFIED   : 
+@VERSION    : $Id: micreateimage.c,v 1.18 1997-10-20 18:30:42 greg Rel $
+              $Name:  $
 ---------------------------------------------------------------------------- */
 #include <sys/types.h>
 #include <sys/stat.h>

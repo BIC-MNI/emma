@@ -14,6 +14,8 @@
               93-9-29 to 93-9-30, added orientation and finished attvalue (GPW)
 	      94-3-10, changed if (debug) to #ifdef DEBUG everywhere
                        removed "gpw.h" because Boolean is defined in mexutils.h
+@VERSION    : $Id: miinquire.c,v 1.18 1997-10-20 18:30:43 greg Rel $
+              $Name:  $
 ---------------------------------------------------------------------------- */
 
 

@@ -16,6 +16,8 @@
               make no representations about the suitability of this
               software for any purpose.  It is provided "as is" without
               express or implied warranty.
+@VERSION    : $Id: delaycorrect.c,v 1.6 1997-10-20 18:30:46 greg Rel $
+              $Name:  $
 ---------------------------------------------------------------------------- */
 
 #include <stdio.h>

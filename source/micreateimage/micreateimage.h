@@ -13,6 +13,8 @@
 @CALLS      : 
 @CREATED    : November 1993, Greg Ward
 @MODIFIED   : 
+@VERSION    : $Id: micreateimage.h,v 1.4 1997-10-20 18:30:42 greg Rel $
+              $Name:  $
 ---------------------------------------------------------------------------- */
 
 #include "emmageneral.h"

@@ -12,6 +12,8 @@
 @CALLS      : 
 @CREATED    : August 6, 1993
 @MODIFIED   : 
+@VERSION    : $Id: ntrapz.c,v 1.6 1997-10-20 18:30:45 greg Rel $
+              $Name:  $
 ---------------------------------------------------------------------------- */
 #include <stdio.h>
 #include <string.h>

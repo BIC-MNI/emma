@@ -16,6 +16,8 @@
 @CREATED    : June, 1993: Greg Ward
 @MODIFIED   : 25 August, 1993, GPW: removed global extern variable debug,
                  and changed all debugging info to #ifdef DEBUG
+@VERSION    : $Id: mincutil.c,v 1.25 1997-10-20 18:30:44 greg Exp $
+              $Name:  $
 ---------------------------------------------------------------------------- */
 #include <stdlib.h>
 #include <stdio.h>

@@ -24,6 +24,8 @@
                           monotonicity checking, and Lookup2 for 
                           decreasing oldx.
               93-7-21, added NaN stuff.
+@VERSION    : $Id: lookup.c,v 1.9 1997-10-20 18:30:45 greg Rel $
+              $Name:  $
 ---------------------------------------------------------------------------- */
 #include <stdio.h>
 #include <string.h>

@@ -15,6 +15,8 @@
 @CREATED    : 93-6-28, Greg Ward
 @MODIFIED   : 93-8-22, GPW: renamed to Monotonic (from CheckOldX), and
               put into monotonic.c
+@VERSION    : $Id: monotonic.c,v 1.2 1997-10-20 18:30:44 greg Rel $
+              $Name:  $
 ---------------------------------------------------------------------------- */
 int Monotonic (double *oldX, int TableRows)
 {

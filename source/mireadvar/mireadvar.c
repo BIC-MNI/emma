@@ -25,6 +25,8 @@
 	         debug variable; removed OPTIONS argument; replaced
 		 gpw.h with direct inclusion of its contents
 @COMMENTS   : 
+@VERSION    : $Id: mireadvar.c,v 1.12 1997-10-20 18:30:43 greg Rel $
+              $Name:  $
 ---------------------------------------------------------------------------- */
 
 

@@ -10,6 +10,8 @@
 @CALLS      : 
 @CREATED    : October 29, 1993 by Mark Wolforth
 @MODIFIED   : 
+@VERSION    : $Id: nfmins.c,v 1.6 1997-10-20 18:30:46 greg Rel $
+              $Name:  $
 ---------------------------------------------------------------------------- */
 
 #include <stdio.h>

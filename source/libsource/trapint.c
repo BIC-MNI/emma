@@ -16,6 +16,8 @@
 @CREATED    : 11 August 1993 (?), Mark Wolforth, as part of C_trapz.c
 @MODIFIED   : 22 August 1993, Greg Ward: took out of ntrapz (aka C_trapz)
               into source file trapint.c; beefed up comments.
+@VERSION    : $Id: trapint.c,v 1.3 1997-10-20 18:30:45 greg Rel $
+              $Name:  $
 ---------------------------------------------------------------------------- */
 void TrapInt (int num_bins, double *times, double *values,
 	      double *area)

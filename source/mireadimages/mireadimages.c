@@ -18,6 +18,8 @@
                  the memory needed for the image(s), it is reused.  This
                  reduces the risk of memory fragmentation.
 @COMMENTS   : For full usage documentation, see mireadimages.m
+@VERSION    : $Id: mireadimages.c,v 1.20 1997-10-20 18:30:43 greg Rel $
+              $Name:  $
 ---------------------------------------------------------------------------- */
 
 #include <stdio.h>

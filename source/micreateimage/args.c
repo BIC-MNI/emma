@@ -10,6 +10,8 @@
 @CALLS      : 
 @CREATED    : 
 @MODIFIED   : 
+@VERSION    : $Id: args.c,v 1.7 1997-10-20 18:30:41 greg Rel $
+              $Name:  $
 ---------------------------------------------------------------------------- */
 #include <stdio.h>
 #include <string.h>

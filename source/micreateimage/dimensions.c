@@ -56,6 +56,8 @@
 @CALLS      : NetCDF, MINC libraries
 @CREATED    : October-November 1993, Greg Ward
 @MODIFIED   : 
+@VERSION    : $Id: dimensions.c,v 1.7 1997-10-20 18:30:42 greg Rel $
+              $Name:  $
 ---------------------------------------------------------------------------- */
 #include <stdio.h>
 #include <stdlib.h>
