@@ -5,6 +5,15 @@
 \psdraft
 \def\code#1{{\tt #1}}
 
+% ttdescription - a description-like environment where item descriptions are
+% typeset using "\tt", followed by a colon
+
+\def\ttlabel#1{{\tt #1}: }
+\newenvironment{ttdescription}[1]
+{\begin{list}{}{\labelsep=-0.25in\rightmargin=0.25in\leftmargin=#1\addtolength{\leftmargin}{0.25in}\labelwidth=\leftmargin\let\makelabel\ttlabel}}{\end{list}}
+
+
+
 \begin{document}
 
 \maketitle
@@ -69,8 +78,10 @@ across frames.  By combining equations (\ref{eq:2comp2}) and
 get:
 
 \begin{equation}
-A^{*}(t) = \frac{\int_{T_1}^{T_2} K_{1} \left[ C_{a}(t) \otimes
-e^{-k_{2}t} \right] + C_{a}(t)V_{0} dt}{T_{2} - T_{1}}
+A^{*}(t) = \frac{\int\limits_{T_1}^{T_2} \left( K_{1} \left[ C_{a}(t) \otimes
+  e^{-k_{2}t} \right] + C_{a}(t)V_{0} \right) dt}{T_{2} - T_{1}}
+%A^{*}(t) = {{\int\limits_{T_1}^{T_2} \left( K_{1} \left[ C_{a}(t) \otimes
+%e^{-k_{2}t} \right] + C_{a}(t)V_{0} \right) dt} \over {T_{2} - T_{1}}}
 \label{eq:2comp4}
 \end{equation}
 
@@ -241,18 +252,16 @@ subject's arm, the activity data gathered from them must be corrected
 for delay and dispersion within the body.  In order to perform the
 delay correction, we used the technique of Iida, by performing a
 least squares fitting of the equation:
-
 \begin{equation}
-A^{*}(t) = \frac{\int_{T_1}^{T_2} \alpha \left[ C_a(t) \otimes e^{-\beta
-t} \right] + \gamma C_a(t) dt}{T_2 - T_1} \label{eq:delay_correc}
+A^{*}(t) = \frac{\int\limits_{T_1}^{T_2} \left( \alpha \left[ C_a(t) \otimes
+  e^{-\beta t} \right] + \gamma C_a(t) \right) dt} {T_2 - T_1}
+\label{eq:delay_correct}
 \end{equation}
-
 where $A^{*}(t)$ in this case is the average activity over grey
 matter, $\int_{T_1}^{T_2}dt$ represents integration over frames,
 $\alpha$, $\beta$, and $\gamma$ are the fitting parameters, and
 $C_a(t)$ is the blood data.  The delay itself enters this equation by
 generating $C_a(t)$ from:
-
 \begin{equation}
 C_a(t) = \bar{g}(t+\delta)
 \label{eq:blood_delay}
@@ -261,13 +270,11 @@ C_a(t) = \bar{g}(t+\delta)
 The function $\bar{g}$ is the result of performing dispersion
 correction on the blood sample data.  This is represented by the
 equation:
-
 \begin{equation}
 \bar{g}(t) = g(t) + \tau \frac{dg}{dt}
+\label{eq:dispersion_correct}
 \end{equation}
-
 which is an implicit deconvolution of the equation:
-
 \begin{equation}
 g(t) = \bar{g}(t) \otimes \left[ \frac{1}{\tau} e^{\frac{-t}{\tau}}
 \right]
@@ -281,7 +288,7 @@ g(t) = \bar{g}(t) \otimes \left[ \frac{1}{\tau} e^{\frac{-t}{\tau}}
 \subsection{Introduction}
 
 The previous section described the mathematical model used to
-represent cerebral blood flow.  Both the simplified two-compartment
+represent cerebral blood flow.  Both the simplified one-compartment
 model (neglecting $V_0$), and the full two-compartment model were
 implemented numerically in MATLAB.
 
@@ -321,9 +328,17 @@ calculated by \code{findintconvo}.
 
 \subsection{Annotated Program Listings}
 
-This section contains listings of all of the matlab programs
+This section contains listings of all of the MATLAB programs
 comprising the rCBF package.  Each program is broken into functional
-sections, which are then annotated.
+sections, which are presented immediately after the description of
+that section.  Note that the code presented here is not {\em exactly}
+what you will see if you type, for example, \code{type rcbf2.m} in
+MATLAB.  In the interests of concentrating on the numerical analysis,
+we have generally neglected code dealing with processing input
+arguments, reporting progress, and making some operations optional.
+Nevertheless, if you are writing MATLAB programs to perform similiar
+analyses, it can be instructional to read this code and its
+accompanying comments.
 
 \subsubsection{RCBF1}
 \label{sec:rcbf1_listing}
@@ -501,7 +516,7 @@ rescale (K1, 100*60/1.05);
 
 \code{RCBF2} is essentially an extension of \code{RCBF1} with the
 addition of a third weighting function (needed to calculate $V_0$) and
-correction for the delay and dispersion of blood.  Also, RCBF2 adds
+correction for the delay and dispersion of blood.  Also, RCBF2
 allows the user to specify a list of slices (as a vector) rather than
 requiring a scalar \code{slice}.  This means that we add a loop
 through all desired slices, so some of the code is rearranged to avoid
@@ -609,7 +624,7 @@ for current_slice = 1:total_slices
   \end{verbatim}
 
 \item Read in the PET data for the current slice, and rescale it
-  convert from ${\rm nCi/mL_{tissue}}$ to ${\rm Bq/g_{tissue}}$.
+  to convert from ${\rm nCi/mL_{tissue}}$ to ${\rm Bq/g_{tissue}}$.
   \begin{verbatim}
 PET = getimages (img, slices(current_slice), 1:length(FrameTimes), PET);
 rescale (PET, (37/1.05));
@@ -709,7 +724,7 @@ clear mask;
   \code{FrameTimes}) is less than the start time of blood data
   [\code{ts\_even(1)}], then \code{nframeint} returns \code{NaN}
   (not-a-number) in the element of \code{Ca\_mft} corresponding to that
-  frame.  Similiary, if the end time of any frame (some element of
+  frame.  Similarly, if the end time of any frame (some element of
   \code{FrameTimes+FrameLengths}) is greater than the end time of
   blood data [\code{ts\_even(length(ts\_even))}], then \code{NaN}
   is also returned.  The frames that fall outside of the blood data
@@ -732,7 +747,7 @@ hand side of equation (\ref{eq:k1two}).  We also calculate the left
 hand side of equation (\ref{eq:k1two}), which will be used in the
 generation of a $k_2$ image.  Here, we see the value of precomputing
 all the terms of \code{rL} and \code{rR}---not only is the code fairly
-straightforward [as long as you understand the correspondance between
+straightforward [as long as you understand the correspondence between
 the variables \code{Ca\_int{\it i\/}}, \code{PET\_int{\it i\/}} and
 \code{conv\_int{\it i\/}}, and the terms of equation (\ref{eq:k1two})],
 but the computation of \code{rL} and \code{rR} is very fast.
@@ -832,62 +847,55 @@ closeimage (img);
 
 \begin{enumerate}
 
-\item Check the input arguments.
-\begin{verbatim}
-if ((nargin < 5) | (nargin > 6))
-   help correctblood
-   error ('Incorrect number of input arguments.')
-end
+\item Function declaration and input/output arguments:
+  \begin{verbatim}
+function [new_ts_even, Ca_even, delta] = correctblood ...
+      (A, FrameTimes, FrameLengths, g_even, ts_even, options)
+  \end{verbatim}
+The input arguments are:
+%
+% Setup a couple of registers to hold the size of "FrameLengths: " in
+% tt, so we know how much space to allocate in the description list
+\newbox\holder
+\setbox\holder=\hbox{\tt FrameLengths: }
+\dimen0=\wd\holder
+%
+\begin{ttdescription}{\dimen0}
+  \item[A] PET activity versus time, averaged across grey matter and
+    sampled at the mid-frame times
+  \item[FrameTimes] the start time for each frame (in seconds,
+    relative to the study start time)
+  \item[FrameLengths] the length of each frame (in seconds)
+  \item[g\_even] blood data, resampled at an evenly-spaced time domain
+  \item[ts\_even] the time domain at which \code{g\_even} is sampled
+\end{ttdescription}
+The output arguments are:
+\begin{ttdescription}{\dimen0}
+\item[new\_ts\_even] Generally the same as \code{ts\_even}, with some
+  elements possibly chopped off from the end due to shifting of the
+  time scale.
+\item[Ca\_even] \code{g\_even} after correction for blood dispersion
+  and delay.
+\item[delta] The computed delay correction $\delta$, in seconds.
+\end{ttdescription}
 
-progress = 0;                   % defaults in case of no options vector -
-do_delay = 1;                   % may be overridden below
-   
-if (nargin == 6)                % options vector
 
-   if (length(options)>=1)      % options vector given; if it has an
-      progress = options(1);    % element 1, that will be progress
-   end
-
-   if (length(options)>=2)      % delay correction toggle supplied
-      do_delay = options(2);
-   end
-
-   if (length(options)>=3)      % value to use for delta supplied
-      delta = options(3);
-   else                         % no delta value given, so use 0
-      delta = 0;                
-   end
-
-end
-
-if (progress) 
-   disp ('Showing progress');
-end
-
-if (~do_delay) 
-   disp (['No delay-fitting will be performed; will use delta = ' ...
-           int2str(delta)]);
-end
-\end{verbatim}
-
-\item Do the initial setup.
+\item Do the initial setup: calculate the mid-frame times, and find
+  frames that fall in the first 60 seconds of the study.  (Although
+  the blood data is corrected over the entire study, the delay
+  correction is based on the PET data from the first 60 seconds only,
+  since the PET time-activity-curve is relatively flat by $t=60$.)
+  because
 \begin{verbatim}
 MidFTimes = FrameTimes + FrameLengths/2;
 first60 = find (FrameTimes < 60);       % all frames in first
 numframes = length(FrameTimes);         %  minute only
-
-tau = 4;                                % dispersion constant
-
-if (progress >= 2)
-   figure;
-   plot (ts_even, g_even, 'y:');
-   title ('Blood activity: dotted=g(t), solid=g(t) + tau*dg/dt');
-   drawnow
-   hold on
-end
 \end{verbatim}
 
-\item Do the dispersion correction.
+\item Perform delay dispersion; we use \code{deriv} to compute a
+  smoothed version of \code{g\_even} and its first derivative, and
+  then replace \code{g\_even} with the dispersion-corrected
+  blood data ($\bar g$ in equation \ref{eq:dispersion_correct}).
 \begin{verbatim}
 [smooth_g_even, deriv_g] = ...
      deriv (3, length(ts_even), g_even, (ts_even(2)-ts_even(1)));
@@ -896,117 +904,123 @@ deriv_g(length(deriv_g)) = [];
 ts_even(length(smooth_g_even)) = [];
  
 g_even = smooth_g_even + tau*deriv_g;
-
-if (progress >= 2)
-   plot (ts_even, g_even, 'r');
-   drawnow
-end
 \end{verbatim}
 
-\item Get ready to do delay correction.
+\item At this point, we are ready to start the delay
+  correction---i.e., we will find the value of $\delta$ that gives a
+  function $C_a (t)$ that best fits the PET activity $A^{*}(t)$ in
+  equation \ref{eq:blood_delay}.  However, there are three other
+  unknowns in equation \ref{eq:blood_delay}, and it was found that a
+  full four-parameter fit was highly unstable.  Therefore, we select a
+  fixed set of values for $\delta$, perform multiple three-parameter
+  fits (for $\alpha$, $\beta$, and $\gamma$), and select the value of
+  $\delta$ which resulted in the best fit.
+
+  First, we prepare for the repeated fits.  The fixed set of
+  $\delta$-values is selected; we initialize \code{rss} and
+  \code{params} (used to select the value of $\delta$ which resulted in
+  the best fit); and select values of $\alpha$, $\beta$, and $\gamma$
+  to start the fitting.  These values are selected as being fairly
+  representative of real data 
+  [$\alpha = 0.6 {\rm mL_{blood} / (100 \, g_{tissue} \cdot min)}$, 
+   $\beta = \alpha / 0.8$, and $\gamma = 0.03 \, {\rm g_{blood}/g_{tissue}}$],
+  but with $\alpha$ converted to our internal units of 
+  ${\rm g_{blood} / (g_{tissue} \cdot sec)}$ and $\beta$ to $1/sec$.
+  The \code{init} vector holds these values of $\alpha$, $\beta$, and 
+  $\gamma$.
 \begin{verbatim}
-A = A (first60);                        % chop off stuff after 60 sec
-MidFTimes = MidFTimes (first60);        % first minute again
-
-if (progress >= 2)
-   figure;
-   plot (MidFTimes, A, 'or');
-   hold on
-   title ('Average activity across gray matter');
-   old_fig = gcf;
-   drawnow;
-end
-
-% Here are the initial values of alpha, beta, and gamma, in units of:
-%  alpha = (mL blood) / ((g tissue) * sec)
-%  beta = 1/sec
-%  gamma = (mL blood) / (g tissue)
-% Note that these differ numerically from Hiroto's suggested initial
-% values of [0.6, alpha/0.8, 0.03] only because of the different
-% units on alpha of (mL blood) / ((100 g tissue) * min).
-
+deltas = -5:1:10;
 init = [.0001 .000125 .03];
+rss = zeros (length(deltas), 1);
+params = zeros (length(deltas), 3);
 \end{verbatim}
 
-\item Do the delay correction by performing several curve fittings.
+\item Now enter the loop through the values of $\delta$ in
+  \code{deltas}.  The first step is to copy the current element,
+  \code{deltas(i)}, to \code{delta}; this is done solely to make the
+  code easier to read.
+  \begin{verbatim}
+for i = 1:length(deltas)
+   delta = deltas (i);
+  \end{verbatim}
+
+\item Now inside the loop, we perform a three-parameter fit for the
+  current value of $\delta$.  This is done by first computing
+  \code{shifted\_g\_even}, which is the current ``guess'' at $C_a (t)$
+  (see equation \ref{eq:blood_delay}).  Note that the shifted
+  activity is computed from \code{g\_even}, which at this point
+  contains $\bar g (t)$, the dispersion-corrected blood data (equation
+  \ref{eq:dispersion_correct}).
 \begin{verbatim}
-if (do_delay)
+   shifted_g_even = lookup ((ts_even-delta), g_even, ts_even);
+   g_select = find (~isnan (shifted_g_even));
+\end{verbatim}
 
-   if (progress), fprintf ('Performing fits...\n'), end
-   deltas = -5:1:10;
-   rss = zeros (length(deltas), 1);     % residual sum-of-squares
-   params = zeros (length(deltas), 3);  % 3 parameters per fit
-   options = [0 0.1];
+\item Now perform the fit.  The function \code{delaycorrect}
+  encapsulates the entire fitting procedure into one function; this is
+  equivalent to having one user-supplied function that evaluates the
+  function to minimize, and another function (such as \code{fmins}) to
+  iteratively evaluate and minimize this function.  However, because
+  this method of delay correction was found to be extremely slow,
+  \code{delaycorrect} was written entirely in C as a special case.
 
-   for i = 1:length(deltas)
-      delta = deltas (i);
-      if (progress), fprintf ('delta = %.1f', delta), end
+\begin{verbatim}
+   final = delaycorrect (init, ...
+                         shifted_g_even(g_select), ...
+                         ts_even(g_select), ...
+                         A, FrameTimes, FrameLengths);
+\end{verbatim}
 
-      % Get the shifted activity function, g(t - delta), by shifting g(t)
-      % to the right (ie. subtract delta from its actual times, ts_even)
-      % and resample at the "correct" times ts_even).  Then do the 
-      % three-parameter fit to optimise the function wrt. alpha, beta,
-      % and gamma.  Plot this fit.  (Could get messy, but what the hell)
+\item Save the fit results ($\alpha$, $\beta$, and $\gamma$) and
+  compute the residual (sum of the squares of the differences between
+  the data points and points on the fitted curve) for this value of
+  $\delta$.  (\code{fit\_b\_curve} simply calls \code{b\_curve} to
+  compute the right-hand-side of equation \ref{eq:delay_correct}, the
+  ``blood curve,'' for the current values of $\alpha$, $\beta$,
+  $\gamma$, and $\delta$, at each mid-frame time.  Then, it finds the
+  differences between this and the points on the PET activity curve
+  \code{A}, and returns the sum of the squares of these differences.
+  This is saved to the vector \code{rss}.
+\begin{verbatim}
+   params (i,:) = final;
+   rss(i) = fit_b_curve (final, ...
+              shifted_g_even(g_select), ts_even(g_select), ...
+              A, FrameTimes, FrameLengths);
+\end{verbatim}
 
-      shifted_g_even = lookup ((ts_even-delta), g_even, ts_even);
-      g_select = find (~isnan (shifted_g_even));
+\item Finally, we re-use the current values of $\alpha$, $\beta$,
+  $\gamma$ as initial values for the next fit and end the \code{for} loop.
+\begin{verbatim}
+   init = final;
+end      % for delta
+\end{verbatim}
 
-      % Be really careful with the fitting.  If the algorithm you
-      % choose makes args(2) a negative value, there will be
-      % infinities in the result of b_curve, which will cause
-      % the entire thing to bomb.
-
-      options(2) = 1;
-      options(3) = 1;
-
-      final = fmins ('fit_b_curve', init, options, [], ...
-                shifted_g_even (g_select), ts_even (g_select), ...
-                A, FrameTimes, FrameLengths);
-
-      params (i,:) = final;
-      rss(i) = fit_b_curve (final, ...
-                 shifted_g_even(g_select), ts_even(g_select), ...
-                 A, FrameTimes, FrameLengths);
-      init = final;
-      if (progress)
-         fprintf ('; final = [%g %g %g]; residual = %g\n', final, rss (i));
-
-         if (progress >= 2)
-            plot (MidFTimes, ...
-             b_curve(final, shifted_g_even(g_select), ts_even(g_select), ...
-             A, FrameTimes, FrameLengths));
-            drawnow;
-         end      % if graphical progress
-      end      % if any progress
-   end      % for delta
-
-   [err, where] = min (rss);            % find smallest residual
-   delta = deltas (where);              % delta for best fit
-
-end      % if do_delay
+\item At this point, we have a vector of residual sums of squares (a single
+  number estimating the goodness-of-fit for each value of $\delta$).
+  To select the ``winning'' $\delta$, we simply find the minimum of
+  this vector.
+\begin{verbatim}
+[err, where] = min (rss);
+delta = deltas (where);
 \end{verbatim}
 
 \item Now that we have a value for \code{delta}, perform the actual
 delay correction (shift the blood data).  We must also remove NaN's
 from the new data.  These appear if \code{lookup} cannot perform a
-lookup at a point (ie. there is no corresponding point in the table).
+lookup at a point (i.e., there is no corresponding point in the table).
 They will therefore occur at the end points, where \code{ts\_even}
 does not span \code{(ts\_even-delta)}.
 \begin{verbatim}
-% At this point either we have performed the delay-correction fitting to 
-% get delta, or the caller set options(2) to zero so that delay-correction
-% was not explicitly done.  In this case, delta will have been set either
-% to zero or to options(3).
-
 Ca_even = lookup ((ts_even-delta), g_even, ts_even);
 
 nuke = find(isnan(Ca_even));
 Ca_even(nuke) = [];
+\end{verbatim}
 
-% Let's assume that the NaN's occur at the beginning or end of the data
-% (not in the middle), and that we can therefore modify ts_even without
-% screwing up the even time spacing.
-
+\item And finally, make \code{new\_ts\_even} a truncated copy of
+  \code{ts\_even} that fits \code{Ca\_even} and reflects the loss of
+  information due to resampling at the very end of the data.
+\begin{verbatim}
 new_ts_even = ts_even;
 new_ts_even(nuke) = [];
 \end{verbatim}
@@ -1097,7 +1111,7 @@ function gets called many times during curve fitting.
 if (length(args) ~= 3), error ('Wrong number of fit parameters'), end;
 \end{verbatim}
 
-\item Do a straight forward evaluation of the function.  
+\item Do a straightforward evaluation of the function.  
 \begin{verbatim}
 % N.B.: alpha = args(1)
 %        beta = args(2)
