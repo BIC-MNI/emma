@@ -322,7 +322,7 @@ FILE *OpenTempFile (char Filename [])
               ImageSize - number of doubles to read fromthe file
               InFile - the file to read from
 @OUTPUT     : fills in Buffer
-@RETURNS    : true if image was read successfully
+@RETURNS    : TRUE if image was read successfully
               FALSE if not all elements were read
 @DESCRIPTION: 
 @METHOD     : 
@@ -637,7 +637,7 @@ int main (int argc, char *argv [])
    ncopts = NC_VERBOSE;
    ErrMsg = (char *) malloc (256);
 
-   strcpy (ErrMsg, "Hello! I am an error message!");
+/* strcpy (ErrMsg, "Hello! I am an error message!"); */
 
    if (argc != NUM_ARGS + 1)        /* +1 because argv[0] counts! */
    {
@@ -691,20 +691,17 @@ int main (int argc, char *argv [])
                 TRUE, ERR_ARGS);
    }
 
-puts("Opening");
    Result = OpenImage (MINC_FILE, &ImInfo, NC_WRITE);
    if (Result != ERR_NONE)
    {
       ErrAbort (ErrMsg, TRUE, Result);
    }
 
-puts("Checking bounds");
    if (!CheckBounds (Slice, Frame, NumSlices, NumFrames, &ImInfo))
    {
       ErrAbort (ErrMsg, TRUE, ERR_ARGS);
    }
 
-puts("Checking for max/min variables");
    if ((ImInfo.MaxID == MI_ERROR) || (ImInfo.MinID == MI_ERROR))
    {
       sprintf (ErrMsg, "Missing image-max or image-min variable in file %s", 
@@ -712,7 +709,6 @@ puts("Checking for max/min variables");
       ErrAbort (ErrMsg, TRUE, ERR_IN_MINC);
    }
 
-puts("Opening temp file");
    InFile = OpenTempFile (TEMP_FILE);
    if (InFile == NULL)
    {
