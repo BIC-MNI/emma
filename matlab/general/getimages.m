@@ -137,25 +137,6 @@ end
 s = check_sf (handle, slices, frames);
 if ~isempty (s); error (s); end;
 
-% Find out the machine we're on so we can make some educated guesses
-% as to how much memory usage should elicit a warning
-
-%host = getenv ('HOST');
-%if (strcmp (host, 'priam'))        % 80 MB of main memory on priam
-%   max_im = 80;                    % 80 images = 10 MB
-%elseif (strcmp (host, 'duncan') | strcmp (host, 'lear'))
-%   max_im = 40;                    % 40 images = 5 MB
-%elseif strcmp (host, 'portia')
-%   max_im = 12;                    % 12 images = 1.5 MB
-%else
-%   max_im = 30;                    % completely arbitrary for unknown machine
-%end
-
-%num_im = max (length (slices), length (frames));
-%if num_im > max_im
-%   disp (['getimages warning: reading enough images to possibly bring ' host ' to its knees']);
-%end
-
 % Now read the images!  (remembering to make slices and frames zero-based for
 % mireadimages).
 
