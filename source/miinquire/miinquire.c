@@ -25,6 +25,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <errno.h>
 #include "mex.h"
 #include "minc.h"
 #include "mierrors.h"
@@ -125,7 +126,8 @@ int GeneralInfo (int CDF, Matrix **NumDims, Matrix **NumGAtts, Matrix **NumVars)
 
    if (ncinquire (CDF, &nDims, &nVars, &nGAtts, NULL) == MI_ERROR)
    {
-      sprintf (ErrMsg, "Error reading from NetCDF file: %s", NCErrMsg (ncerr));
+      sprintf (ErrMsg, "Error reading from NetCDF file: %s",
+	       NCErrMsg (ncerr, errno));
       return (ERR_IN_MINC);
    }
 
@@ -564,7 +566,8 @@ int GetOrientation (int CDF, int nargin, Matrix *InArgs[], int *CurInArg,
 		      &NumDims, DimIDs, NULL);
    if (Result == MI_ERROR)
    {
-       sprintf (ErrMsg, "Error reading MINC file: %s\n", NCErrMsg (ncerr));
+       sprintf (ErrMsg, "Error reading MINC file: %s\n",
+		NCErrMsg (ncerr, errno));
        return (ERR_BAD_MINC);
    }
    
