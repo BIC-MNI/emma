@@ -2,10 +2,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <nan.h>
-typedef int Boolean;
-
-#define TRUE 1
-#define FALSE 0
+#include "emmageneral.h"
 
 #define MAX_X_LENGTH 1024       /* maximum number of elements of X that can */
                                 /* be found within each frame */
