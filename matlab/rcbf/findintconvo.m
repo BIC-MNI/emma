@@ -1,35 +1,37 @@
 function [int1, int2, int3] = findintconvo (Ca_even, ts_even, k2_lookup,...
-                                     midftimes, flengths, w1, w2, w3)
+                                     midftimes, flengths, w1, w2, w3, progress)
 
 % FINDINTCONVO   calculate tables of the integrated convolutions commonly used
 %
 %   [int1,int2,int3] = findintconvo (Ca_even, ts_even, k2_lookup,...
 %                                    midftimes, flengths, w1[, w2[, w3]])
-%
+% 
 % given a table of k2 values, generates tables of weighted integrals
-% that commonly occur in RCBF analysis.  Namely, int_convo is a table of
-% the same size as k2_lookup containing
+% that commonly occur in RCBF analysis.  Namely, int_convo is a table
+% of the same size as k2_lookup containing
 %
 %       int ( conv (Ca(t), exp(-k2*t)) * weight )
-%
-% where the integration is carried out across frames.  weight is
-% one of w1, w2, or w3, each of which will generally be some simple
+% 
+% where the integration is carried out across frames.  weight is one
+% of w1, w2, or w3, each of which will generally be some simple
 % function of midftimes.  findintconvo will return int2 if and only if
-% w2 is supplied, and int3 if and only if w3 is supplied.  w1 is 
+% w2 is supplied, and int3 if and only if w3 is supplied.  w1 is
 % required, and int1 will always be returned.  Normally, the weight
 % functions should be vectors with the same number of elements as
-% midftimes; however, if w1 is empty then the weighting function 
-% is taken to be unity.
-%
-% Note that in order to correctly calculate the convolution, Ca(t) must
-% be resampled at evenly spaced time intervals, and this resampled blood
-% activity should be passed as Ca_even.  The times at which it is
-% sampled should be passed as ts_even.  (These can be calculated by
-% resampleblood before calling findconvints.)
-%
-% Then, the convolution of Ca(t) and exp(-k2*t) is resampled at the
-% mid-frame times (passed as midftimes) and integrated across frames
-% using flengths as dt.
+% midftimes; however, if w1 is empty then the weighting function is
+% taken to be unity.  (If w2 or w3 are empty, they are NOT assumed to
+% be unity -- they are treated as though they were not even supplied.)
+% 
+% Note that in order to correctly calculate the convolution, Ca(t)
+% must be resampled at evenly spaced time intervals, and this
+% resampled blood activity should be passed as Ca_even.  The times at
+% which it is sampled should be passed as ts_even.  (These can be
+% calculated by resampleblood before calling findconvints.)
+% 
+% Then, the convolution of Ca(t) and exp(-k2*t) is integrated across
+% each individual frame (a slightly more sophisticated approach than
+% simply resampling at the mid-frame times) and integrated across all
+% frames using flengths as dt.
 
 % ----------------------------- MNI Header -----------------------------------
 % @NAME       : findintconvo
@@ -57,7 +59,7 @@ function [int1, int2, int3] = findintconvo (Ca_even, ts_even, k2_lookup,...
 % ---------------------------------------------------------------------------- */
 
 
-if ((nargin < 6) | (nargin > 8))
+if ((nargin < 6) | (nargin > 9))
     help findintconvo
     error ('Incorrect number of input arguments.');
 end
@@ -69,21 +71,26 @@ NumFrames = length(midftimes);
 fstart = midftimes - (flengths / 2);
 
 % Now we need to calculate the function to convolve with Ca_even
-% [a/k/a Ca(t)].  A note on the variables: exp_fun and integrand
-% represent, respectively, the functions exp (-k2 * t) and [Ca(t) (*)
-% exp (-k2 * t)] where (*) represents convolution.  (The t here is
-% ts_even.)  integrand is then integrated across all frames
-% by a simple rectangular integration, just as the image data is
-% integrated in findrl.m.  This is then repeated for every element in
-% the k2 vector to create a table of possible k2's and the two
-% integrated convolutions conv_int1 and conv_int2 as described above.
+% [a/k/a Ca(t)].  A note on the variables: exp_fun and convo
+% represent, respectively, the functions exp (-k2 * t) and
+% conv(Ca(t), exp (-k2 * t)).  (The t here is ts_even.)  integrand 
+% is just convo integrated across each individual frame (i.e. we 
+% go from having several hundred elements -- the size of the ts_even
+% sampling -- to having one element per frame).  Then, integrand is
+% multiplied by the various weighting functions and integrated across
+% all frames to give the final results (one number per weighting
+% function, per value of k2).  Iterating across all values of k2 gives
+% the vectors conv_int{1,2,3}.
 
 TableSize = length (k2_lookup);
-integrand = zeros (NumFrames, 1);               % this is integrated across frames
+integrand = zeros (NumFrames, 1);           % this is integrated across frames
 
 if (nargin >= 6); int1 = zeros (1, TableSize); end;
 if (nargin >= 7); int2 = zeros (1, TableSize); end;
-if (nargin == 8); int3 = zeros (1, TableSize); end;
+if (nargin >= 8); int3 = zeros (1, TableSize); end;
+if (nargin < 9)
+   progress = 1;
+end
 
 % if w1 is empty, assume that it should be all ones
 
@@ -93,7 +100,7 @@ end
 
 for i = 1:TableSize
 
-   fprintf('.')
+   if (progress); fprintf('.'); end;
 
    exp_fun = exp(-k2_lookup(i) * ts_even);
    convo = nconv(Ca_even, exp_fun, ts_even(2) - ts_even(1));
@@ -108,16 +115,22 @@ for i = 1:TableSize
       int1 (i) = ntrapz(midftimes(select), (w1(select) .* integrand(select)));
    end
    
-   % w2 given?
+   % w2 given, and not empty? then calculate the second convolution integral
 
    if (nargin >= 7)
-      int2 (i) = ntrapz(midftimes(select), (w2(select) .* integrand(select)));
+      if (~isempty (w2))
+         int2 (i) = ntrapz(midftimes(select), ...
+                          (w2(select) .* integrand(select)));
+      end
    end
 
-   % w3 given?
+   % w3 given, and not empty?
    
    if (nargin == 8)
-      int3 (i) = ntrapz(midftimes(select), (w3(select) .* integrand(select)));
+      if (~isempty (w3))
+         int3 (i) = ntrapz(midftimes(select), ...
+                          (w3(select) .* integrand(select)));
+      end
    end
 end
 
