@@ -14,4 +14,5 @@ if (get(0,'ScreenSize') == [0 0 1 1])
    return;
 end
 
-[x,y] = ginput(n)
+[x,y] = ginput(n);
+
