@@ -94,9 +94,9 @@
                         in fact, the elements of DimNames could just
                         be reconstructed using calls to ncdiminq and
                         the elements of DimIDs.
-@RETURNS    : true on success
-              false if an invalid orientation was given
-              false if any errors occured while creating the dimensions
+@RETURNS    : TRUE on success
+              FALSE if an invalid orientation was given
+              FALSE if any errors occured while creating the dimensions
               (ErrMsg is set on error)
 @DESCRIPTION: Create up to four image dimensions in an open MINC file.
               At least two dimensions, the "width" and "height" of the 
@@ -182,7 +182,7 @@ Boolean CreateDims (int CDF,
          sprintf (ErrMsg, "Unknown orientation %s "
                   "(must be one of transverse, coronal, or sagittal\n",
                   Orientation);
-         return (false);
+         return (FALSE);
       }
    }
    
@@ -236,14 +236,14 @@ Boolean CreateDims (int CDF,
       {
          sprintf (ErrMsg, "Error creating dimensions: %s\n",
                   NCErrMsg (ncerr));
-         return (false);
+         return (FALSE);
       }
    }
    
 #ifdef DEBUG
    printf (" Done creating %d dimensions\n", CurDim);
 #endif
-   return (true);
+   return (TRUE);
     
 }      /* CreateDims () */    
 
@@ -261,7 +261,7 @@ Boolean CreateDims (int CDF,
                  on ANY dimensions -- should be subscripted on this 
                  dimension only)
 @OUTPUT     : NewVarID - ID of the newly created variable in the child file
-              CopyVals - true if the newly-created variable is such
+              CopyVals - TRUE if the newly-created variable is such
                  that we can and should copy the values from the parent
                  as well as the definition (things have to be done this
                  way because it is more efficient to copy all the 
@@ -270,10 +270,10 @@ Boolean CreateDims (int CDF,
                  for CopyVals to be set true are: the variable to copy
                  depends on exactly one dimension, and the length of that
                  dimension is the same in both files,
-@RETURNS    : true if successful
-              false if a VarID (in the parent file) is subscripted by 
+@RETURNS    : TRUE if successful
+              FALSE if a VarID (in the parent file) is subscripted by 
                  some other dimension than that named by DimName
-              false if a VarID (in the parent file) is subscripted
+              FALSE if a VarID (in the parent file) is subscripted
                  by more than one dimension
               (ErrMsg set on any error)
 @DESCRIPTION: 
@@ -314,7 +314,7 @@ Boolean CopyDimVar (int ParentCDF, int ChildCDF,
                                 /* that is in fact the only one we look at) */
    char    VarDimName[MAX_NC_NAME]; /* name of that dimension */
    
-   *CopyVals = false;
+   *CopyVals = FALSE;
 
    /* 
     * Get info about VarID in the parent file: its type, number of 
@@ -361,7 +361,7 @@ Boolean CopyDimVar (int ParentCDF, int ChildCDF,
          sprintf (ErrMsg, "Dimension variable %s is not subscripted by "
                   "its dimension (%s) in file %s\n", 
                   VarName, DimName, gParentFile);
-         return (false);
+         return (FALSE);
       }
       
       /* 
@@ -404,7 +404,7 @@ Boolean CopyDimVar (int ParentCDF, int ChildCDF,
          /* The dimension lengths were equal, so just copy everything */
          
     /*     *NewVarID = micopy_var_def (ParentCDF, VarID, ChildCDF);   */
-         *CopyVals = true;
+         *CopyVals = TRUE;
 
       }     /* if/else: dimension lengths are equal */
    }     /* else: VarID depends on exactly one dimension */
@@ -414,10 +414,10 @@ Boolean CopyDimVar (int ParentCDF, int ChildCDF,
       sprintf (ErrMsg, "Dimension variable %s in file %s is "
                "subscripted by more than one dimension\n",
                VarName, gParentFile);
-      return (false);
+      return (FALSE);
    }
 
-   return (true);
+   return (TRUE);
 
 }     /* CopyDimVar () */
 
@@ -449,12 +449,12 @@ Boolean CopyDimVar (int ParentCDF, int ChildCDF,
 		 by CreateDimVars), but we must still copy their values.
 		 Also, it's still the caller's responsibility to add 
 		 MIimage, etc.
-@RETURNS    : true if successful
-              false if a dimension variable was found in the parent file
+@RETURNS    : TRUE if successful
+              FALSE if a dimension variable was found in the parent file
                  that is subscripted by some other dimension than is
                  expected (eg., "zspace" subscripted by "zspace" is 
                  expected; if it is subscripted by "xspace", bomb)
-              false if a dimension variable in the parent file is
+              FALSE if a dimension variable in the parent file is
                  subscripted by more than one dimension
               ErrMsg is set (but by CopyDimVar) in either of these cases
 @DESCRIPTION: Create variables associated with the 2, 3, or 4 image 
@@ -512,7 +512,7 @@ Boolean CreateDimVars (int ParentCDF, int ChildCDF,
     *      - compare the name to the name of the variable (which is just
     *        the name of the current dimension in the child file); if
     *        they are not the same, we fail - set an error message and
-    *        return false
+    *        return FALSE
     *      - get the length of the current dimension in the child file
     *        - if it's the same as the dimension in the parent file,
     *          we just copy the variable definition *and* values
@@ -560,7 +560,7 @@ Boolean CreateDimVars (int ParentCDF, int ChildCDF,
           * file that is subscripted on > 1 dimensions or subscripted
           * by a dimension other than the one expected (which in this case
           * will be DimNames[CurDim]).  In either of those cases, it will
-          * return false and set ErrMsg, so we can just return false from
+          * return FALSE and set ErrMsg, so we can just return FALSE from
           * here.
           */
 #ifdef DEBUG
@@ -572,7 +572,7 @@ Boolean CreateDimVars (int ParentCDF, int ChildCDF,
                           DimIDs[CurDim], DimNames[CurDim],
                           &(ChildVars[CurDim]), &Copyable))
          {
-            return (false);
+            return (FALSE);
          }
 	 if (!Copyable)
 	 {
@@ -616,7 +616,7 @@ Boolean CreateDimVars (int ParentCDF, int ChildCDF,
                           DimIDs[CurDim], DimNames[CurDim],
                           &(ChildVars[CurDim]), &Copyable))
          {
-            return (false);
+            return (FALSE);
          }
 
 	 if (!Copyable)
@@ -662,6 +662,6 @@ Boolean CreateDimVars (int ParentCDF, int ChildCDF,
 #endif
 
 
-   return (true);
+   return (TRUE);
 
 }     /* CreateDimVars () */

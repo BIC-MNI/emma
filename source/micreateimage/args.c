@@ -14,6 +14,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <netcdf.h>
+#include <float.h>
 #include <limits.h>
 #include "ParseArgv.h"
 #include "micreateimage.h"	/* typedef's, #define's, and extern's */
@@ -126,7 +127,7 @@ Boolean GetArgs (int *pargc, char *argv[],
 
    if (ParseArgv (pargc, argv, ArgTable, 0))
    {
-      ErrAbort ("", true, 1);
+      ErrAbort ("", TRUE, 1);
    }
 
    /* Break-down the elements of the gSizes[] array. */
@@ -138,7 +139,7 @@ Boolean GetArgs (int *pargc, char *argv[],
 
    if (!SetTypeAndVR (gTypeStr, Type, Signed, gValidRange))
    {
-      ErrAbort (ErrMsg, true, 1);
+      ErrAbort (ErrMsg, TRUE, 1);
    }
 
 #ifdef DEBUG
@@ -153,7 +154,7 @@ Boolean GetArgs (int *pargc, char *argv[],
 
    if (gSizes[0] == -1)
    {
-      ErrAbort ("-size option is required and sizes must be non-negative integers", true, 1);
+      ErrAbort ("-size option is required and sizes must be non-negative integers", TRUE, 1);
    }
 
 #ifdef DEBUG
@@ -165,14 +166,14 @@ Boolean GetArgs (int *pargc, char *argv[],
    
    if (*pargc < 2)
    {
-      ErrAbort ("Name of new MINC file required", true, 1);
+      ErrAbort ("Name of new MINC file required", TRUE, 1);
    }
    else
    {
       gChildFile = argv [1];
    }
 
-   return (true);
+   return (TRUE);
 }     /* GetArgs () */
 
 
@@ -190,9 +191,9 @@ Boolean GetArgs (int *pargc, char *argv[],
               Signed - whether or not the type is signed (this is currently
                  hard-coded to set bytes unsigned, all others signed)
               ValidRange - the (possibly unmodified) valid range.
-@RETURNS    : true on success
-              false if TypeStr is invalid
-              false if ValidRange is invalid for the given type
+@RETURNS    : TRUE on success
+              FALSE if TypeStr is invalid
+              FALSE if ValidRange is invalid for the given type
               (all error conditions set the global variable ErrMsg)
 @DESCRIPTION: Converts the character string TypeStr (from the command-line)
               to an nc_type.  If ValidRange is {0, 0} (ie. not set on the
@@ -219,37 +220,37 @@ Boolean SetTypeAndVR (char *TypeStr, nc_type *TypeEnum, Boolean *Signed,
    if (strcmp (TypeStr, "byte") == 0)
    {
       *TypeEnum = NC_BYTE;
-      *Signed = false;
+      *Signed = FALSE;
    }
    else if (strcmp (TypeStr, "short") == 0)
    {
       *TypeEnum = NC_SHORT;
-      *Signed = true;
+      *Signed = TRUE;
    }
    else if (strcmp (TypeStr, "long") == 0)
    {
       *TypeEnum = NC_LONG;
-      *Signed = true;
+      *Signed = TRUE;
    }
    else if (strcmp (TypeStr, "float") == 0)
    {
       *TypeEnum = NC_FLOAT;
-      *Signed = true;
+      *Signed = TRUE;
    }
    else if (strcmp (TypeStr, "double") == 0)
    {
       *TypeEnum = NC_DOUBLE;
-      *Signed = true;
+      *Signed = TRUE;
    }
    else if (strcmp (TypeStr, "char") == 0)
    {
       sprintf (ErrMsg, "Unsupported NetCDF type: char");
-      return (false);
+      return (FALSE);
    }
    else
    {
       sprintf (ErrMsg, "Unknown data type: %s", TypeStr);
-      return (false);
+      return (FALSE);
    }
 
 #ifdef DEBUG
@@ -298,7 +299,7 @@ Boolean SetTypeAndVR (char *TypeStr, nc_type *TypeEnum, Boolean *Signed,
       default:
       {
 	 sprintf (ErrMsg, "An impossible situation has arisen (an unsupported NetCDF type slipped\nthrough) in function SetTypeAndVR, file args.c of micreateimage.\nWe apologise for the inconvenience.");
-	 return (false);
+	 return (FALSE);
       }
    }
 
@@ -336,11 +337,11 @@ Boolean SetTypeAndVR (char *TypeStr, nc_type *TypeEnum, Boolean *Signed,
       {
          sprintf (ErrMsg, "Invalid range (%lg .. %lg) given for type %s",
                   ValidRange[0], ValidRange[1], TypeStr);
-         return (false);
+         return (FALSE);
       }
    }
 
-   return (true);
+   return (TRUE);
 
 }     /* SetTypeAndVR() */
 

@@ -39,7 +39,7 @@
 #include "dimensions.h"
 #define PROGNAME      "micreateimage"
 
-#define ERROR_CHECK(success) { if (!(success)) { ErrAbort (ErrMsg, true, 1); }}
+#define ERROR_CHECK(success) { if (!(success)) { ErrAbort (ErrMsg, TRUE, 1); }}
 
 
 
@@ -198,9 +198,9 @@ void DumpInfo (int CDF)
 @OUTPUT     : parent_CDF  -> The cdfid of the opened parent file, or -1 if
                              no parent file was given.
               child_CDF   -> The cdfid of the created child file.
-@RETURNS    : true if all went well
-              false if error opening parent file (but only if one was supplied)
-              false if error creating child file
+@RETURNS    : TRUE if all went well
+              FALSE if error opening parent file (but only if one was supplied)
+              FALSE if error creating child file
 @DESCRIPTION: Opens the (optional) parent MINC file, and creates the (required)
               new MINC file.  Also creates the root variable (using
               micreate_std_variable) in the child file.
@@ -229,7 +229,7 @@ Boolean OpenFiles (char parent_file[], char child_file[],
       {
          sprintf (ErrMsg, "Error opening input file %s: %s\n", 
                   parent_file, NCErrMsg (ncerr));
-         return (false);
+         return (FALSE);
       }
    }
    else
@@ -245,7 +245,7 @@ Boolean OpenFiles (char parent_file[], char child_file[],
       sprintf (ErrMsg, "Error creating child file %s: %s\n", 
                child_file, NCErrMsg (ncerr));
       ncclose (*parent_CDF);
-      return (false);
+      return (FALSE);
    }
    
 #ifdef DEBUG
@@ -264,7 +264,7 @@ Boolean OpenFiles (char parent_file[], char child_file[],
    {
       sprintf (ErrMsg
 */
-   return (true);
+   return (TRUE);
 }      /* OpenFiles () */
 
 
@@ -427,11 +427,11 @@ void FinishExclusionLists (int ParentCDF,
               NumDim - *total* number of image dimensions (2,3, or 4)
               DimIDs - ID's of the NumDim image dimensions
 	      NCType - type of the image variable
-	      Signed - true or false, for the image variable
+	      Signed - TRUE or FALSE, for the image variable
 	      ValidRange - for the image variable
 @OUTPUT     : 
-@RETURNS    : true on success
-              false if any error creating either variable
+@RETURNS    : TRUE on success
+              FALSE if any error creating either variable
               (sets ErrMsg on error)
 @DESCRIPTION: Create the MIimagemax and MIimagemin variables in a newly
               created MINC file (must be in definition mode!).  The 
@@ -486,10 +486,10 @@ Boolean CreateImageVars (int CDF, int NumDim, int DimIDs[],
    {  
       sprintf (ErrMsg, "Error creating image max/min variables: %s\n",
                NCErrMsg (ncerr));
-      return (false);
+      return (FALSE);
    }
 
-   return (true);
+   return (TRUE);
 
 }     /* CreateImageVars () */
 
@@ -575,7 +575,7 @@ Boolean CopyOthers (int ParentCDF, int ChildCDF,
       sprintf (ErrMsg, "Error %d copying variable definitions: %s", 
 	       ncerr, NCErrMsg (ncerr));
       ncclose (ChildCDF);
-      return (false);
+      return (FALSE);
    }
 
 #ifdef DEBUG
@@ -594,10 +594,10 @@ Boolean CopyOthers (int ParentCDF, int ChildCDF,
       sprintf (ErrMsg, "Error %d copying variable values: %s", 
 	       ncerr, NCErrMsg (ncerr));
       ncclose (ChildCDF);
-      return (false);
+      return (FALSE);
    }
 
-   return (true);
+   return (TRUE);
 
 }     /* CopyOthers () */
 
