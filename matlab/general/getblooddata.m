@@ -83,7 +83,12 @@ if isstr (study)
         disp (['getblooddata: file ' filename ' does not contain blood analysis data']);
         return;
     end
-else        % study is a number, so use it as a handle to access Filename#
+else                        % study is a number, so use it 
+                            % as a handle to access Filename#
+			    
+    if (length (study) ~= 1)
+        error ('Image handle must be a scalar')
+    end    
 
     eval(['global Filename' int2str(study)]);
     if exist (['Filename' int2str(study)]) ~= 1
