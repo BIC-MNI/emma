@@ -19,31 +19,31 @@
 #define MAX_SAMPLES     50
 
 typedef struct HEADER
-    {
-	char first_name[30];
-	char last_name[30];
-	long run_number;
-	char start_time[10];
-	char date[10];
-	char isotope[5];
-	char study_type[10];
-	int count_time;
-	int background;
-	int num_samples;
-    }   header;
+{
+    char patient_name[60];
+    long run_number;
+    char start_time[10];
+    char date[10];
+    char isotope[5];
+    char study_type[10];
+    int count_time;
+    int background;
+    int num_samples;
+}   header;
 
 typedef struct BLOOD_DATA
-    {
-	double start[MAX_SAMPLES];
-	double stop[MAX_SAMPLES];
-	double length[MAX_SAMPLES];
-	double count_start[MAX_SAMPLES];
-	double count_time[MAX_SAMPLES];
-	double counts[MAX_SAMPLES];
-	double empty_weight[MAX_SAMPLES];
-	double full_weight[MAX_SAMPLES];
-	double corrected_activity[MAX_SAMPLES];
-    }   blood_data;
+{
+    double start[MAX_SAMPLES];
+    double stop[MAX_SAMPLES];
+    double length[MAX_SAMPLES];
+    double count_start[MAX_SAMPLES];
+    double count_time[MAX_SAMPLES];
+    double counts[MAX_SAMPLES];
+    double empty_weight[MAX_SAMPLES];
+    double full_weight[MAX_SAMPLES];
+    double corrected_activity[MAX_SAMPLES];
+    double activity[MAX_SAMPLES];
+}   blood_data;
 
 
 /* ----------------------------- MNI Header -----------------------------------
@@ -192,15 +192,13 @@ int CreateBloodCDF (char name[], header *cnt_header)
     miattputstr (file_CDF, empty_weight_id, "units", "grams");
     miattputstr (file_CDF, full_weight_id, "units", "grams");
     miattputstr (file_CDF, corrected_activity_id, "units", "Bq/gram");
-    miattputstr (file_CDF, activity_id, "units", "Bq/gram");
+    miattputstr (file_CDF, activity_id, "units", "Bq");
 
     /* Make a root for the blood analysis info */
 
     parent_id = ncvardef (file_CDF, MIbloodroot, NC_LONG, 0, NULL);
-    (void) miattputstr (file_CDF, parent_id, MIbloodfirstname,
-			cnt_header->first_name);
-    (void) miattputstr (file_CDF, parent_id, MIbloodlastname,
-			cnt_header->last_name);
+    (void) miattputstr (file_CDF, parent_id, MIbloodname,
+			cnt_header->patient_name);
     (void) ncattput (file_CDF, parent_id, MIbloodrunnumber, NC_LONG, 1,
 		     &(cnt_header->run_number));
     (void) miattputstr (file_CDF, parent_id, MIbloodstarttime,
@@ -263,18 +261,41 @@ void GetCNT (FILE *in_file, header *cnt_header, blood_data *data)
     while (GetRecord (in_file, buffer) > 10)
     {
 	total_tokens = TokenizeRecord (buffer, tokens);
+
 	switch (counter)
 	{
 	    case FIRST_LINE:
-	        strcpy (cnt_header->first_name, tokens[5]);
-		strcpy (cnt_header->last_name, tokens[4]);
-		cnt_header->run_number = atol (tokens[6]);
-		strcpy (cnt_header->start_time, tokens[7]);
-		strcat (cnt_header->start_time, ":");
-		strcat (cnt_header->start_time, tokens[8]);
-		strcat (cnt_header->start_time, ":");
-		strcat (cnt_header->start_time, tokens[9]);
-		strcpy (cnt_header->date, tokens[10]);
+	        strcpy (cnt_header->patient_name, tokens[4]);
+
+		/*
+		 * We must handle the case where only one name is given
+		 * instead of two.  In this case, all tokens in this line
+		 * are shifted over by one.
+		 */
+
+		if (total_tokens == 11)
+		{
+		    strcat (cnt_header->patient_name, " ");
+		    strcat (cnt_header->patient_name, tokens[5]);
+
+		    cnt_header->run_number = atol (tokens[6]);
+		    strcpy (cnt_header->start_time, tokens[7]);
+		    strcat (cnt_header->start_time, ":");
+		    strcat (cnt_header->start_time, tokens[8]);
+		    strcat (cnt_header->start_time, ":");
+		    strcat (cnt_header->start_time, tokens[9]);
+		    strcpy (cnt_header->date, tokens[10]);
+		}
+		else
+		{
+		    cnt_header->run_number = atol (tokens[5]);
+		    strcpy (cnt_header->start_time, tokens[6]);
+		    strcat (cnt_header->start_time, ":");
+		    strcat (cnt_header->start_time, tokens[7]);
+		    strcat (cnt_header->start_time, ":");
+		    strcat (cnt_header->start_time, tokens[8]);
+		    strcpy (cnt_header->date, tokens[9]);
+		}		    
 		break;
 	    case SECOND_LINE:
 		strcpy (cnt_header->isotope, tokens[1]);
@@ -297,6 +318,8 @@ void GetCNT (FILE *in_file, header *cnt_header, blood_data *data)
 		data->empty_weight[counter-5] = atof (tokens[6]);
 		data->full_weight[counter-5] = atof (tokens[7]);
 	  	data->corrected_activity[counter-5] = atof (tokens[8]);
+		data->activity[counter-5] = data->counts[counter-5]/
+		    ((double)(cnt_header->count_time));
 
 		data->count_time[counter-5] = (double) cnt_header->count_time;
 
@@ -377,6 +400,7 @@ void FillBloodCDF (int file_CDF, header *cnt_header, blood_data *data)
     (void) mivarsetdouble (file_CDF, MIemptyweight, samples, data->empty_weight);
     (void) mivarsetdouble (file_CDF, MIfullweight, samples, data->full_weight);
     (void) mivarsetdouble (file_CDF, MIcorrectedactivity, samples, data->corrected_activity);
+    (void) mivarsetdouble (file_CDF, MIactivity, samples, data->activity);
 }
 
 
