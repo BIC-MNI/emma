@@ -1,7 +1,7 @@
 \documentstyle[12pt,fullpage]{article}
 
 \title{rCBF Analysis Using MATLAB}
-\author{Mark Wolforth and Greg Ward}
+\author{Mark Wolforth \and Greg Ward}
 
 \def\code#1{{\tt #1}}
 
@@ -274,10 +274,13 @@ It is written as six different functions.
 \subsubsection{RCBF2}
 
 \begin{enumerate}
-\item Check the input arguments.
+\item Check the input arguments.  We want to make sure that we have
+at least two input arguments (the filename and the slice number).
+Then, for various numbers of input arguments, we want to set options
+such as whether to display progress or perform blood delay and
+dispersion correction.  Finally, we check to ensure that the
+argument passed as slice is a scalar (has a length of one).
 \begin{verbatim}
-% Input argument checking
-
 if (nargin < 2)
    help rcbf2
    error ('Not enough input arguments');
@@ -298,7 +301,12 @@ end
 
 \item Get the images and image information.  This includes all of the
 frames for the slice in question, the frame start times, frame
-lengths, mid-frame times, and the blood data.
+lengths, mid-frame times, and the blood data.  The blood data is
+returned by \code{resampleblood} in a new time domain, resampled to
+half second intervals.  In order to keep our units consistent, we
+convert the units of the PET images from $nCi/ml_{tissue}$ to $counts
+/ (g_{tissue} \cdot second)$.  The units of the blood data will be
+converted after cross-calibration correction is performed.
 \begin{verbatim}
 img = openimage(filename);
 FrameTimes = getimageinfo (img, 'FrameTimes');
@@ -308,14 +316,16 @@ MidFTimes = FrameTimes + (FrameLengths / 2);
 
 
 PET = getimages (img, slice, 1:length(FrameTimes));
-PET = PET * 37 / 1.05;                  % convert to decay / (g_tissue * sec)
+PET = PET * 37 / 1.05;     % convert to decay / (g_tissue * sec)
 \end{verbatim}
 
-\item Create the weighting functions, plus some useful integrals that
-are used several times later in the program.  Here we also create a
-simple mask that excludes information outside of the brain, and apply
-it to our integrals.  This will ensure that areas outside of the
-brain will be set to zero.
+\item Create the weighting functions, plus some integrals that are
+used several times later in the program.  \code{PET\_int1},
+\code{PET\_int2}, and \code{PET\_int3} are weighted integrals of the
+PET data across frames.  Here we also create a simple mask that
+excludes information outside of the brain, and apply it to our
+integrals.  This will ensure that areas outside of the brain will be
+set to zero.
 \begin{verbatim}
 w2 = MidFTimes;
 w3 = sqrt (MidFTimes);
@@ -325,8 +335,9 @@ PET_int1 = C_trapz (MidFTimes, PET')';
 PET_int2 = C_trapz (MidFTimes, PET' .* (w2 * ones(1,ImLen)))';
 PET_int3 = C_trapz (MidFTimes, PET' .* (w3 * ones(1,ImLen)))';
 
-% Now use PET_int1 to create a simple mask, and mask all three PET integrals.
-% This does a good job of removing the outside-of-head data for CBF studies.
+% Now use PET_int1 to create a simple mask, and mask all three
+% PET integrals.  This does a good job of removing the
+% outside-of-head data for CBF studies.
 
 mask = PET_int1 > mean(PET_int1);
 PET_int1 = PET_int1 .* mask;
@@ -337,18 +348,23 @@ PET_int3 = PET_int3 .* mask;
 \item Correct the blood data for delay and dispersion, and apply the
 cross-calibration factor.  The correction will be accomplished by
 performing a curve fitting on average activity across grey matter.
-Therefore, \code{getmask()} allows the user to select grey matter by
+Therefore, \code{getmask} allows the user to select grey matter by
 choosing a threshold value.  The average grey matter activity is then
-passed to \code{correctblood()}.
+passed to \code{correctblood}.  The units of the blood data are
+converted from $counts / (g_{blood} \cdot second)$ to $nCi /
+ml_{tissue}$ by multiplying by the cross-calibration factor.
+Therefore, to maintain consistent units, we convert to $counts /
+(g_{tissue} \cdot second)$.
+
 \begin{verbatim}
 XCAL = 0.11;
-g_even = g_even*XCAL*37;              % units are decay / (g_tissue * sec)
+g_even = g_even*XCAL*37/1.05;    % units are decay / (g_tissue * sec)
 
 if (correction)
    mask = getmask (PET_int1);
    A = (mean (PET (find(mask),:)))';
    [ts_even, Ca_even, delta] = correctblood ...
-                       (A, FrameTimes, FrameLengths, g_even, ts_even, progress);
+           (A, FrameTimes, FrameLengths, g_even, ts_even, progress);
 else
    Ca_even = g_even;
 end
@@ -362,13 +378,15 @@ these three weighted integrals.  The values of $k_2$ used in the
 lookup are also chosen here.
 \begin{verbatim}
 k2_lookup = (-10:0.05:10) / 60;
-[conv_int1,conv_int2,conv_int3] = findintconvo (Ca_even,ts_even,k2_lookup,...
-      MidFTimes, FrameLengths, 1, w2, w3);
+[conv_int1,conv_int2,conv_int3] = findintconvo (Ca_even,ts_even,...
+   k2_lookup, MidFTimes, FrameLengths, 1, w2, w3);
 \end{verbatim}
 
 \item Generate some additional useful integrals.  These are used more
 than once in the subsequent code, and so are calculated in advance to
-try and increase the speed slightly.
+try and increase the speed slightly.  \code{Ca\_mft} is the blood
+data averaged over each frame.  This is taken as the value of the
+blood data at the mid-frame time.
 \begin{verbatim}
 Ca_mft = nframeint (ts_even, Ca_even, FrameTimes, FrameLengths);      
 
@@ -377,12 +395,12 @@ Ca_int2 = C_trapz(MidFTimes, (w2 .* Ca_mft));
 Ca_int3 = C_trapz(MidFTimes, (w3 .* Ca_mft));
 \end{verbatim}
 
-\item Generate the lookup table relating k2 to values of the right
+\item Generate the lookup table relating $k_2$ to values of the right
 hand side of equation (\ref{eq:k1two}).  We also calculate the left
 hand side of equation (\ref{eq:k1two}), which will be used in the
 generation of a $k_2$ image.  Since we will be looking up values of
-$k_2$ from values of rR (the right hand side of equation
-(\ref{eq:k1two})), we sort the table on rR.
+$k_2$ from values of \code{rR} (the right hand side of equation
+(\ref{eq:k1two})), we sort the table on \code{rR}.
 \begin{verbatim}
 rL = ((Ca_int3 .* PET_int1) - (Ca_int1 .* PET_int3)) ./ ...
      ((Ca_int3 .* PET_int2) - (Ca_int2 .* PET_int3));
@@ -403,8 +421,9 @@ rR = ((Ca_int3 * conv_int1) - (Ca_int1 * conv_int3)) ./ ...
 k2_sorted = k2_lookup (sort_order);
 \end{verbatim}
 
-\item Generate the $k_2$ image.  This is performed through a simple
-table lookup.
+\item Generate the $k_2$ image, through a simple table lookup.
+Values of $k_2$ are chosen by finding the value of $k_2$ where
+\code{rL} and \code{rR} are equal.
 \begin{verbatim}
 k2 = lookup(rR, k2_sorted, rL);
 \end{verbatim}
@@ -422,14 +441,14 @@ K1 = K1_numer ./ K1_denom;
 \end{verbatim}
 
 \item Generate the $V_0$ image by evaluating equation
-(\ref{eq:fullweight1}).
+(\ref{eq:fullweight1}) directly.  Once again, we may get values for
+the complicated part of the equation through simple table lookup.
 \begin{verbatim}
 V0 = (PET_int1 - (K1 .* lookup(k2_lookup,conv_int1,k2))) / Ca_int1;
 \end{verbatim}
 
 \item Clean up the images by removing NaN's and infinities (setting
 them to zero).
-
 \begin{verbatim}
 nuke = find (isnan (K1));
 K1 (nuke) = zeros (size (nuke));
@@ -450,6 +469,306 @@ closeimage (img);
 
 \end{enumerate}
 
+
+\subsubsection{CORRECTBLOOD}
+
+\begin{enumerate}
+
+\item Check the input arguments.
+\begin{verbatim}
+if ((nargin < 5) | (nargin > 6))
+   help correctblood
+   error ('Incorrect number of input arguments.')
+end
+
+progress = 0;                   % defaults in case of no options vector -
+do_delay = 1;                   % may be overridden below
+   
+if (nargin == 6)                % options vector
+
+   if (length(options)>=1)      % options vector given; if it has an
+      progress = options(1);    % element 1, that will be progress
+   end
+
+   if (length(options)>=2)      % delay correction toggle supplied
+      do_delay = options(2);
+   end
+
+   if (length(options)>=3)      % value to use for delta supplied
+      delta = options(3);
+   else                         % no delta value given, so use 0
+      delta = 0;                
+   end
+
+end
+
+if (progress) 
+   disp ('Showing progress');
+end
+
+if (~do_delay) 
+   disp (['No delay-fitting will be performed; will use delta = ' ...
+           int2str(delta)]);
+end
+\end{verbatim}
+
+\item Do the initial setup.
+\begin{verbatim}
+MidFTimes = FrameTimes + FrameLengths/2;
+first60 = find (FrameTimes < 60);       % all frames in first
+numframes = length(FrameTimes);         %  minute only
+
+tau = 4;                                % dispersion constant
+
+if (progress >= 2)
+   figure;
+   plot (ts_even, g_even, 'y:');
+   title ('Blood activity: dotted=g(t), solid=g(t) + tau*dg/dt');
+   drawnow
+   hold on
+end
+\end{verbatim}
+
+\item Do the dispersion correction.
+\begin{verbatim}
+[smooth_g_even, deriv_g] = ...
+     deriv (3, length(ts_even), g_even, (ts_even(2)-ts_even(1)));
+smooth_g_even(length(smooth_g_even)) = [];
+deriv_g(length(deriv_g)) = [];
+ts_even(length(smooth_g_even)) = [];
+ 
+g_even = smooth_g_even + tau*deriv_g;
+
+if (progress >= 2)
+   plot (ts_even, g_even, 'r');
+   drawnow
+end
+\end{verbatim}
+
+\item Get ready to do delay correction.
+\begin{verbatim}
+A = A (first60);                        % chop off stuff after 60 sec
+MidFTimes = MidFTimes (first60);        % first minute again
+
+if (progress >= 2)
+   figure;
+   plot (MidFTimes, A, 'or');
+   hold on
+   title ('Average activity across gray matter');
+   old_fig = gcf;
+   drawnow;
+end
+
+% Here are the initial values of alpha, beta, and gamma, in units of:
+%  alpha = (mL blood) / ((g tissue) * sec)
+%  beta = 1/sec
+%  gamma = (mL blood) / (g tissue)
+% Note that these differ numerically from Hiroto's suggested initial
+% values of [0.6, alpha/0.8, 0.03] only because of the different
+% units on alpha of (mL blood) / ((100 g tissue) * min).
+
+init = [.0001 .000125 .03];
+\end{verbatim}
+
+\item Do the delay correction by performing several curve fittings.
+\begin{verbatim}
+if (do_delay)
+
+   if (progress), fprintf ('Performing fits...\n'), end
+   deltas = -5:1:10;
+   rss = zeros (length(deltas), 1);     % residual sum-of-squares
+   params = zeros (length(deltas), 3);  % 3 parameters per fit
+   options = [0 0.1];
+
+   for i = 1:length(deltas)
+      delta = deltas (i);
+      if (progress), fprintf ('delta = %.1f', delta), end
+
+      % Get the shifted activity function, g(t - delta), by shifting g(t)
+      % to the right (ie. subtract delta from its actual times, ts_even)
+      % and resample at the "correct" times ts_even).  Then do the 
+      % three-parameter fit to optimise the function wrt. alpha, beta,
+      % and gamma.  Plot this fit.  (Could get messy, but what the hell)
+
+      shifted_g_even = lookup ((ts_even-delta), g_even, ts_even);
+      g_select = find (~isnan (shifted_g_even));
+
+      % Be really careful with the fitting.  If the algorithm you
+      % choose makes args(2) a negative value, there will be
+      % infinities in the result of b_curve, which will cause
+      % the entire thing to bomb.
+
+      options(2) = 1;
+      options(3) = 1;
+
+      final = fmins ('fit_b_curve', init, options, [], ...
+                shifted_g_even (g_select), ts_even (g_select), ...
+                A, FrameTimes, FrameLengths);
+
+      params (i,:) = final;
+      rss(i) = fit_b_curve (final, ...
+                 shifted_g_even(g_select), ts_even(g_select), ...
+                 A, FrameTimes, FrameLengths);
+      init = final;
+      if (progress)
+         fprintf ('; final = [%g %g %g]; residual = %g\n', final, rss (i));
+
+         if (progress >= 2)
+            plot (MidFTimes, ...
+             b_curve(final, shifted_g_even(g_select), ts_even(g_select), ...
+             A, FrameTimes, FrameLengths));
+            drawnow;
+         end      % if graphical progress
+      end      % if any progress
+   end      % for delta
+
+   [err, where] = min (rss);            % find smallest residual
+   delta = deltas (where);              % delta for best fit
+
+end      % if do_delay
+\end{verbatim}
+
+\item Now that we have a value for \code{delta}, perform the actual
+delay correction (shift the blood data).  We must also remove NaN's
+from the new data.  These appear if \code{lookup} cannot perform a
+lookup at a point (ie. there is no corresponding point in the table).
+They will therefore occur at the end points, where \code{ts\_even}
+does not span \code{(ts\_even-delta)}.
+\begin{verbatim}
+% At this point either we have performed the delay-correction fitting to 
+% get delta, or the caller set options(2) to zero so that delay-correction
+% was not explicitly done.  In this case, delta will have been set either
+% to zero or to options(3).
+
+Ca_even = lookup ((ts_even-delta), g_even, ts_even);
+
+nuke = find(isnan(Ca_even));
+Ca_even(nuke) = [];
+
+% Let's assume that the NaN's occur at the beginning or end of the data
+% (not in the middle), and that we can therefore modify ts_even without
+% screwing up the even time spacing.
+
+new_ts_even = ts_even;
+new_ts_even(nuke) = [];
+\end{verbatim}
+\end{enumerate}
+
+
+\subsubsection{FINDINTCONVO}
+\begin{enumerate}
+\item Check the input arguments.
+\begin{verbatim}
+if ((nargin < 6) | (nargin > 8))
+    help findintconvo
+    error ('Incorrect number of input arguments.');
+end
+\end{verbatim}
+
+\item Do some initial setup.  We need to get the sizes of various
+vectors, and initialize vectors that we will fill element by element
+later.  Initializing vectors to all zero before filling them allows
+better memory management by MATLAB.
+\begin{verbatim}
+NumEvenTimes = length(ts_even);
+NumFrames = length(midftimes);
+fstart = midftimes - (flengths / 2);
+
+TableSize = length (k2_lookup);
+integrand = zeros (NumFrames, 1);
+
+if (nargin >= 6); int1 = zeros (1, TableSize); end;
+if (nargin >= 7); int2 = zeros (1, TableSize); end;
+if (nargin == 8); int3 = zeros (1, TableSize); end;
+
+% if w1 is empty, assume that it should be all ones
+
+if isempty (w1)
+   w1 = ones (size(NumFrames));
+end
+\end{verbatim}
+
+\item Calculate each element of the integrals, one at a time.
+Unfortunately, there does not seem to be any way to vectorize this
+operation, and it must therefore be performed within an inefficient
+\code{for} loop.  Since this function can take considerable time to
+execute, it prints a period for every iteration of the loop to keep
+the user awake.
+
+\begin{verbatim}
+for i = 1:TableSize
+
+   fprintf('.')
+
+   exp_fun = exp(-k2_lookup(i) * ts_even);
+   convo = nconv(Ca_even, exp_fun, ts_even(2) - ts_even(1));
+
+   integrand = nframeint (ts_even, convo(1:length(ts_even)),...
+                          fstart, flengths);
+
+   % w1 given?
+
+   if (nargin >= 6)
+      int1 (i) = ntrapz(midftimes, (w1 .* integrand));
+   end
+   
+   % w2 given?
+
+   if (nargin >= 7)
+      int2 (i) = ntrapz(midftimes, (w2 .* integrand));
+   end
+
+   % w3 given?
+   
+   if (nargin == 8)
+       int3 (i) = ntrapz(midftimes, (w3 .* integrand));
+   end
+end
+\end{verbatim}
+\end{enumerate}
+
+
+\subsubsection{B\_CURVE}
+\begin{enumerate}
+
+\item Check for the correct number of fitting parameters.  We don't
+want to be very strict about checking input arguments here since this
+function gets called many times during curve fitting.
+\begin{verbatim}
+if (length(args) ~= 3), error ('Wrong number of fit parameters'), end;
+\end{verbatim}
+
+\item Do a straight forward evaluation of the function.  
+\begin{verbatim}
+% N.B.: alpha = args(1)
+%        beta = args(2)
+%       gamma = args(3)
+
+expthing = exp(-args(2)*ts_even); 	% ts_even for the convolution
+c = nconv(shifted_g_even,expthing,ts_even(2)-ts_even(1));
+c = c (1:length(ts_even));		% chop off points outside of the time
+					% domain we're interested in
+
+% Calculate the two main terms of the expression, alpha * (convoluted
+% stuff) and gamma * (shifted activity), and sum them.
+
+i1 = args(1)*c;				% alpha * (convolution)
+i2 = args(3)*shifted_g_even;		% gamma * g(t - delta)
+
+i = i1+i2;
+
+integral = nframeint (ts_even, i, fstart, flengths);
+\end{verbatim}
+
+\item Clean up any NaN's that have cropped up by setting them to zero.
+Also, truncate the function to whatever length \code{A} is.
+\begin{verbatim}
+nuke = find (isnan (integral));
+integral (nuke) = zeros (size (nuke));
+
+integral = integral (1:length(A));
+\end{verbatim}
+\end{enumerate}
 
 
 
@@ -481,8 +800,8 @@ correction}
 \begin{verbatim}
 
 
-   [new_ts_even, Ca_even, delta] = correctblood (A, FrameTimes, ...
-                                   FrameLengths, g_even, ts_even, progress)
+ [new_ts_even, Ca_even, delta] = correctblood (A, FrameTimes, ...
+               FrameLengths, g_even, ts_even, progress)
 
 
 \end{verbatim}
