@@ -5,7 +5,7 @@
 # The only change you should make to this file is EMMA_ROOT; other
 # site-specific options are in Makefile.site.
 #
-# $Id: Makefile,v 1.3 1997-10-17 20:08:45 greg Exp $
+# $Id: Makefile,v 1.4 1997-10-21 16:08:21 greg Rel $
 #
 
 
@@ -84,14 +84,25 @@ clean:
 # Prepare for and build a distribution.
 
 include Makefile.version
+RCSNAME  = rcs -q -n$(NAME_SYM): -s$(STATE)
+CO       = co -q -u -r$(NAME_SYM)
+RCSTOUCH = rcstouch
 
 distprep: 
 	cd doc ; $(MAKE)
 
 rcsname:
-	@for file in `cat MANIFEST` ; do \
-	  echo "rcs -q -N$(RCSNAME): -s$(STATE) $$file" ; \
-	  rcs -q -N$(RCSNAME): -s$(STATE) $$file ; \
+	@files=`perl5 -MExtUtils::Manifest=maniread -MFile::Basename \
+	  -e '$$mani = maniread;' \
+	  -e '$$, = "\n";' \
+	  -e 'print sort grep { -e (dirname ($$_) . "/RCS/" . basename ($$_) . ",v") } keys %$$mani;'` ;\
+	for file in $$files ; do \
+	  echo "$(RCSNAME) $$file" ; \
+	  $(RCSNAME) $$file ; \
+	  echo $(CO) $$file ; \
+	  $(CO) $$file ; \
+	  echo $(RCSTOUCH) $$file ; \
+	  $(RCSTOUCH) $$file ; \
 	done
 
 # To make a distribution, we copy all files in the manifest with hard
