@@ -3,7 +3,7 @@
 
 #
 # Change this to reflect your machine type.  Possible machine types
-# are irix4, irix5, sun4, and develop (note that develop is not
+# are irix4, irix5, sun4, linux, and develop (note that develop is not
 # meant for general usage; it's just what we use when working on
 # EMMA).
 #
