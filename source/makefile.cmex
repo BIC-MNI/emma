@@ -21,7 +21,7 @@
 #
 # by Greg Ward 1994/03/10
 #
-# $Id: makefile.cmex,v 1.2 1997-10-17 20:26:44 greg Exp $
+# $Id: makefile.cmex,v 1.3 1997-10-21 16:14:36 greg Rel $
 #
 
 # Currently this can be used to generate the following EMMA CMEX programs:
@@ -67,7 +67,7 @@ LINTFLAGS = $(LINTOPTS) $(INCLUDES)
 # move it to the matlab directory
 $(EMMA_MEX)/$(PROG_MEX): $(PROG_SRC) $(EMMALIB)/libemma.a
 	rm -f $@
-	$(CMEX) CFLAGS="$(CFLAGS_MEX)" $(DEFINES) $(INCLUDES) $(LDFLAGS) $(PROG_SRC)
+	$(MEX) CFLAGS="$(CFLAGS_MEX)" $(MEX_FLAGS) $(DEFINES) $(INCLUDES) $(LDFLAGS) $(PROG_SRC)
 	mv $(PROG_MEX) $(EMMA_MEX)/$(PROG_MEX)
 
 lint:
