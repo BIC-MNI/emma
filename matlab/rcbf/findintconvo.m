@@ -36,8 +36,6 @@ if ((nargin < 6) | (nargin > 8))
     error ('Incorrect number of input arguments.');
 end
 
-error (nargchk (6, 8, nargin));
-
 % Get size of various time vectors - needed for initialization below
 
 NumEvenTimes = length(ts_even);
