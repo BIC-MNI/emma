@@ -2,52 +2,90 @@
 # Makefile for EMMA documentation.
 #
 
+# The general scheme for building LaTeX documents is as follows: one
+# latex run creates the .toc and .aux files; the .dvi file resulting
+# from this run is deleted, because it includes an empty toc.  (The toc
+# of the right length is only created after we've read the entire
+# document once.)  Then, the .dvi file depends on the .toc and .aux
+# files; it takes two latex runs to generate the correct .dvi file,
+# because the first run -- by including the full-length toc -- can push
+# the rest of the document down a bit.  The third run computes the toc
+# with this "push-down" effect accounted for.
+#
+# Every LaTeX file is handled differently, because they all have subtly
+# different dependencies (included files, figures, etc.).
+
+.SUFFIXES : .dvi .ps
+
+SHELL = /bin/sh
+
+# Implicit rule: .dvi -> .ps
+.dvi.ps:
+	dvips -o $@ $<
+
 #
 # Set up the targets
 #
 
-default: all
-
-all: emma.ps leastsq.ps rcbf.ps simul.ps Makefile
+all: emma.ps leastsq.ps rcbf.ps simul.ps 
 
 
 #
 # How to build the general EMMA documentation.
 #
 
-emma.dvi: emma.tex emma-help.tex
-	latex emma.tex
-
-emma.ps: emma.dvi
-	dvips -o emma.ps emma.dvi
+emma.toc emma.aux: emma.tex emma-help.tex
+	latex emma
+	rm emma.dvi
+emma.dvi: emma.toc emma.aux
+	latex emma
+	latex emma
 
 #
-# How to build the least squares documentation.
+# How to build the least squares documentation.  (This only takes
+# two runs because there is no table of contents.)
 #
 
 leastsq.dvi: leastsq.tex
-	latex leastsq.tex
+	latex leastsq
+	latex leastsq
 
-leastsq.ps: leastsq.dvi
-	dvips -o leastsq.ps leastsq.dvi
 
 #
 # How to build the rcbf documentation.
 #
 
-rcbf.dvi: rcbf.tex flow.ps structure.ps rcbf-help.tex
-	latex rcbf.tex
+rcbf.toc rcbf.aux: rcbf.tex flow.ps structure.ps rcbf-help.tex
+	latex rcbf
+	rm rcbf.dvi
+rcbf.dvi: rcbf.toc rcbf.aux 
+	latex rcbf
+	latex rcbf
 
-rcbf.ps: rcbf.dvi flow.ps structure.ps
-	dvips -o rcbf.ps rcbf.dvi
+flow.ps: flow.xfig
+	fig2dev -Lps $? $@
+structure.ps: structure.xfig
+	fig2dev -Lps $? $@
 
 
 #
 # How to build the simulation documentation.
 #
 
-simul.dvi: simul.tex
-	latex simul.tex
+simul.toc simul.aux: simul.tex
+	latex simul
+	rm simul.dvi
+simul.dvi: simul.toc simul.aux
+	latex simul
+	latex simul
 
-simul.ps: simul.dvi
-	dvips -o simul.ps simul.dvi
+
+# 
+# Cleanup targets
+# 
+
+clean:
+	rm -f *.aux *.toc *.log *.dvi 
+
+scrub: clean
+	rm -f emma.ps leastsq.ps rcbf.ps simul.ps
