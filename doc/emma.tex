@@ -1,0 +1,224 @@
+\documentstyle[12pt,fullpage]{article}
+
+\title{PAMI -- User Manual}
+\author{Mark Wolforth, Greg Ward}
+\date{Tuesday June 15, 1993}  
+
+\def\code#1{{\tt #1}}
+
+\begin{document} 
+
+\maketitle
+\newpage
+
+\tableofcontents
+
+%--------------------------------------------------------------
+\newpage
+\section{Introduction}
+
+This document is the user manual for PAMI (Package for the Analysis of Medical
+Images) developed at the Montreal Neurological Institute.  This package consists
+of a set of Matlab .m files and programs written in C, designed to ease the
+analysis of PET data.  The entire package runs under Matlab.
+
+This document presumes that the reader is familiar with manipulation of PET
+images, and simply wishes to know how image manipulation is possible using
+PAMI and Matlab.
+
+
+%--------------------------------------------------------------
+\newpage
+\section{Basic Concepts}
+
+To a programmer, the interface to PAMI should be very familiar.  Simply open
+a data set contained in a MINC file by calling openimage.  This returns a
+handle which is used in all subsequent calls to PAMI functions.  The user does
+not need to worry about the underlying mechanisms.  For example, to open
+an image file, read in the first line of the first frame of the second slice,
+and then close the image file, you could type:
+
+
+\begin{verbatim}
+data_handle = openimage ('arnaud_20547.mnc');
+image_line = getnextline (data_handle, 2, 1);
+closeimage (data_handle);
+\end{verbatim}
+
+
+In this example, \verb+data_handle+ is a handle to the data contained in the
+MINC file \verb+arnaud_20547.mnc+.  After the data has been opened with
+openimage, the name of the MINC file is never used again.  Only the handle for
+the data is used.  Therefore, \verb+getnextline+ is passed the handle for the
+data, as well as the slice number and frame number.  Once you have finished
+working with the image, always remember to call \verb+closeimage+.  This
+cleans up the Matlab memory space and destroys the handle.
+
+Because PAMI uses handles, the user never needs to worry about how the image
+data is stored within Matlab.  You simply call PAMI functions with the handle,
+and the underlying structure takes care of the nitty-gritty details.
+
+
+%--------------------------------------------------------------
+\newpage
+\section{PAMI Matlab Functions}
+
+The Matlab interface to PAMI is performed through the following
+Matlab scripts and functions (.m files).
+
+
+\begin{itemize}
+
+\item \code{openimage} : Prepares a MINC file for reading.  Returns a handle to the data.
+\begin{verbatim}
+IMhandle = openimage (filename)
+\end{verbatim}
+
+\item \code{getnextline} : Gets the next line from a data set.  Will get the next line from a
+    group of images.
+\begin{verbatim}
+line = getnextline (IMhandle, slices, frames)
+\end{verbatim}
+
+\item \code{getimage} : Gets an entire image from a data set.
+\begin{verbatim}
+im = getimage (IMhandle, slice, frame)
+\end{verbatim}
+
+\item \code{newimage} : Creates a MINC file for a new image.  Returns a handle
+    to the newly created data set that is used in calls to other functions
+    (such as \code{putnextline} and \code{closeimage}).  Requires a parent
+    MINC file from which to copy the history attribute, and root variable.
+\begin{verbatim}
+IMhandle = newimage (filename, parent_file, numslices, numframes)
+\end{verbatim}
+
+\item \code{putnextline} :
+
+\item \code{putimage} :
+
+\item \code{getimageinfo} : Gets information about an open image.  Will return
+    one of:
+    \begin{itemize}
+    \item \code{Filename}  : The name of the MINC file.
+    \item \code{NumFrames} : Number of frames in the study. 0 if non-dynamic study.
+    \item \code{NumSlices} : Number of slices in the study.
+    \item \code{ImageSize} : Size of a single image (eg. 128, 256)
+    \item \code{FrameLengths} : Vector with NumFrames elements containing the duration
+          of each frame in the study, expressed in seconds.
+    \item \code{FrameTimes} : Vector with NumFrames elements containing the start
+          time of each frame, relative to the start of the study, expressed
+          in seconds.
+    \end{itemize}
+\begin{verbatim}
+info = getimageinfo (IMhandle, info_descriptor)
+\end{verbatim}
+
+\item \code{viewimage} : Displays an image on the workstation screen.  If the
+    workstation is monochrome, the image will be converted to a grayscale and
+    displayed using xv.  Otherwise, the image is displayed in colour using
+    Matlab directly.
+\begin{verbatim}
+viewimage (im)
+\end{verbatim}
+
+\item \code{closeimage} : Destroys the appropriate variables in the workspace.
+\begin{verbatim}
+closeimage (IMhandle)
+\end{verbatim}
+
+\end{itemize}
+
+
+%--------------------------------------------------------------
+\newpage
+\section{Underlying Structure}
+
+PAMI has a set of underlying functions written in C that provide the interface
+to MINC files.  A PAMI user will not ordinarily require use of these functions
+since every interaction with MINC files should be possible using the Matlab
+scripts and functions provided (.m files).  However, for the sake of
+completeness, these functions are documented in this section.
+
+Matlab provides an interface to external C programs that allows dynamic linking
+at runtime.  This interface, called CMEX, is detailed in the Matlab
+{\em External Interface Guide}.  Please consult this guide for further details.
+Unfortunately, due to problems with the CMEX interface, it was not possible to
+create any CMEX programs that wrote to MINC files.  Therefore, all of the
+MINC creation and writing functions are written as stand-alone C programs, and
+all of the MINC reading functions are written as CMEX programs.
+
+
+\subsection {Stand-alone C Programs}
+
+\begin {itemize}
+
+\item \code{miwriteimages} : Writes images to a MINC file.  The images are taken from
+    the specified temporary file, whose data is expected to
+    be stored as doubles.  MINC file must exist, and contain
+    an image structure (create with micreate and then
+    micreateimage).
+\begin{verbatim}
+int miwriteimages <MINC file> <slices> <frames> <temp file>
+\end{verbatim}
+
+\item \code{micreateimage} : Create the MIimage variable in an existing MINC file.
+    Also updates the file hierarchy (MIimage is a child of MIrootvariable).
+\begin{verbatim}
+int micreateimage <MINC file> <size> <number of slices> <number of frames>
+\end{verbatim}
+
+\item \code{miwritevar} : Writes values to a variable in a MINC file.  Values are
+    taken from the specified temporary file, whose data is
+    expected to be stored as doubles.
+\begin{verbatim}
+int miwritevar <MINC file> <var name> <start vector> <length vector> <temp file>
+\end{verbatim}
+
+\item \code{micreatevar} : Create a variable in a MINC file.
+\begin{verbatim}
+int micreatevar <MINC file> <var name> <data type> <num dims> <dim names>
+\end{verbatim}
+
+\item \code{micreatedim} : Create a dimension in a MINC file.
+\begin{verbatim}
+int micreatedim <MINC file> <dim name> <length>
+\end{verbatim}
+
+
+\item \code{micreate} : Create a new MINC file by copying the global attributes
+    and root variable from another MINC file.  Will also copy 
+    the specified variables, and update the file hierarchy.  Adds 
+    a time stamp to the "history" global variable.
+\begin{verbatim}
+micreate <parent file> <new file> [<variable list>]
+\end{verbatim}
+
+\end{itemize}
+
+
+\subsection{CMEX Programs}
+
+In addition to stand-alone C programs, the underlying structure also includes
+several CMEX programs which are dynamically linked by Matlab.  Please see the
+Matlab {\em External Interface Guide} for an explanation of CMEX files.
+
+\begin{itemize}
+
+\item \code{mireadvar} : Read a hyperslab from a MINC (or any NetCDF) file into a MATLAB
+    vector, using NetCDF-style start and count vectors.  (Zero-based!!!)  
+\begin{verbatim}
+mireadvar ('minc_file', 'var_name', start_vector, count_vector)
+\end{verbatim}
+
+\item \code{mireadimages} : Read images from a MINC file.
+\begin{verbatim}
+mireadimages ('minc_file'[, slices[, frames[, options]]]) 
+\end{verbatim}
+
+\end{itemize}
+
+
+
+\end{document}
+
