@@ -32,8 +32,7 @@ end
 % times at which each element of Ca is the blood activity, hence ts_mid
 % is used as "old x" for any resampling.
 
-[Ca, ts_start, ts_stop] = getblooddata (handle);
-ts_mid = (ts_start + ts_stop) / 2;
+[Ca, ts_mid] = getblooddata (handle);
 
 if (nargin == 2) 			% samples not supplied
    samples = ceil(2*(max(ts_mid)-min(ts_mid)));
