@@ -18,7 +18,6 @@
 %   mireadvar     - Read a hyperslab from any NetCDF variable.
 %   micreate      - Create a new MINC file from scratch.
 %   miwriteimages - Write images to a MINC file (used by putimages).
-%   miwritevar    - Write a hyperslab to any NetCDF variable.
 %   miinquire     - Get NetCDF variable, dimension, or attribute information.
 %
 %     Note: these seven functions should not generally be called by 
