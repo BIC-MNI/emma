@@ -20,7 +20,6 @@
 @COMMENTS   : For full usage documentation, see mireadimages.m
 ---------------------------------------------------------------------------- */
 
-
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -39,7 +38,6 @@
 
 #define PROGNAME "mireadimages"
 
-Matrix  *mNaN;                  /* NaN as a MATLAB Matrix */
 double  NaN;                    /* NaN in native C format */
 
 
@@ -247,6 +245,10 @@ Boolean CheckBounds (long Slices[], long Frames[],
 @CREATED    : 93-6-6, Greg Ward
 @MODIFIED   : 93-8-23, GPW: added support for missing slice dimension 
                             (NumSlices==0) just like NumFrames==0 case
+	      95-1-1, Mark Wolforth
+                      -Removed the non functional code that mapped out
+                       of range values to NaN.  This is superseded
+                       by changes to the library.
 @COMMENTS   : 
 ---------------------------------------------------------------------------- */
 int ReadImages (ImageInfoRec *Image,
@@ -326,8 +328,6 @@ int ReadImages (ImageInfoRec *Image,
    printf ("  Any slice dimension: %s\n", DoSlices ? "YES" : "NO");
    printf ("Reading from row %ld, for %ld rows.\n", StartRow, NumRows);
 #endif
-
-
 
    /*
     * If *Mimages points to NULL, we want to allocate a new Matrix
@@ -423,27 +423,6 @@ int ReadImages (ImageInfoRec *Image,
 	   Size*NumFrames*NumSlices);
 #endif   
 
-   /*
-    * For some reason that I can't quite figure out, this bit goes
-    * into an infinite loop, and I am therefore leaving it commented
-    * out for the time being.  MW.
-    */
-
-#if 0
-
-   for (j=0; j<(Size*NumFrames*NumSlices); j++)
-   {
-       printf ("%ld\n", j);
-       if (VectorImages[j] == -DBL_MAX)
-       {
-	   printf ("Made a -DBL_MAX into a NaN.\n");
-
-	   VectorImages[j] = NaN;
-       }
-   }
-
-#endif
-
 #ifdef DEBUG
    putchar ('\n');
 #endif
@@ -520,8 +499,7 @@ void mexFunction(int    nlhs,
     * Create the NaN variable
     */
 
-   mexCallMATLAB (1, &mNaN, 0, NULL, "NaN");
-   NaN = *(mxGetPr(mNaN));
+   NaN = CreateNaN();
    
    /*
     * Open MINC file, get info about image, and setup ICV
