@@ -1,5 +1,12 @@
-# Site-specific configuration for EMMA.  Note: this file must
-# be included by a makefile that has already defined EMMA_ROOT.
+#
+# Site-specific configuration for EMMA.  Note: this file must be
+# included by a makefile that has already defined EMMA_ROOT, which must
+# either be empty or a directory with a trailing slash.
+#
+# $Id: Makefile.site,v 1.4 1997-10-17 20:15:19 greg Exp $
+#
+
+SHELL       = /bin/sh			# Bourne shell or equivalent
 
 #
 # Change this to reflect your machine type.  Possible machine types
@@ -10,35 +17,45 @@
 
 MACHINE     = develop
 
-
 #
-# These are directories where the build process looks for various
-# files.  MATLAB must have been installed under MATLAB_ROOT,
-# the NetCDF and MINC libraries must be in MINCLIB, and the NetCDF
-# and MINC header (.h) files must be in MINCINC.
+# Put here any macro definitions you need to compile stuff.  If you're
+# running MATLAB 5, you need -DV4_COMPAT to build EMMA's CMEX
+# programs (which is why it's defined by default).
+#
+
+DEFINES = -DV4_COMPAT
+
+# 
+# MATLAB stuff: the root directory of the MATLAB installation, as well
+# as various things found under it (headers for building MEX programs
+# and the cmex script).  You may have to change MATLAB_ROOT, but you
+# probably shouldn't touch the others.
 #
 
 MATLAB_ROOT = /usr/local/matlab
-MINCLIB     = /usr/local/lib
-MINCINC     = /usr/local/include
+MATLABINC   = $(MATLAB_ROOT)/extern/include
+CMEX        = $(MATLAB_ROOT)/bin/cmex
+
+
+# 
+# Where to search for the MINC and NetCDF library and header files.
+# These are just inserted into the compiler command lines as needed, so
+# if MINC and NetCDF are in different directories, you can add more -L
+# or -I options as needed.
+#
+
+MINCLIB     = -L/usr/local/lib
+MINCINC     = -I/usr/local/include
 
 
 #
 # Where to find the EMMA library and header files.  You shouldn't change these.
 #
 
-EMMAINC     = $(EMMA_ROOT)/include
-EMMALIB     = $(EMMA_ROOT)/lib
+EMMAINC     = $(EMMA_ROOT)include
+EMMALIB     = $(EMMA_ROOT)lib
 
 
-#
-# You shouldn't have to change these unless you have a weird MATLAB
-# setup.  MATLABINC is where EMMA looks for mex.h, and MATLABLIB
-# is where it looks for the MEX library.
-#
-
-MATLABINC   = $(MATLAB_ROOT)/extern/include
-MATLABLIB   = $(MATLAB_ROOT)/extern/lib/$(MACHINE)
 
 #
 # These are directories where the various components of EMMA will be
@@ -59,25 +76,24 @@ MATLAB_INSTALL_DIR = $(MATLAB_ROOT)/toolbox/emma
 BIN_INSTALL_DIR    = /usr/local/bin
 DOC_INSTALL_DIR    = /usr/local/doc
 
-#
-# Finally, these are compiler options based on the above directories.
-# These almost certainly won't need to be changed, except possibly to
-# add /usr/local/include and/or /usr/local/lib if for some reason 
-# they aren't automatically searched.  They're just here for
-# easy propagation to lower-level makefiles.
+
+# 
+# Finally, these are compiler/linker options based on the above
+# directories.  These almost certainly won't need to be changed; they're
+# just here for easy propagation to lower-level makefiles, and to
+# provide an easy place to add directories if necessary.
 #
 
-INCLUDES    = -I$(MATLABINC) \
-              -I$(EMMAINC) \
-              -I$(MINCINC)
+INCLUDES = -I$(EMMAINC) \
+             $(MINCINC) \
+           -I$(MATLABINC)
 
-LIBDIRS     = -L$(MATLABLIB) \
-              -L$(EMMALIB) \
-              -L$(MINCLIB)
+LIBDIRS  = -L$(EMMALIB) \
+             $(MINCLIB)
 
 #
 # Now include the architecture-dependent options, such as compiler,
 # compiler options, libraries, etc.
 #
 
-include $(EMMA_ROOT)/Makefile.$(MACHINE)
+include $(EMMA_ROOT)Makefile.$(MACHINE)
