@@ -1,16 +1,14 @@
 # Options for compiling EMMA programs for SGI (IRIX 5.x).
 # Distribution version.
 
-RANLIB      = true
+RANLIB      = 
 MEX_EXT     = mexsg
-CMEX_LIBS   = -lemma -lminc -lnetcdf \
-              -lsun -lm -lc \
-              -lmalloc
-XDR_LIB     = -lsun
+CMEX_LIBS   = -lemma -lminc -lnetcdf -lm -lc
+XDR_LIB     = 
 CC          = cc
 
 # Options for the MIPS C compiler.  CMEX_OPT is for CMEX programs,
 # STD_OPT is for standalone programs.
 
-CMEX_OPT    = -O2 -prototypes
-STD_OPT     = -O2 -prototypes
+CFLAGS_MEX  = -O2 -prototypes
+CFLAGS_STD  = -O2 -prototypes
