@@ -55,9 +55,7 @@ function ImHandle = openimage (filename)
 %              other) image variables associated with the current
 %              handle.
 %@GLOBALS    : reads/increments: ImageCount
-%              creates: Filename#, NumFrames#, NumSlices#, ImageSize#,
-%              PETimages#, FrameTimes#, FrameLengths#, AvailFrames#,
-%              AvailSlices#, CurLine#
+%              creates: Filename#, DimSizes#, FrameTimes#, FrameLengths#
 %@CALLS      : mireadvar (CMEX)
 %              miinquire (CMEX)
 %@CREATED    : June 1993, Greg Ward & Mark Wolforth
@@ -100,7 +98,8 @@ end
 % height, width will be the elements of DimSizes where height and
 % width are the two image dimensions.  DimSizes WILL have four 
 % elements; if any of the dimensions do not exist, the corresponding
-% element of DimSizes will be zero.  (See also miinquire doc's.)
+% element of DimSizes will be zero.  (See also miinquire documentation
+% ... when it exists!)
 
 DimSizes = miinquire (filename, 'imagesize');
 
@@ -109,46 +108,43 @@ NumSlices = DimSizes (2);
 Height = DimSizes (3);
 Width = DimSizes (4);
 
-if (Height == Width)
-   ImageSize = Height;
-else
-   error (['Images are not square (width ' int2str(Width), ', height ' int2str(Height) ')']);
-end
-
 % Get the frame times and lengths for all frames.  Note that mireadvar
 % returns an empty matrix for non-existent variables, so we don't need
 % to check the dimensions of the file.
 
 FrameTimes = mireadvar (filename, 'time');
 FrameLengths = mireadvar (filename, 'time-width');
-Zspace = mireadvar (filename, 'zspace');
 
-% Now make "numbered" copies of the six variables we just created; the
-% number used is ImageCount, and the effect of the following
-% statements is to declare these numbered variables as global (so
-% other functions can access them) and to copy the local data to the
-% global variables.
+% Now make "numbered" copies of the four variables we just created
+% (Filename, DimSizes, FrameTimes, and FrameLengths); the number used
+% is ImageCount, and the effect of the following statements is to
+% declare these numbered variables as global (so other functions can
+% access them) and to copy the local data to the global variables.
 
 eval(['global Filename'     int2str(ImageCount)]);
-eval(['global NumFrames',   int2str(ImageCount)]);
-eval(['global NumSlices',   int2str(ImageCount)]);
-eval(['global ImageSize',   int2str(ImageCount)]);
-eval(['global PETimages'    int2str(ImageCount)]);
+eval(['global DimSizes'     int2str(ImageCount)]);
 eval(['global FrameTimes'   int2str(ImageCount)]);
 eval(['global FrameLengths',int2str(ImageCount)]);
-eval(['global AvailFrames', int2str(ImageCount)]);
-eval(['global AvailSlices', int2str(ImageCount)]);
-eval(['global CurLine',     int2str(ImageCount)]);
+
+%eval(['global NumFrames',   int2str(ImageCount)]);
+%eval(['global NumSlices',   int2str(ImageCount)]);
+%eval(['global ImageSize',   int2str(ImageCount)]);
+%eval(['global PETimages'    int2str(ImageCount)]);
+%eval(['global AvailFrames', int2str(ImageCount)]);
+%eval(['global AvailSlices', int2str(ImageCount)]);
+%eval(['global CurLine',     int2str(ImageCount)]);
 
 eval(['Filename'     int2str(ImageCount) ' = filename;']);
-eval(['NumFrames'    int2str(ImageCount) ' = NumFrames;']);
-eval(['NumSlices'    int2str(ImageCount) ' = NumSlices;']);
-eval(['ImageSize'    int2str(ImageCount) ' = ImageSize;']);
 eval(['FrameTimes'   int2str(ImageCount) ' = FrameTimes;']);
 eval(['FrameLengths' int2str(ImageCount) ' = FrameLengths;']);
-eval(['CurLine'      int2str(ImageCount) ' = 1;']);
-eval(['AvailFrames'  int2str(ImageCount) ' = [];']);
-eval(['AvailSlices'  int2str(ImageCount) ' = [];']);
-eval(['PETimages'    int2str(ImageCount) ' = [];']);
+eval(['DimSizes'     int2str(ImageCount) ' = DimSizes;']);
+
+%eval(['NumFrames'    int2str(ImageCount) ' = NumFrames;']);
+%eval(['NumSlices'    int2str(ImageCount) ' = NumSlices;']);
+%eval(['ImageSize'    int2str(ImageCount) ' = ImageSize;']);
+%eval(['CurLine'      int2str(ImageCount) ' = 1;']);
+%eval(['AvailFrames'  int2str(ImageCount) ' = [];']);
+%eval(['AvailSlices'  int2str(ImageCount) ' = [];']);
+%eval(['PETimages'    int2str(ImageCount) ' = [];']);
 
 ImHandle = ImageCount;
