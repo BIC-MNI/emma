@@ -559,11 +559,11 @@ Boolean CreateImageVars (int CDF, int NumDim, int DimIDs[],
               TimeStamp - string to be added to history attribute in ChildCDF
 @OUTPUT     : (none)
 @RETURNS    : (void)
-@DESCRIPTION: Update the history of a MINC file by prepending a string
+@DESCRIPTION: Update the history of a MINC file by appending a string
               to it.  The history attribute will be created if it does
               not exist in the file specified by CDF; otherwise, its
               current value will be read in, the string TimeStamp will
-              be prepended to it, and it will be re-written.
+              be appended to it, and it will be re-written.
 @METHOD     : 
 @GLOBALS    : 
 @CALLS      : NetCDF, MINC libraries
