@@ -19,6 +19,11 @@ function miwriteimages (filename, images, slices, frames)
 %  is called by miwriteimages.m via a shell escape.  Neither of these
 %  programs are meant for everyday use by the end user.
 
+if (nargin < 2) | (nargin > 4)
+   help miwriteimages
+   error ('Incorrect number of arguments');
+end
+
 % If the slices vector was supplied and is non-empty, then convert it
 % to a string (eg. [1 2 3] becomes '1,2,3') for passing to the executable
 % miwriteimages.  If the vector was not supplied or is empty, then 
