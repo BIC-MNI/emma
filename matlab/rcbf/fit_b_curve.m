@@ -1,7 +1,6 @@
-function err = fit_b_curve (args)
+function err = fit_b_curve (args, shifted_g_even, ts_even, A, midftimes)
 
-global A
-
-integral = b_curve (args);
+integral = b_curve (args, shifted_g_even, ts_even, A, midftimes);
 
 err = sum((A - integral).^2);
+% err = A - integral;
