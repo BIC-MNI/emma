@@ -13,7 +13,7 @@ function info = getimageinfo (handle, whatinfo)
 % supplied, getimageinfo will return the length of that dimension from
 % the MINC file, or 0 if the dimension does not exist.  Note that
 % requesting "time" is equivalent to requesting "NumFrames"; also,
-% the three spatial dimensions also have equivalences that are
+% the three spatial dimensions have equivalences that are
 % somewhat more complicated.  For the case of transverse images,
 % zspace is equivalent to NumSlices, yspace to ImageHeight, and xspace
 % to ImageWidth.  See the help for newimage (or the MINC standard
@@ -90,8 +90,30 @@ function info = getimageinfo (handle, whatinfo)
 %                     volume (where an "image" is one slice of one
 %                     frame).  The ordering is the same as for AllMin.
 %
-% You can also use miinquire to get the value of any MINC attribute,
-% such as the patient name, scanning date, etc.
+%     Steps         - returns the step (voxel size) for each spatial 
+%                     dimension, in (x,y,z) order, as a 3x1 vector
+%
+%     Starts        - returns the start coordinate for each spatial
+%                     dimension, in (x,y,z) order, as a 3x1 vector
+%
+%     DirCosines    - returns the direction cosines for each spatial
+%                     dimension, in (x,y,z) order, as a 3x1 vector
+%
+%     Permutation   - returns the permutation matrix, a 4x4 matrix that
+%                     reorders a point in voxel order (slowest- to 
+%                     fastest-varying dimension) to world order (x,y,z).
+%                     Because the matrix is 4x4, the points must be
+%                     homogeneous, ie. 4x1 vectors where the fourth 
+%                     element is 1.
+%
+% Note if you wish to convert between voxel and world coordinates, 
+% you must use Steps, Starts, *and* DirCosines.  You should use 
+% the functions getvoxeltoworld, voxeltoworld, and worldtovoxel
+% for this sort of conversion.
+%
+% You can also use miinquire (with the 'attvalue' option) to get the
+% value of any MINC attribute, such as the patient name, scanning
+% date, etc.
 %
 % If the requested data item is invalid, or `handle' is invalid,
 % getimageinfo fails with an error message.  
@@ -111,16 +133,17 @@ function info = getimageinfo (handle, whatinfo)
 %@METHOD     : 
 %@GLOBALS    : Filename#, DimSizes#, FrameLengths#, FrameTimes#
 %@CALLS      : mireadvar (CMEX), miinquire (CMEX)
-%@CREATED    : 93-6-17, Greg Ward
-%@MODIFIED   : 93-6-17, Greg Ward: added standard MINC dimension names,
+%@CREATED    : 93-06-17, Greg Ward
+%@MODIFIED   : 93-06-17, Greg Ward: added standard MINC dimension names,
 %              spruced up help
-%              93-7-6, Greg Ward: added this header
-%              93-8-18, Greg Ward: massive overhaul (see RCS log for
+%              93-07-06, Greg Ward: added this header
+%              93-08-18, Greg Ward: massive overhaul (see RCS log for
 %              details)
-%              95-7-11, Greg Ward: fixed so it doesn't blindly make
+%              95-07-11, Greg Ward: fixed so it doesn't blindly make
 %              `whatinfo' global, and treats standard globals like any
 %              other info item -- so they too are now case insensitive!
-%              95-9-21, Greg Ward: added MinMax, AllMin, and AllMax
+%              95-09-21, Greg Ward: added MinMax, AllMin, and AllMax
+%              95-11-07, Greg Ward: added Steps, Starts, DirCosines
 %-----------------------------------------------------------------------------
 
 if nargin ~= 2
@@ -200,6 +223,36 @@ elseif (strcmp (lwhatinfo, 'allmin'))
    info = mireadvar (filename, 'image-min');
 elseif (strcmp (lwhatinfo, 'allmax'))
    info = mireadvar (filename, 'image-max');
+elseif (strcmp (lwhatinfo, 'steps'))
+   [xstep,ystep,zstep] = miinquire (filename, ...
+      'attvalue', 'xspace', 'step', ...
+      'attvalue', 'yspace', 'step', ...
+      'attvalue', 'zspace', 'step');
+   if (isempty (xstep) | isempty (ystep) | isempty (zstep))
+      error (['volume is missing one of xstep, ystep, or zstep']);
+   end
+   info = [xstep; ystep; zstep];
+elseif (strcmp (lwhatinfo, 'starts'))
+   [xstart, ystart, zstart] = miinquire (filename, ...
+      'attvalue', 'xspace', 'start', ...
+      'attvalue', 'yspace', 'start', ...
+      'attvalue', 'zspace', 'start');
+   if (isempty (xstart)), xstart = 0; end;
+   if (isempty (ystart)), ystart = 0; end;
+   if (isempty (zstart)), zstart = 0; end;
+   info = [xstart; ystart; zstart];
+elseif (strcmp (lwhatinfo, 'dircosines'))
+   [xdircos,ydircos,zdircos] = miinquire (filename, ...
+      'attvalue', 'xspace', 'direction_cosines', ...
+      'attvalue', 'yspace', 'direction_cosines', ...
+      'attvalue', 'zspace', 'direction_cosines');
+   if (isempty (xdircos)), xdircos = [1 0 0]; end;
+   if (isempty (ydircos)), ydircos = [0 1 0]; end;
+   if (isempty (zdircos)), zdircos = [0 0 1]; end;
+   info = [xdircos' ydircos' zdircos'];
+
+elseif (strcmp (lwhatinfo, 'permutation'))
+   info = miinquire (filename, 'permutation');
 
 % Finally check for one of the default global variables for this volume
 
