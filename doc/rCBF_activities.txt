@@ -4,18 +4,22 @@ rCBF model in Matlab:
 1) Get the most recent articles on performing two-compartment analysis
    that includes solving for V0.
 
-   COMPLETED ON:
+   COMPLETED ON: July 5, 1993
 
-   STATUS:
+   STATUS: Solving for V0 as well as K1 and k2 seems quite straight
+           forward, and should be no more difficult than solving for
+           K1 and k2.  We will use the triple weighted integration
+           method, either applied directly, or by using Hiroto's
+           more elegant modification.
 
 
-Although the desired final product is a package that solves for K1, K2 and
-V0, it is easier to start by neglecting V0.  In order to perform the analysis
-while ignoring V0, the following must be completed:
+Although the desired final product is a package that solves for K1, k2 and
+V0, it is easier to start by neglecting V0, delay, and dispersion.  In order
+to perform the analysis while ignoring V0, the following must be completed:
 
 2) Create a Matlab routine that generates the rR lookup table.  This lookup
-   table is used to find a value for K2 at each pixel, and should be 100x1
-   (100 values of rR corresponding to values of K2 from 0.01 minutes to
+   table is used to find a value for k2 at each pixel, and should be 100x1
+   (100 values of rR corresponding to values of k2 from 0.01 minutes to
    1 minute).
 
    COMPLETED ON: June 25, 1993
@@ -41,29 +45,38 @@ while ignoring V0, the following must be completed:
    STATUS: Completed.
 
 4) Create a Matlab routine that integrates the above two routines by 
-   using the look-up table to find an approximation for K2.  This
+   using the look-up table to find an approximation for k2.  This
    routine can probably also calculate K1 since this is straight
-   forward once K2 is known.  This routine should probably just take
+   forward once k2 is known.  This routine should probably just take
    a handle to an input data set, and a handle to an output data set.
 
-   COMPLETED ON:
+   COMPLETED ON: July 2, 1993
 
-   STATUS: June 30, 1993: Routine now calculates a K1 image as well as
-                          a K2 image.  However, while this image appears
+   STATUS: July  5, 1993: Worked out the correct units for K1 and k2.
+                          K1 was being expressed as:
+                          (nCi * sec * (g blood)) / ((mL tissue) * counts * sec)
+                          It should be expressed as:
+                          (mL blood) / ((g tissue) * minute)
+                          k2 was being expressed as s^-1, and should be
+                          expressed as min^-1.
+           June 30, 1993: Routine now calculates a K1 image as well as
+                          a k2 image.  However, while this image appears
                           qualitatively similar to a K1 image produced
                           by Jin's K1_image_auto.for, the values themselves
 			  are off by a little more than four orders of
 			  magnitude.
            June 25, 1993: A .m file exists, but it is very rudimentary.
-                          Data for a K2 image is generated, but no
+                          Data for a k2 image is generated, but no
                           K1 image is generated.
-           June 21, 1993: Played around with getting values for K2 by
+           June 21, 1993: Played around with getting values for k2 by
                           using the above two functions.  No actual
                           .m file exists yet, but once again all of
   			  the commands used were saved in a matlab
 			  diary.
 
 The above three routines will provide an rCBF package that does not take
-V0 into account.  At this time, we are not sure of the steps that are
-necessary in order to complete an analysis involving V0.  Therefore, these
-steps will be included in a later version of this list.
+V0, delay or dispersion into account.
+
+We are currently adding delay and dispersion correction to the
+above routines, and from there we will move on to performing
+an analysis that also solves for V0.
