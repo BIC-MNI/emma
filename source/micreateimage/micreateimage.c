@@ -1,46 +1,65 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <limits.h>		/* for limits on integer types */
+#include <float.h>		/* for limits on floating point types */
 #include "ParseArgv.h"
 #include "minc.h"
 #include "mincutil.h"           /* for NCErrMsg () */
 
 #define PROGNAME      "micreateimage"
 
-#define MINC_FILE     argv[1]
-#define NUM_FRAMES    argv[2]   /* the image size parameters as strings */
-#define NUM_SLICES    argv[3]   /* to be parsed by GetImageSize */
-#define HEIGHT        argv[4]   
-#define WIDTH         argv[5]
-#define DIM_ORDER     argv[6]   /* "transverse", "coronal", or "sagittal" */
-
-typedef int Boolean;
-
-char    *ErrMsg;                /* just to keep mincutil happy */
-Boolean  debug;
-
 #define NUM_SIZES 4             /* number of elements in Sizes array */
 #define NUM_VALID 2             /* number of elements in ValidRange array */
 
+#define DEBUG
 
-int     Sizes [NUM_SIZES];      /* # frames, # slices, height, width */
-char   *Type;                   /* byte/short/long/float/double */
-double  ValidRange [NUM_VALID]; /* low, high */
-char   *Orientation;            /* transverse/coronal/sagittal */
 
-ArgvInfo ArgTable [] = 
-{
-   {"-size", ARGV_INT, (char *) NUM_SIZES, (char *) Sizes, 
-    "lengths of the image dimensions: <# frames> <# slices> <height> <width>"},
-   {"-type", ARGV_STRING, NULL, (char *) &Type,
-    "type of the image variable: one of byte, short, long, float, or double"},
-   {"-valid_range", ARGV_FLOAT, (char *) NUM_VALID, (char *) ValidRange,
-    "valid range of image data to be stored in the MINC file"},
-   {"-orientation", ARGV_STRING, NULL, (char *) &Orientation,
-    "orientation of the image dimensions: transverse, coronal, or sagittal"},
-   {"-help", ARGV_HELP, NULL, NULL, NULL},
-   {NULL, ARGV_END, NULL, NULL, NULL}
-};
+
+/* MI_SIGN_STR is used for passing signed/unsigned info to the MINC 
+ * library; SIGN_STR is for passing it to the user.  (Because MI_* 
+ * tacks on those ugly underscores.)
+ */
+
+#define MI_SIGN_STR(sgn) ((sgn) ? (MI_SIGNED) : (MI_UNSIGNED))
+#define SIGN_STR(sgn) ((sgn) ? ("signed") : ("unsigned"))
+
+typedef enum { false, true } Boolean;
+
+
+/* Global variables */
+
+char    *ErrMsg;
+
+/* These are needed for ParseArgv to work */
+
+int     Sizes [NUM_SIZES] = {-1,-1,-1,-1};
+char   *TypeStr = "byte";
+double  ValidRange [NUM_VALID];
+char   *Orientation = "transverse";
+
+/* Type strings (from ~neelin/src/file/minc/progs/mincinfo/mincinfo.c) */
+
+char *type_names[] = 
+   { NULL, "byte", "char", "short", "long", "float", "double" };
+
+
+/* Function prototypes */
+
+Boolean GetArgs (int *pargc, char *argv[], char **MincFile,
+		 long *NumFrames, long *NumSlices, long *Height, long *Width,
+		 nc_type *Type, Boolean *Signed);
+void usage (void);
+void ErrAbort (char *msg, Boolean PrintUsage, int ExitCode);
+Boolean SetTypeAndVR (char *TypeStr, nc_type *TypeEnum, Boolean *Signed, 
+		      double ValidRange[]);
+void GetImageSize (char num_frames[], long *frames,
+                   char num_slices[], long *slices,
+                   char im_height[],  long *height,
+                   char im_width[],   long *width);
+void CreateDims (int CDF, long Frames, long Slices, long Height, long Width,
+                 char *DimOrder, int *NumDims, int DimIDs[]);
+
 
 
 /* ----------------------------- MNI Header -----------------------------------
@@ -55,15 +74,29 @@ ArgvInfo ArgTable [] =
 @CREATED    : June 2, 1993 by MW
 @MODIFIED   :
 ---------------------------------------------------------------------------- */
-void usage (void) 
+void usage (void)
 {
    fprintf (stderr, "\nUsage:\n");
    fprintf (stderr, "%s <MINC file> [option] [option] ...\n\n");
-   fprintf (stderr, "options may come in any order; %s -help for descriptions\n", argv [0]);
+   fprintf (stderr, "options may come in any order; %s -help for descriptions\n", PROGNAME);
 }
 
 
-void ErrAbort (char *msg, boolean PrintUsage, int ExitCode)
+/* ----------------------------- MNI Header -----------------------------------
+@NAME       : ErrAbort
+@INPUT      : msg - a nice, descriptive error message to print before bombing
+              PrintUsage - flag whether to print a syntax summary
+	      ExitCode - integer to return to caller [via exit()]
+@OUTPUT     : (N/A)  [does NOT return!]
+@RETURNS    : (void) [does NOT return!]
+@DESCRIPTION: Print out a usage summary, error message, and die.
+@METHOD     : 
+@GLOBALS    : 
+@CALLS      : 
+@CREATED    : 
+@MODIFIED   : 
+---------------------------------------------------------------------------- */
+void ErrAbort (char *msg, Boolean PrintUsage, int ExitCode)
 {
    if (PrintUsage) usage ();
    fprintf (stderr, "%s\n\n", msg);
@@ -71,108 +104,280 @@ void ErrAbort (char *msg, boolean PrintUsage, int ExitCode)
 }
 
 
+/*
+ * GetArgs and SetTypeAndVR - two functions for parsing and making sense
+ * out of the command line. 
+ */
+
+
+
 /* ----------------------------- MNI Header -----------------------------------
-@NAME       : GetImageSize
-@INPUT      : num_frames -> A character string containing a number representing
-                            the number of frames.  If NULL or contains only
-                            "-", number of slices will be zero.
-              num_slices -> A character string containing a number representing
-                            the number of slices.  If NULL or contains only
-                            "-", number of slices will be zero.
-              height     -> the image height in pixels; must be supplied and
-                            be greater than zero
-              width      -> the image width in pixels; must be supplied and
-                            be greater than zero
-@OUTPUT     : frames -> An integer representation of the number of frames in
-                        the image.
-              slices -> An integer representation of the number of slices in
-                        the image.
-              height -> Height of the image in pixels (as long int).
-              width  -> Width of the image in pixels (as long int).
-@RETURNS    : void
-@DESCRIPTION: Gets the number of frames, number of slices, image height,
-              and image width from character strings (presumably from
-              the command line).  If either of the character string     
-              representations of the number of frames or slices is      
-              NULL, contains only "-", then the corresponding integer   
-              representation will be zero.  (It is then up to the caller
-              to be smart enough to not create the associated MINC
-              dimension).  If either of height or width is NULL or
-              non-numeric or zero, that is an error and the program
-              will be terminated with a brief message.
-
-@METHOD     : none
-@GLOBALS    : none
-@CALLS      : none
-@CREATED    : June 2, 1993 by MW
-@MODIFIED   : August 16, 1993, Greg Ward: changed to parse all four image
-              size parameters.
+@NAME       : GetArgs
+@INPUT      : argc - pointer to the argc passed to main()
+              argv - just what is passed to main()
+@OUTPUT     : argc - decremented for every argument that ParseArgv handles
+              NumFrames, NumSlices, Height, Width - image size parameters
+	         will be parsed from the -size argument
+	      MincFile - whatever is left on the command line after calling
+	         ParseArgv.
+	      Type, ValidRange, Orientation - other parameters; each one
+	         has its own command-line argument and will be parsed
+		 out by ParseArgv.
+@RETURNS    : true on success
+              on failure (eg. if ParseArgv returns false), calls ErrAbort - 
+  	         does NOT return!
+@DESCRIPTION: Use ParseArgv to parse the command-line arguments.  The table
+              that drives ParseArgv lives here, so this is what needs to
+	      be changed to add more options.  Also, intelligent defaults
+	      should be set by whoever calls GetArgs if the argument is
+	      truly optional (this is how Type, ValidRange, and Orientation
+	      work); GetArgs should make sure that the value(s) set by
+	      ParseArgv are NOT the same as the defaults if an option
+	      is required to be set on the command line.
+@METHOD     : 
+@GLOBALS    : 
+@CALLS      : ParseArgv, ErrAbort (on error)
+@CREATED    : 93-10-16, Greg Ward
+@MODIFIED   : 
+@COMMENTS   : Currently no support for explicitly setting signed or
+              unsigned types.
 ---------------------------------------------------------------------------- */
-void GetImageSize (char num_frames[], long *frames,
-                   char num_slices[], long *slices,
-                   char im_height[],  long *height,
-                   char im_width[],   long *width)
+Boolean GetArgs (int *pargc, char *argv[], char **MincFile,
+		 long *NumFrames, long *NumSlices, long *Height, long *Width,
+		 nc_type *Type, Boolean *Signed)
 {
-    char   *eos;         /* end-of-string returned by strtol */
 
-    /* 
-     * If the num_frames string is NULL or "-", then assume zero frames.
-     * Otherwise use strtol to parse the number out of num_frames; if
-     * strtol returns anything other than the terminating NULL character
-     * as the first "unrecognized" character, then that means there was
-     * non-numeric junk in the string, so it's an error.
-     */      
+   /*
+    * Define the valid command line arguments (-size, -type, -valid_range,
+    * -orientation, and -help); what type of arguments should follow them;
+    * and where to put those arguments when found.
+    */
+   
+   ArgvInfo ArgTable [] = 
+   {
+      {"-size", ARGV_INT, (char *) NUM_SIZES, (char *) Sizes, 
+       "lengths of the four image dimensions"},
+      {"-type", ARGV_STRING, NULL, (char *) &TypeStr,
+       "type of the image variable: byte, short, long, float, or double"},
+      {"-valid_range", ARGV_FLOAT, (char *) NUM_VALID, (char *) ValidRange,
+       "valid range of image data to be stored in the MINC file"},
+      {"-orientation", ARGV_STRING, NULL, (char *) &Orientation,
+       "orientation of the image dimensions: transverse, coronal, or sagittal"},
+      {"-help", ARGV_HELP, NULL, NULL, NULL},
+      {NULL, ARGV_END, NULL, NULL, NULL}
+   };
 
-    if ((strcmp (num_frames, "-") == 0) || (num_frames == NULL))
-    {
-        *frames = 0;
-    }
-    else
-    {
-        *frames = strtol (num_frames, &eos, 0);
-        if (*eos != (char) 0)
-        {
-            fprintf (stderr, "micreateimage: number of frames must be numeric or \"-\" for no frames\n");
-            exit (-1);
-        }
-    }
+#ifdef DEBUG
+   printf ("Default values:\n");
+   printf ("%ld frames, %ld slices, height %ld, width %ld\n",
+	   Sizes [0], Sizes [1], Sizes [2], Sizes [3]);
+   printf ("valid range min = %lg, max = %lg\n", 
+	   ValidRange [0], ValidRange [1]);
+   printf ("Image type = %s %s, Orientation = %s\n\n",
+	   SIGN_STR (*Signed), TypeStr, Orientation);
+#endif
 
-    /* Now do the exact same thing for num_slices and *slices */
 
-    if ((strcmp (num_slices, "-") == 0) || (num_slices == NULL))
-    {
-        *slices = 0;
-    }
-    else
-    {
-        *slices = strtol (num_slices, &eos, 0);
-        if (*eos != (char) 0)
-        {
-            fprintf (stderr, "micreateimage: number of slices must be numeric or \"-\" for no slices\n");
-            exit (-1);
-        }
-    }
+   /* Parse those command line arguments!  If any errors, die right now. */
 
-    /*
-     * Parse the image height and width now.  Both must be numeric and
-     * greater than zero; anything else is an error.
-     */
+   if (ParseArgv (pargc, argv, ArgTable, 0))
+   {
+      ErrAbort ("", true, 1);
+   }
 
-    *height = strtol (im_height, &eos, 0);
-    if ((*eos != (char) 0) || (*height <= 0))
-    {
-        fprintf (stderr, "micreateimage: image height must be numeric and greater than zero\n");
-        exit (-1);
-    }
+   /* Break-down the elements of the Sizes[] array. */
+   
+   *NumFrames = (long) Sizes [0];
+   *NumSlices = (long) Sizes [1];
+   *Height = (long) Sizes [2];
+   *Width = (long) Sizes [3];
 
-    *width = strtol (im_width, &eos, 0);
-    if ((*eos != (char) 0) || (*width <= 0))
-    {
-        fprintf (stderr, "micreateimage: image width must be numeric and greater than zero\n");
-        exit (-1);
-    }
-    
-}     /* GetImageSize */
+   if (!SetTypeAndVR (TypeStr, Type, Signed, ValidRange))
+   {
+      ErrAbort (ErrMsg, true, 1);
+   }
+
+#ifdef DEBUG
+   printf ("\nValues after ParseArgv and SetTypeAndVR:\n");
+   printf ("%ld frames, %ld slices, height %ld, width %ld\n",
+	   Sizes [0], Sizes [1], Sizes [2], Sizes [3]);
+   printf ("valid range min = %lg, max = %lg\n", 
+	   ValidRange [0], ValidRange [1]);
+   printf ("Image type = %s %s, Orientation = %s\n",
+	   SIGN_STR (*Signed), TypeStr, Orientation);
+#endif
+   
+   if ((*pargc < 2) || (Sizes[0] == -1))
+   {
+      ErrAbort ("Require at least a MINC file name and image size", true, 1);
+   }
+   else
+   {
+      *MincFile = argv [1];
+   }
+}     /* GetArgs () */
+
+
+/* ----------------------------- MNI Header -----------------------------------
+@NAME       : SetTypeAndVR
+@INPUT      : TypeStr - the desired image type as a character string, must
+                 be one of "byte", "short", "long", "float", "double".
+	      ValidRange - the (possibly not-yet-set) valid range.
+@OUTPUT     : TypeEnum - the data type as one of the nc_type enumeration,
+                 i.e. NC_BYTE, NC_SHORT, etc.
+	      Signed - whether or not the type is signed (this is currently
+	         hard-coded to set bytes unsigned, all others signed)
+	      ValidRange - the (possibly unmodified) valid range.
+@RETURNS    : true on success
+              false if TypeStr is invalid
+	      false if ValidRange is invalid for the given type
+	      (all error conditions set the global variable ErrMsg)
+@DESCRIPTION: Converts the character string TypeStr (from the command-line)
+              to an nc_type.  If ValidRange is {0, 0} (ie. not set on the
+	      command line), then it is set to the default valid range for
+	      the given type, namely the maximum range of the type.  If
+	      ValidRange was already set, then it is checked to make
+	      sure it's within the maximum range of the type.
+@METHOD     : 
+@GLOBALS    : ErrMsg
+@CALLS      : 
+@CREATED    : 93-10-16, Greg Ward
+@MODIFIED   :
+@COMMENTS   : Currently no support for explicitly setting signed or
+              unsigned types; byte => unsigned, all others => signed.
+---------------------------------------------------------------------------- */
+Boolean SetTypeAndVR (char *TypeStr, nc_type *TypeEnum, Boolean *Signed,
+		      double ValidRange[])
+{
+   double  DefaultMin;		/* maximum range of the type specified by */
+   double  DefaultMax;		/* TypeStr (used for setting/checking) */
+
+   /* First convert the character string type to the nc_type enumeration */
+
+   if (strcmp (TypeStr, "byte") == 0)
+   {
+      *TypeEnum = NC_BYTE;
+      *Signed = false;
+   }
+   else if (strcmp (TypeStr, "short") == 0)
+   {
+      *TypeEnum = NC_SHORT;
+      *Signed = true;
+   }
+   else if (strcmp (TypeStr, "long") == 0)
+   {
+      *TypeEnum = NC_LONG;
+      *Signed = true;
+   }
+   else if (strcmp (TypeStr, "float") == 0)
+   {
+      *TypeEnum = NC_FLOAT;
+      *Signed = true;
+   }
+   else if (strcmp (TypeStr, "double") == 0)
+   {
+      *TypeEnum = NC_DOUBLE;
+      *Signed = true;
+   }
+   else if (strcmp (TypeStr, "char") == 0)
+   {
+      sprintf (ErrMsg, "Unsupported NetCDF type: char");
+      return (false);
+   }
+   else
+   {
+      sprintf (ErrMsg, "Unknown data type: %s", TypeStr);
+      return (false);
+   }
+
+#ifdef DEBUG
+   printf ("Supplied type was %s, this maps to nc_type as %s, and it's %s\n",
+	   TypeStr, type_names [*TypeEnum], SIGN_STR(*Signed));
+#endif
+
+
+   /* Now find the maximum range of the desired type; this will be 
+    * used to either set the valid range (if none was set on the command
+    * line) or to ensure that the given valid range is in fact valid.
+    */
+
+   switch (*TypeEnum)
+   {
+      case NC_BYTE:
+      {
+	 DefaultMin = (double) CHAR_MIN;
+	 DefaultMax = (double) CHAR_MAX;
+	 break;
+      }
+      case NC_SHORT:
+      {
+	 DefaultMin = (double) SHRT_MIN;
+	 DefaultMax = (double) SHRT_MAX;
+	 break;
+      }
+      case NC_LONG:
+      {
+	 DefaultMin = (double) LONG_MIN;
+	 DefaultMax = (double) LONG_MAX;
+	 break;
+      }
+      case NC_FLOAT:
+      {
+	 DefaultMin = (double) -FLT_MAX;
+	 DefaultMax = (double) FLT_MAX;
+	 break;
+      }
+      case NC_DOUBLE:
+      {
+	 DefaultMin = -DBL_MAX;
+	 DefaultMax = DBL_MAX;
+	 break;
+      }
+   }
+
+#ifdef DEBUG
+   printf ("Maximum range (= default valid range) for this type: [%lg %lg]\n",
+	   DefaultMin, DefaultMax);
+#endif
+
+
+   /* If both the min and max of ValidRange are zero, then it was not
+    * set on the command line by the user -- so set it to the default
+    * range for the given type.  Otherwise, make sure that the given
+    * range is legal.
+    */
+
+   if ((ValidRange[0] == 0) && (ValidRange[1] == 0))
+   {
+      ValidRange [0] = DefaultMin;
+      ValidRange [1] = DefaultMax;
+
+#ifdef DEBUG
+      printf ("Valid range was all zero already, so set it to [%lg %lg]\n",
+	      ValidRange[0], ValidRange[1]);
+#endif
+
+   }     /* if ValidRange not set on command line */
+   else
+   {
+#ifdef DEBUG
+      printf ("Valid range already set, making sure it's in bounds\n");
+#endif
+
+      if ((ValidRange [0] < DefaultMin) ||
+	  (ValidRange [1] > DefaultMax))
+      {
+	 sprintf (ErrMsg, "Invalid range (%lg .. %lg) given for type %s",
+		  ValidRange[0], ValidRange[1], TypeStr);
+	 return (false);
+      }
+   }
+
+   return (true);
+
+}     /* SetTypeAndVR() */
+
+
 
 
 /* ----------------------------- MNI Header -----------------------------------
@@ -191,7 +396,10 @@ void GetImageSize (char num_frames[], long *frames,
                         the slowest varying dimension (MItime if Frames>0),
                         and DimIDs[NumDims-1] the fastest varying (MIxspace
                         in the case of transverse images).
-@RETURNS    : (void)
+@RETURNS    : true on success
+              false if an invalid orientation was given
+	      false if any errors occured while creating the dimensions
+	      (ErrMsg is set on error)
 @DESCRIPTION: Create up to four image dimensions in an open MINC file.
               At least two dimensions, the "width" and "height" of the 
               image, will always be created.  Note that width and height
@@ -207,14 +415,16 @@ void GetImageSize (char num_frames[], long *frames,
                  transverse   MIzspace     MIyspace     MIxspace
                  sagittal     MIxspace     MIzspace     MIyspace
                  coronal      MIyspace     MIzspace     MIxspace
+
+              (Note that only the first character of DimOrder is looked at.)
 @METHOD     : 
-@GLOBALS    : 
+@GLOBALS    : ErrMsg
 @CALLS      : NetCDF library
-@CREATED    : 16 August 1993, Greg Ward
-@MODIFIED   : 
+@CREATED    : 1993/8/16, Greg Ward
+@MODIFIED   : 1993/10/26: Civilised the error handling (GPW)
 ---------------------------------------------------------------------------- */
-void CreateDims (int CDF, long Frames, long Slices, long Height, long Width,
-                 char *DimOrder, int *NumDims, int DimIDs[])
+Boolean CreateDims (int CDF, long Frames, long Slices, long Height, long Width,
+		    char *DimOrder, int *NumDims, int DimIDs[])
 {
     int    CurDim = 0;        /* index into DimIDs */
     char  *SliceDim;
@@ -267,8 +477,10 @@ void CreateDims (int CDF, long Frames, long Slices, long Height, long Width,
         }
         default:
         {
-            fprintf (stderr, "micreateimage: unknown dimension ordering (must be one of transverse, coronal, or sagittal\n");
-            exit (-1);
+            sprintf (ErrMsg, "Unknown orientation %s "
+		     "(must be one of transverse, coronal, or sagittal\n",
+		     DimOrder);
+	    return (false);
         }
     }
 
@@ -306,9 +518,9 @@ void CreateDims (int CDF, long Frames, long Slices, long Height, long Width,
     {
         if (DimIDs [CurDim] == MI_ERROR)
         {
-            fprintf (stderr, "micreateimage: error creating dimensions (%s)\n",
+            sprintf (ErrMsg, "Error creating dimensions (%s)\n",
                      NCErrMsg (ncerr));
-            exit (-1);
+	    return (false);
         }
     }
 
@@ -316,7 +528,7 @@ void CreateDims (int CDF, long Frames, long Slices, long Height, long Width,
     printf ("Done creating %d dimensions\n", CurDim);
 #endif
     
-}    
+}      /* CreateDims () */    
 
 
 
@@ -338,8 +550,8 @@ void CreateDims (int CDF, long Frames, long Slices, long Height, long Width,
               image-max, and image-min variables.
 @METHOD     : none
 @GLOBALS    : ncopts
-@CALLS      : usage
-              GetImageSize
+@CALLS      : GetArgs
+              CreateDims
               MINC library
               NetCDF library
 @CREATED    : June 3, 1993 by MW
@@ -348,133 +560,116 @@ void CreateDims (int CDF, long Frames, long Slices, long Height, long Width,
 
 int main (int argc, char *argv[])
 {
-#if 0
-    long   frames;		/* lengths of the various image dimensions */
-    long   slices;
-    long   height;
-    long   width;
-    double vrange[2];		/* valid range of image data */
-#endif
+   nc_type NCType;
+   Boolean Signed;
 
-    char  *MincFile;		/* name of MINC file from command line */
-    int    file_CDF;
-    int    dim[4];		/* dimension ID's for the image */
-    int    num_dimensions;	/* 2, 3, or 4 based on whether frames */ 
+
+   long    NumFrames;		/* lengths of the various image dimensions */
+   long    NumSlices;
+   long    Height;
+   long    Width;
+/* double  vrange[2];	    */  /* valid range of image data */
+
+   char   *MincFile;		/* name of MINC file from command line */
+   int     file_CDF;
+   int     Dim[4];		/* dimension ID's for the image */
+   int     NumDim;		/* 2, 3, or 4 based on whether frames */ 
 				/* slices, or both are zero */
 
-    int    image_id, max_id, min_id;
-    int    time_id, time_width_id;
+   int     image_id, max_id, min_id;
+   int     time_id, time_width_id;
 
 
-    if (ParseArgv (&argc, argv, ArgTable, 0))
-    {
-       ErrAbort ("", true, 1);
-    }
+   ErrMsg = (char *) calloc (256, sizeof (char));
 
-    printf ("%d frames, %d slices, height %d, width %d\n", 
-            Sizes [0], Sizes [1], Sizes [2], Sizes [3]);
-    printf ("vr min = %lf, vr max = %lf\n", ValidRange[0], ValidRange[1]);
-    printf ("Image type: %s; image orientation: %s\n", Type, Orientation);
+   GetArgs (&argc, argv, &MincFile, &NumFrames, &NumSlices, &Height, &Width, 
+	    &NCType, &Signed);
 
-    if (argc < 2)
-    {
-       ErrAbort ("Must supply the name of a MINC file", true, 1);
-    }
-    else
-    {
-       MincFile = argv [1];
-    }
 
+   printf ("File is: %s\n", MincFile);
     
-    ncopts = 0;
-/*
-    GetImageSize (NUM_FRAMES, &frames, NUM_SLICES, &slices,
-                  HEIGHT, &height, WIDTH, &width);
-*/
-    /* Open the NetCDF file, bomb if error */
+   ncopts = 0;
+   
+   /* Open the NetCDF file, bomb if error */
+   
+   file_CDF = ncopen (MincFile, NC_WRITE);
+   if (file_CDF == MI_ERROR)
+   {
+      sprintf (ErrMsg, "Error opening MINC file %s: %s\n",
+	       MincFile, NCErrMsg (ncerr));
+      ErrAbort (ErrMsg, true, 1);
+   }
+   
+   /* Bomb if the MIimage variable is already in the NetCDF file */
+   
+   if (ncvarid (file_CDF, MIimage) != MI_ERROR)
+   {
+      sprintf (ErrMsg, "Image variable already exists in file %s\n", MincFile);
+      ErrAbort (ErrMsg, true, 1);
+   }
 
-    file_CDF = ncopen (MincFile, NC_WRITE);
-    if (file_CDF == MI_ERROR)
-    {
-        fprintf (stderr, "micreateimage: error opening MINC file %s\n",
-                 MINC_FILE);
-        exit (-1);
-    }
+   /* Put the CDF file back into definition mode, and create the 
+    * image dimensions (either two, three, or four of them; how 
+    * many are actually created will be put into NumDim, and the 
+    * list of dimension ID's will be put into Dim[].
+    */
 
-    /* Bomb if the MIimage variable is found in the NetCDF file */
-
-    if (ncvarid (file_CDF, MIimage) != MI_ERROR)
-    {
-        fprintf (stderr, "micreateimage: image variable already exists "
-                 "in file %s\n", MINC_FILE);
-        exit (-1);
-    }
-
-    ncredef(file_CDF);
-
-    if (argc < 7)              /* DIM_ORDER not supplied */
-    {
-        CreateDims (file_CDF, frames, slices, height, width, 
-                    "transverse", &num_dimensions, dim);
-    }
-    else
-    {
-        CreateDims (file_CDF, frames, slices, height, width, 
-                    DIM_ORDER, &num_dimensions, dim);
-    }
-
-    /* 
-     * Create the image-max and image-min variables.  They should be
-     * dependent on the "non-image" dimensions (ie. time and slices,
-     * if they exist), so pass num_dimensions-2 as the number of
-     * dimensions, and dim as the list of dimension ID's -- 
-     * micreate_std_variable should then only look at the first one
-     * or two dimension IDs in the list.
-     */
-
-    max_id = micreate_std_variable (file_CDF, MIimagemax, NC_DOUBLE,
-                                    num_dimensions-2, dim);
-    min_id = micreate_std_variable (file_CDF, MIimagemin, NC_DOUBLE,
-                                    num_dimensions-2, dim);
-
-    if ((max_id == MI_ERROR) || (min_id == MI_ERROR))
-    {  
-        fprintf (stderr, "Error creating image max/min variables: %s\n",
-                 NCErrMsg (ncerr));
-        exit (-1);
-    }
-
-    if (frames > 0)
-    {
-        time_id = micreate_std_variable (file_CDF, MItime, NC_DOUBLE, 1, dim);
-        time_width_id = micreate_std_variable (file_CDF, MItime_width, NC_DOUBLE, 1, dim);
-
-        if ((time_id == MI_ERROR) || (time_width_id == MI_ERROR))
-        {
-            fprintf (stderr, "Error creating time/time-width variables: %s\n",
-                     NCErrMsg (ncerr));
-            exit (-1);
-        }
-    }
+   ncredef(file_CDF);
+   CreateDims (file_CDF, NumFrames, NumSlices, Height, Width, 
+	       Orientation, &NumDim, Dim);
 
 
-    /* 
-     * N.B. we're currently doing only unsigned byte images, valid range
-     * 0 .. 255.  That should be made more flexible, through still MORE
-     * arguments to micreateimage
-     */
+   /*
+    * Create the image-max and image-min variables.  They should be
+    * dependent on the "non-image" dimensions (ie. time and slices,
+    * if they exist), so pass NumDim-2 as the number of
+    * dimensions, and Dim as the list of dimension ID's -- 
+    * micreate_std_variable should then only look at the first one
+    * or two dimension IDs in the list.
+    */
+   
+   max_id = micreate_std_variable (file_CDF, MIimagemax, NC_DOUBLE,
+				   NumDim-2, Dim);
+   min_id = micreate_std_variable (file_CDF, MIimagemin, NC_DOUBLE,
+				   NumDim-2, Dim);
+   
+   if ((max_id == MI_ERROR) || (min_id == MI_ERROR))
+   {  
+      fprintf (stderr, "Error creating image max/min variables: %s\n",
+	       NCErrMsg (ncerr));
+      exit (-1);
+   }
 
-    image_id = micreate_std_variable (file_CDF, MIimage, NC_BYTE,
-                                      num_dimensions, dim);
-    (void) miattputstr (file_CDF, image_id, MIsigntype, MI_UNSIGNED);
-    (void) miattputstr (file_CDF, image_id, MIcomplete, MI_FALSE);
-    
-    vrange[0] = 0;
-    vrange[1] = 255;
-    (void) ncattput (file_CDF, image_id, MIvalid_range, NC_DOUBLE, 2, vrange);
+   /* If there are to be any frames present in the file, create time
+    * and time-width variables. */
+   
+   if (NumFrames > 0)
+   {
+      time_id = micreate_std_variable (file_CDF, MItime, NC_DOUBLE, 1, Dim);
+      time_width_id = micreate_std_variable (file_CDF, MItime_width, NC_DOUBLE, 1, Dim);
+      
+      if ((time_id == MI_ERROR) || (time_width_id == MI_ERROR))
+      {
+	 fprintf (stderr, "Error creating time/time-width variables: %s\n",
+		  NCErrMsg (ncerr));
+	 exit (-1);
+      }
+   }
+   
 
-    ncclose (file_CDF);
+   /* Finally, we create the image variable, and put in the valid range,
+    * signtype, and complete attributes.
+    */
+  
+   image_id = micreate_std_variable (file_CDF, MIimage, NCType,
+				     NumDim, Dim);
+   (void) miattputstr (file_CDF, image_id, MIsigntype, SIGN_STR(Signed));
+   (void) miattputstr (file_CDF, image_id, MIcomplete, MI_FALSE);
+   
+   (void) ncattput (file_CDF, image_id, MIvalid_range, NC_DOUBLE, 2, ValidRange);
 
-    return (0);
+   ncclose (file_CDF);
+   
+   return (0);
 }
 
