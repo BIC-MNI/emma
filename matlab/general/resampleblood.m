@@ -34,6 +34,28 @@ end
 
 [Ca, ts_mid] = getblooddata (handle);
 
+% Perform a little sanity checking based on past unpleasant experiences
+
+if (length (Ca) ~= length (ts_mid))
+   error ('Blood activity data and sample times have different number of points');
+end;
+
+if (length (Ca) < 3)
+   error ('Found less than three blood activity data points');
+end;
+
+if (any (ts_mid < 0))
+   error ('Found blood sample times less than zero');
+end;
+
+if (all (Ca == 0) | all (isnan (Ca)) | all (isinf (Ca)))
+   error ('Blood activity data points are all zero, all NaN, or all infinity');
+end;
+
+if (all (ts_mid == 0) | all (isnan (ts_mid)) | all (isinf (ts_mid)))
+   error ('Blood sample times are all zero, all NaN, or all infinity');
+end;
+
 if (nargin == 2) 			% samples not supplied
    samples = ceil(2*(max(ts_mid)-min(ts_mid)));
 end
