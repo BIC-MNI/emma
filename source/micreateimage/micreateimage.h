@@ -43,6 +43,8 @@ extern double  gValidRange [];
 extern char   *gOrientation;
 extern char   *gChildFile;
 extern char   *gParentFile;
+extern double  gImageVal;
+extern int     gClobberFlag;
 
 /* Function prototypes: globally needed functions defined in micreateimage.c */
 
