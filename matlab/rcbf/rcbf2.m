@@ -62,7 +62,7 @@ FrameTimes = getimageinfo (img, 'FrameTimes');
 FrameLengths = getimageinfo (img, 'FrameLengths');
 MidFTimes = FrameTimes + (FrameLengths / 2);
 [g_even, ts_even] = resampleblood (img, 'even');
-g_even = g_even * 1.05;                 % convert to decay / (mL_blood * sec)
+
 
 PET = getimages (img, slice, 1:length(FrameTimes));
 PET = PET * 37 / 1.05;                  % convert to decay / (g_tissue * sec)
@@ -89,19 +89,18 @@ PET_int3 = PET_int3 .* mask;
 % Use getmask to interactively create a threshold mask, and then perform
 % delay/dispersion correction.
 
+% Apply the cross-calibration factor.
+XCAL = 0.11;
+g_even = g_even*XCAL*37;              % units are decay / (g_tissue * sec)
+
 if (correction)
    mask = getmask (PET_int1);
-%  mask = (PET_int1>(1.8*mean(PET_int1)));
-   A = (mean (PET (find(mask),:)))' * 37 / 1.05;
+   A = (mean (PET (find(mask),:)))';
    [Ca_even, delta] = correctblood ...
                        (A, FrameTimes, FrameLengths, g_even, ts_even, progress);
 else
    Ca_even = g_even;
 end
-
-% Apply the cross-calibration factor.
-XCAL = 0.11;
-Ca_even = Ca_even/XCAL;
 
 
 % Pick values of k2 and then calculate rR for every one.  (Ie. create
@@ -118,7 +117,7 @@ k2_lookup = (-10:0.05:10) / 60;
       MidFTimes, FrameLengths, 1, w2, w3);
 
 
-Ca_mft = frameint (ts_even, Ca_even, FrameTimes, FrameLengths);      
+Ca_mft = nframeint (ts_even, Ca_even, FrameTimes, FrameLengths);      
 
 Ca_int1 = C_trapz(MidFTimes, Ca_mft);
 Ca_int2 = C_trapz(MidFTimes, (w2 .* Ca_mft));
