@@ -40,7 +40,7 @@ end
 % way they will display as black.
 
 nuke = (isnan (img) | isinf (img));
-if any (nuke)
+if any (any (nuke))
    lo = min(img(~nuke));
    hi = max(img(~nuke));
    disp ('viewimage warning: image contains NaN''s and/or infinities');
