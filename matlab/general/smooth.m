@@ -1,4 +1,4 @@
-function new_data = smooth (old_data, k)
+function new_data = smooth (old_data)
 
 % SMOOTH  do spatial smoothing on an image
 %
@@ -13,7 +13,7 @@ function new_data = smooth (old_data, k)
 % conv2 (part of the MATLAB Image Processing Toolbox), to perform a
 % fast 2-D convolution.
 
-if (nargin ~= 2)
+if (nargin ~= 1)
    help smooth
    error ('Incorrect number of input arguments.');
 end
