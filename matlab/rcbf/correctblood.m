@@ -1,6 +1,5 @@
-function [new_ts_even, Ca_even, delta] = correctblood (A, FrameTimes, FrameLengths, ...
-                                                       g_even, ts_even, options)
-
+function [new_ts_even, Ca_even, delta] = correctblood ...
+      (A, FrameTimes, FrameLengths, g_even, ts_even, options)
 % CORRECTBLOOD  perform delay and dispersion corrections on blood curve
 %
 %  [new_ts_even, Ca_even, delta] = correctblood (A, FrameTimes, ...
@@ -88,9 +87,23 @@ if (~do_delay)
            int2str(delta)]);
 end
 
-MidFTimes = FrameTimes + FrameLengths/2;
-first60 = find (FrameTimes < 60);           % all frames in first minute only
+% Find the mid-frame times, and select all frames in the first 60 sec
+% of the study only
+
 numframes = length(FrameTimes);
+MidFTimes = FrameTimes + FrameLengths/2;
+first60 = find (FrameTimes < 60);
+A = A (first60);                        % chop off stuff after 60 seconds
+MidFTimes = MidFTimes (first60);        % first minute again
+
+if (progress >= 2)
+   figure;
+   plot (MidFTimes, A, 'or');
+   hold on
+   title ('Average activity across gray matter in first minute');
+   old_fig = gcf;
+   drawnow;
+end
 
 tau = 4;                                    % assumed dispersion time constant
 
@@ -111,7 +124,11 @@ end
 smooth_g_even(length(smooth_g_even)) = [];
 deriv_g(length(deriv_g)) = [];
 ts_even(length(smooth_g_even)) = [];
- 
+
+
+% Now the actual dispersion correction, using the smoothed and 
+% differentiated versions of g_even
+
 g_even = smooth_g_even + tau*deriv_g;
 
 if (progress >= 2)
@@ -119,21 +136,9 @@ if (progress >= 2)
    drawnow
 end
 
-A = A (first60);                        % chop off stuff after 60 seconds
-MidFTimes = MidFTimes (first60);        % first minute again
-
-if (progress >= 2)
-   figure;
-   plot (MidFTimes, A, 'or');
-   hold on
-   title ('Average activity across gray matter');
-   old_fig = gcf;
-   drawnow;
-end
-
 % Here are the initial values of alpha, beta, and gamma, in units of:
 %  alpha = (mL blood) / ((g tissue) * sec)
-%  beta = 1/sec
+%   beta = 1/sec
 %  gamma = (mL blood) / (g tissue)
 % Note that these differ numerically from Hiroto's suggested initial
 % values of [0.6, alpha/0.8, 0.03] only because of the different
@@ -158,30 +163,15 @@ if (do_delay)
       % to the right (ie. subtract delta from its actual times, ts_even)
       % and resample at the "correct" times ts_even).  Then do the 
       % three-parameter fit to optimise the function wrt. alpha, beta,
-      % and gamma.  Plot this fit.  (Could get messy, but what the hell)
-
+      % and gamma.
 
       shifted_g_even = lookup ((ts_even-delta), g_even, ts_even);
       g_select = find (~isnan (shifted_g_even));
 
-      % Be really careful with the fitting.  If the algorithm you choose makes
-      % args(2) a negative value, there will be infinities in the result
-      % of b_curve, which will cause the entire thing to bomb.
-
-%      options(2) = 1;
-%      options(3) = 1;
-
-%      options(5) = 1;
-%      [final,options,f] = leastsq ('fit_b_curve', init, options, [], ...
-%                             shifted_g_even(g_select), ts_even(g_select), ...
-%                             A, FrameTimes, FrameLengths);
-
-%      final = fmins ('fit_b_curve', init, options, [], ...
-%                     shifted_g_even (g_select), ts_even (g_select), ...
-%                     A, FrameTimes, FrameLengths);
-
-      final = delaycorrect (init, shifted_g_even(g_select), ts_even(g_select), ...
-	                    A, FrameTimes, FrameLengths);
+      final = delaycorrect (init, ...
+	                    shifted_g_even(g_select), ...
+                            ts_even(g_select), ...
+ 	                    A, FrameTimes, FrameLengths);
 
       params (i,:) = final;
 %     rss (i) = sum (f .^ 2) ;            % if using leastsq
@@ -195,8 +185,10 @@ if (do_delay)
 
          if (progress >= 2)
             plot (MidFTimes, ...
-                b_curve(final, shifted_g_even(g_select), ts_even(g_select), ...
-                A, FrameTimes, FrameLengths));
+		  b_curve(final, ...
+	                  shifted_g_even(g_select), ...
+	                  ts_even(g_select), ...
+                          A, FrameTimes, FrameLengths));
             drawnow;
          end      % if graphical progress
       end      % if any progress
@@ -210,7 +202,8 @@ end      % if do_delay
 % At this point either we have performed the delay-correction fitting to 
 % get delta, or the caller set options(2) to zero so that delay-correction
 % was not explicitly done.  In this case, delta will have been set either
-% to zero or to options(3).
+% to zero or to options(3).  So set Ca_even to the g_even, shifted by
+% delta.
 
 Ca_even = lookup ((ts_even-delta), g_even, ts_even);
 
@@ -223,5 +216,3 @@ Ca_even(nuke) = [];
 
 new_ts_even = ts_even;
 new_ts_even(nuke) = [];
-
-
