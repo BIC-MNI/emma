@@ -10,6 +10,49 @@ extern   Boolean debug;
 
 
 /* ----------------------------- MNI Header -----------------------------------
+@NAME       : NCErrMsg
+@INPUT      : NCErrCode - a NetCDF error code as defined in netcdf.h
+@OUTPUT     : (none)
+@RETURNS    : string containing text corresponding to that error code
+@DESCRIPTION: 
+@METHOD     : 
+@GLOBALS    : 
+@CALLS      : 
+@CREATED    : 93-6-30, Greg Ward
+@MODIFIED   : 
+---------------------------------------------------------------------------- */
+char *NCErrMsg (int NCErrCode)
+{
+	switch (NCErrCode)
+	{
+		case NC_NOERR        : return ("No Error");
+		case NC_EBADID       : return ("Not a netcdf id");
+		case NC_ENFILE       : return ("Too many netcdfs open");
+		case NC_EEXIST       : return ("netcdf file exists && NC_NOCLOBBER");
+		case NC_EINVAL       : return ("Invalid Argument");
+		case NC_EPERM        : return ("Write to read only");
+		case NC_ENOTINDEFINE : return ("Operation not allowed in data mode");
+		case NC_EINDEFINE    : return ("Operation not allowed in define mode");
+		case NC_EINVALCOORDS : return ("Coordinates out of Domain");
+		case NC_EMAXDIMS     : return ("MAX_NC_DIMS exceeded");
+		case NC_ENAMEINUSE   : return ("String match to name in use");
+		case NC_ENOTATT      : return ("Attribute not found");
+		case NC_EMAXATTS     : return ("MAX_NC_ATTRS exceeded");
+		case NC_EBADTYPE     : return ("Not a netcdf data type");
+		case NC_EBADDIM      : return ("Invalid dimension id");
+		case NC_EUNLIMPOS    : return ("NC_UNLIMITED in the wrong index");
+		case NC_EMAXVARS     : return ("MAX_NC_VARS exceeded");
+		case NC_ENOTVAR      : return ("Variable not found");
+		case NC_EGLOBAL      : return ("Action prohibited on NC_GLOBAL varid");
+		case NC_ENOTNC       : return ("Not a netcdf file");
+		case NC_ESTS         : return ("In Fortran, string too short");
+		case NC_EMAXNAME     : return ("MAX_NC_NAME exceeded");
+		case NC_EUNLIMIT     : return ("NC_UNLIMITED size already in use");
+		default					: return ("UNKNOWN NetCDF Error Code!!!");
+	}
+}
+
+/* ----------------------------- MNI Header -----------------------------------
 @NAME       : OpenFile
 @INPUT      : Filename - name of the NetCDF/MINC file to open
 @OUTPUT     : *CDF - handle of the opened file
@@ -22,6 +65,7 @@ extern   Boolean debug;
 @CALLS      : standard NetCDF, mex functions.
 @CREATED    : 93-5-31, adapted from code in micopyvardefs.c, Greg Ward
 @MODIFIED   : 93-6-4, modified debug/error handling and added Mode parameter
+            : 93-6-30, changed error message
 @COMMENTS   : N.B. this is just a copy of the same function from
               mireadvar... need to work on that modularity thing, eh?
 ---------------------------------------------------------------------------- */
@@ -33,7 +77,7 @@ int OpenFile (char *Filename, int *CDF, int Mode)
 
    if (*CDF == MI_ERROR)
    {
-      sprintf (ErrMsg, "Error opening output (MINC) file %s", Filename);
+      sprintf (ErrMsg, "Error opening file %s: %s", Filename, NCErrMsg(ncerr));
       return (ERR_IN_MINC);
    }  
    return (ERR_NONE);
