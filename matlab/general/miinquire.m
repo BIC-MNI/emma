@@ -19,21 +19,22 @@
 %
 % The currently available options are:
 %
-%     dimlength  (length of a given dimension)
-%     imagesize  (sizes of the four image dimensions)
-%     vartype    (variable type, as a string)
-%     attvalue   (attribute value, either scalar, vector, or string)
-%     orientation(image orientation, as a string: either 'transverse',
-%                 'coronal', or 'sagittal')
+%     dimlength    length of a given dimension
+%     imagesize    sizes of the four image dimensions
+%     vartype      variable type, as a string
+%     attvalue     attribute value, either scalar, vector, or string
+%     orientation  image orientation, as a string: either 'transverse',
+%                  'coronal', or 'sagittal'
+%     dimnames     list of dimensions associated with the image variable
+%     permutation  matrix to reorder voxel coordinates to (x,y,z) order
 %
 % dimlength requires one item, the dimension name.  imagesize requires 
 % no items.  vartype requires the variable name.  attvalue requires
 % both the variable name and attribute name, in that order.  See Examples
 % below for further illumination.
 % 
-% Options that will most likely be added in the near future are:
+% Options that may be added at some point in the future are:
 %
-%     dimnames
 %     varnames
 %     vardims
 %     varatts
