@@ -42,4 +42,5 @@
 %   rcbf1         - Performs a single compartment rCBF analysis.
 %   rcbf2         - Performs a full two compartment rCBF analysis, with
 %                   blood dispersion and delay correction.
-
+%   rcbfanalysis  - Perform two compartment rCBF analysis, and write out
+%                   K1 and V0 in MINC files.
