@@ -19,9 +19,6 @@
 #include "mex.h"
 #include "emmageneral.h"
 
-#define min(A, B) ((A) < (B) ? (A) : (B))
-#define max(A, B) ((A) > (B) ? (A) : (B))
-#define abs(A)    ((A) < 0 ? (A*(-1)) : (A))
 
 #define PROGNAME "nfmins"
 
