@@ -1,10 +1,37 @@
 function [roiHandle,Xi,Yi,lineHandle] = box (line_color, fig)
 
+% BOX  draw a simple rectangular ROI
 %
 %
-%     [roiHandle,Xi,Yi,lineHandle] = box (line_color, fig)
+%     [roiHandle,Xi,Yi,lineHandle] = box ([line_color [,fig]])
 %
 %
+%  This function allows the user to draw simple rectangular ROI's on an
+%  image.  The function can take two arguments: the line colour to use, and
+%  the figure number to draw the ROI on.  It returns up to 4 arguments:
+%
+%    roiHandle  - A handle for the created ROI.  This can be used when
+%                 calling other ROI functions to refer to the ROI.
+%    Xi         - The normalized X coordinates of the vertices.  The
+%                 coordinates are expressed as a percentage of the image
+%                 size.  For example, an X coordinate that is half way
+%                 across the image would be expressed as 0.5
+%    Yi         - The normalized Y coordinates of the vertices.  These are
+%                 normalized in the same way as the X coordinates.
+%    lineHandle - The MATLAB handle for the created line.
+%
+
+% @COPYRIGHT  :
+%             Copyright 1993,1994 Mark Wolforth and Greg Ward, McConnell
+%             Brain Imaging Centre, Montreal Neurological Institute, McGill
+%             University.
+%             Permission to use, copy, modify, and distribute this software
+%             and its documentation for any purpose and without fee is
+%             hereby granted, provided that the above copyright notice
+%             appear in all copies.  The authors and McGill University make
+%             no representations about the suitability of this software for
+%             any purpose.  It is provided "as is" without express or
+%             implied warranty.
 
 
 if (nargin<1)
