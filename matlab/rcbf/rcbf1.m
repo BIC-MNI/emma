@@ -30,12 +30,11 @@ FrameLengths = getimageinfo (img, 'FrameLengths');
 MidFTimes = FrameTimes + (FrameLengths / 2);
 
 [g_even, ts_even] = resampleblood (img, 'even');
-g_even = g_even * 1.05;                 % convert to decay / (mL_blood * sec)
-Ca_even = g_even;                       % no delay/dispersion correction!!!
-
 % Apply the cross-calibration factor.
 XCAL = 0.11;
-Ca_even = Ca_even/XCAL;
+g_even = g_even*XCAL*37;              % units are decay / (g_tissue * sec)
+
+Ca_even = g_even; 			% no delay/dispersion correction!!!
 
 PET = getimages (img, slice, 1:length(FrameTimes));
 PET = PET * 37 / 1.05;                  % convert to decay / (g_tissue * sec)
