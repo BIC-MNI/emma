@@ -406,6 +406,7 @@ void mexFunction (int nlhs, Matrix *plhs [],
    Result = OpenFile (Filename, &CDFid, debug);
    if (Result != ERR_NONE)
    {
+		ncclose (CDFid);
       ErrAbort (ErrMsg, TRUE, Result);
    }
    Result = GetVarInfo (CDFid, Varname, &VarInfo);
@@ -428,6 +429,7 @@ void mexFunction (int nlhs, Matrix *plhs [],
    {
       if (nrhs < COUNT_POS)         /* can't have one without the other! */
       {
+			ncclose (CDFid);
          ErrAbort ("Cannot supply just one of start and count vectors", 
                    TRUE, ERR_ARGS);
       }
@@ -439,18 +441,20 @@ void mexFunction (int nlhs, Matrix *plhs [],
       Result = VerifyVectors (&VarInfo,Start,Count,NumStart,NumCount);
       if (Result != ERR_NONE)
       {
+			ncclose (CDFid);
          ErrAbort (ErrMsg, TRUE, Result);
       }
    }     /* if start and count vectors given */
    else
    {
       MakeDefaultVectors (&VarInfo,Start,Count,&NumStart,&NumCount);
-
    }
 
    Result = ReadValues (&VarInfo, Start, Count, &RET_VECTOR);
+	ncclose (CDFid);
    if (Result != ERR_NONE)
    {
       ErrAbort (ErrMsg, TRUE, Result);
    }  
 }     /* mexFunction */
+
