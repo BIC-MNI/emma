@@ -82,10 +82,12 @@ fclose (outfile);
 % Finally, do a shell escape to miwriteimages to write the data from the
 % temporary (raw) file to the MINC file.
 
-[Result, Output] = unix (execstr);
+[result, output] = unix (execstr);
 
-if (Result ~= 0)
-   disp (['Error ' int2str(Result) ' running miwriteimages']);
+if (result ~= 0)
+   disp (['Command: ' execstr]);
+   disp ([' Output: ' output]);
+   error (['Error running miwriteimages to write to file ' filename]);
 else
    eval (['delete ' tempfile]);
 end
