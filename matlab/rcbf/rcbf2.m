@@ -55,8 +55,8 @@ function [K1,k2,V0,delta] = rcbf2_slice (filename, slices, progress, ...
 % cross-calibration factor) and converted back to Bq/g_blood.  Thus,
 % K1 is calculated internally as g_blood / (g_tissue * sec).  The
 % final step of the rCBF analysis is to convert this to the more
-% standard mL_blood / (100 g_tissue * min).  k2 and V0 are left in CGS
-% units (1/sec and g_blood/g_tissue, respectively).
+% standard mL_blood / (100 g_tissue * min).  k2 and V0 are similarly 
+% converted to 1/min and mL_blood / (100 g_tissue).
 
 
 % ----------------------------- MNI Header -----------------------------------
@@ -121,7 +121,6 @@ end
 FrameTimes = getimageinfo (img, 'FrameTimes');
 FrameLengths = getimageinfo (img, 'FrameLengths');
 MidFTimes = FrameTimes + (FrameLengths / 2);
-[g_even, orig_ts_even] = resampleblood (img, 'even');
 
 % The blood data is initially in units of Bq/g_blood.  The cross-
 % calibration factor, XCAL, converts this to nCi/mL_blood,
@@ -131,6 +130,7 @@ MidFTimes = FrameTimes + (FrameLengths / 2);
 % 1/mL_blood to 1/g_blood), thus returning to units of Bq/g_blood...
 % but with equipment calibration factored in.
 
+[g_even, orig_ts_even] = resampleblood (img, 'even');
 XCAL = 0.11;
 % Apply the cross-calibration factor.
 rescale(g_even, (XCAL*37/1.05));        % units are decay / (g_blood * sec)
@@ -143,8 +143,7 @@ k2_lookup = (-10:0.05:10) / 60;
 
 
 for current_slice = 1:total_slices
-  % Input arguments are checked, so now we can do some REAL work, ie.
-  % read in all the data we need.  FrameTimes, FrameLengths, and 
+  % Now start the real computation.  FrameTimes, FrameLengths, and 
   % MidFTimes should be self-explanatory.  Ca_even is the blood
   % activity resampled at some evenly-spaced time domain; ts_even
   % is the actual points of that domain.  Ca_mft is the blood activity
@@ -155,7 +154,7 @@ for current_slice = 1:total_slices
   end
 
   if (progress)
-    disp ('Reading image information and generating mask');
+    disp ('Reading PET data for current slice');
   end
   
   ts_even = orig_ts_even;
@@ -163,12 +162,9 @@ for current_slice = 1:total_slices
   PET = getimages (img, slices(current_slice), 1:length(FrameTimes), PET);
   rescale (PET, (37/1.05));             % convert to decay / (g_tissue * sec)
 
-  % Create the weighting functions (N.B. w1 is just one, so don't bother),
-  % and calculate the three weighted integrals of PET.
-  
 
   if (progress)
-    disp ('Creating the weighted integrals.');
+    disp ('Creating weighted integrals of the PET data');
   end
 
   PET_int1 = ntrapz (MidFTimes, PET, w1);
@@ -325,6 +321,8 @@ V0 (nuke) = zeros (size (nuke));
 
 rescale (K1, 100*60/1.05);    % convert from g_blood / (g_tissue * sec)
                               % to mL_blood / (100 g_tissue * min)
+rescale (k2, 60);             % from 1/sec to 1/min
+rescale (V0, 100/1.05);       % from g_blood/g_tissue to mL_b / (100 g_t)
 
 disp ('WARNING!!! rcbf2 now calculates K1 in mL_blood / (100 g_tissue * min)');
 
