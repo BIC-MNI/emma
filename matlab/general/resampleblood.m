@@ -1,4 +1,5 @@
 function [new_g, new_ts] = resampleblood (handle, type, samples)
+
 %  RESAMPLEBLOOD  resample the blood activity in some new time domain
 %
 %  [new_g, new_ts] = resampleblood (handle, type[, samples])
@@ -12,12 +13,9 @@ function [new_g, new_ts] = resampleblood (handle, type, samples)
 %  activity is returned as new_g, and the times used are returned as
 %  new_ts.
 %
-%  The optional argument samples specifies the increase in number of
-%  samples to take.  It defaults to two; that is, by default new_g will
-%  return twice as many data points as the original g(t) data (from 
-%  the MINC or BNC file).  For 'frame' sampling, samples has no effect:
-%  new_g will simply contain the same number of points as there are
-%  frames.
+%  The optional argument samples specifies the number of samples
+%  to take.  If it is not supplied, resampleblood will resample the
+%  blood data at roughly 0.5 second intervals.
 
 if (nargin < 2) | (nargin > 3)
    help resampleblood
@@ -29,10 +27,6 @@ if (~isstr (type))
    error('argument "type" must be a string');
 end
 
-if (nargin == 2)								 % samples not supplied
-   samples = 2;
-end
-
 % Get the original blood activity data, and the start/stop times for
 % each sample.  The mid-sample times, ts_mid, are presumed to be the
 % times at which each element of Ca is the blood activity, hence ts_mid
@@ -41,8 +35,12 @@ end
 [Ca, ts_start, ts_stop] = getblooddata (handle);
 ts_mid = (ts_start + ts_stop) / 2;
 
+if (nargin == 2) 			% samples not supplied
+   samples = ceil(2*(max(ts_mid)-min(ts_mid)));
+end
+
 if (strcmp (type, 'even'))
-   new_ts = linspace (min(ts_mid), max(ts_mid), samples * length (ts_mid))';
+   new_ts = linspace (min(ts_mid), max(ts_mid), samples)';
    new_g = lookup (ts_mid, Ca, new_ts);
 elseif (strcmp (type, 'frame'))
    tf_start = getimageinfo (handle, 'FrameTimes');
