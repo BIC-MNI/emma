@@ -511,6 +511,82 @@ int GetAttValue (int CDF, int nargin, Matrix *InArgs[], int *CurInArg,
 
 
 /* ----------------------------- MNI Header -----------------------------------
+@NAME       : get_dimension_info
+@INPUT      : CDF - handle to the MINC file
+@OUTPUT     : *num_dims - number of dimensions associated with image variable
+              dim_ids   - list of dimension id's for the image variable
+              *xdim, *ydim, *zdim - dimension ID's for (respectively)
+                 MIxspace, MIyspace, and MIzspace; or 0 for any
+                 missing dimensions (this will enable us to handle 2-D files)
+@RETURNS    : ERR_BAD_MINC if we were unable to get the dimensions of MIimage
+              ERR_BAD_MINC if we were unable to get the dimension id of
+                 any of MI{x,y,z}space for reasons *other* than simply not
+                 having that dimension
+              ERR_NONE otherwise
+@DESCRIPTION: Gets the dimension ID's needed for determining the 
+              orientation, dimension names, dimension order, etc.
+@METHOD     : 
+@GLOBALS    : ErrMsg
+@CALLS      : NetCDF
+@CREATED    : 95/08/08, Greg Ward - from code in GetOrientation()
+@MODIFIED   : 
+---------------------------------------------------------------------------- */
+int get_dimension_info (int CDF, int *num_dims, int dim_ids[], 
+			int *xdim, int *ydim, int *zdim)
+{
+   int     Result;
+
+   /*
+    * Find the dimension *id*'s for the image variable -- these are NOT
+    * (I think) necessarily the dimension numbers, which are relative
+    * to the image variable.  
+    */
+
+   Result = ncvarinq (CDF, ncvarid (CDF, MIimage), NULL, NULL, 
+		      num_dims, dim_ids, NULL);
+   if (Result == MI_ERROR)
+   {
+       sprintf (ErrMsg, "Error reading MINC file: %s\n",
+		NCErrMsg (ncerr, errno));
+       return (ERR_BAD_MINC);
+   }
+   
+   /*
+    * Find the dimension numbers corresponding to MIzspace, etc.
+    * If one of the dimensions is missing, we can automatically
+    * guess the orientation.  By setting the missing dimension id to
+    * zero, the orientation checking will come out right.
+    */
+   
+   *xdim = ncdimid (CDF, MIxspace);
+   if ((*xdim == MI_ERROR) && (ncerr == NC_EBADDIM))
+   {
+       *xdim = 0;
+   }
+   
+   *ydim = ncdimid (CDF, MIyspace);
+   if ((*ydim == MI_ERROR) && (ncerr == NC_EBADDIM))
+   {
+       *ydim = 0;
+   }
+
+   *zdim = ncdimid (CDF, MIzspace);
+   if ((*zdim == MI_ERROR) && (ncerr == NC_EBADDIM))
+   {
+       *zdim = 0;
+   }
+
+   if (*xdim == MI_ERROR || *ydim == MI_ERROR || *zdim == MI_ERROR)
+   {
+       sprintf (ErrMsg, "Error reading MINC dimensions.\n");
+       return (ERR_BAD_MINC);
+   }
+   return (ERR_NONE);
+}   
+
+
+
+/* ----------------------------- MNI Header -----------------------------------
 @NAME       : GetOrientation
 @INPUT      : (see GetDimLength)
 @OUTPUT     : (see GetDimLength)
@@ -529,10 +605,9 @@ int GetAttValue (int CDF, int nargin, Matrix *InArgs[], int *CurInArg,
                      transverse   MIzspace     MIyspace     MIxspace
                      sagittal     MIxspace     MIzspace     MIyspace
                      coronal      MIyspace     MIzspace     MIxspace
-
 @METHOD     : 
 @GLOBALS    : ErrMsg
-@CALLS      : CMEX, NetCDF library functions
+@CALLS      : CMEX, NetCDF, get_dimension_info
 @CREATED    : 93-9-29, Greg Ward
 @MODIFIED   : 94-10-28, Mark Wolforth Fixed a bug in the orientation
                  calculation, and generally cleaned things up.
@@ -541,6 +616,9 @@ int GetAttValue (int CDF, int nargin, Matrix *InArgs[], int *CurInArg,
                  (x and y dimensions only).  Since 2D data is also
                  sometimes stored in either coronal or sagittal
                  orientation, the program would bomb.
+	      95-08-08, GW: added handling of the "xyz" orientation
+                 (because this is what Dave Macdonald's programs output);
+                 moved a big chunk of code into get_dimension_info
 ---------------------------------------------------------------------------- */
 /* ARGSUSED */
 int GetOrientation (int CDF, int nargin, Matrix *InArgs[], int *CurInArg,
@@ -553,54 +631,15 @@ int GetOrientation (int CDF, int nargin, Matrix *InArgs[], int *CurInArg,
    int       DimIDs [MAX_NC_DIMS];      /* dimension *id*'s for MIimage */
    int       HeightDim;                 /* of DimIDs - these three only */
    int       WidthDim;                  /* exist to improve code clarity! */
-   int       zdim, ydim, xdim;          /* NetCDF dimension ID's corresponding 
+   int       xdim, ydim, zdim;          /* NetCDF dimension ID's corresponding 
                                            to MIzspace, ... */
 
-   /*
-    * Find the dimension *id*'s for the image variable -- these are NOT
-    * (I think) necessarily the dimension numbers, which are relative
-    * to the image variable.  
-    */
-
-   Result = ncvarinq (CDF, ncvarid (CDF, MIimage), NULL, NULL, 
-		      &NumDims, DimIDs, NULL);
-   if (Result == MI_ERROR)
+   Result = get_dimension_info (CDF, &NumDims, DimIDs, &xdim, &ydim, &zdim);
+   if (Result != ERR_NONE)
    {
-       sprintf (ErrMsg, "Error reading MINC file: %s\n",
-		NCErrMsg (ncerr, errno));
-       return (ERR_BAD_MINC);
+      return (Result);
    }
    
-   /*
-    * Find the dimension numbers corresponding to MIzspace, etc.
-    * If one of the dimensions is missing, we can automatically
-    * guess the orientation.  By setting the missing dimension to
-    * zero, the orientation checking will come out right.
-    */
-   
-   zdim = ncdimid (CDF, MIzspace);
-   if ((zdim == MI_ERROR) && (ncerr == NC_EBADDIM))
-   {
-       zdim = 0;
-   }
-
-   ydim = ncdimid (CDF, MIyspace);
-   if ((ydim == MI_ERROR) && (ncerr == NC_EBADDIM))
-   {
-       ydim = 0;
-   }
-
-   xdim = ncdimid (CDF, MIxspace);
-   if ((xdim == MI_ERROR) && (ncerr == NC_EBADDIM))
-   {
-       xdim = 0;
-   }
-   
-   if (zdim == MI_ERROR || ydim == MI_ERROR || xdim == MI_ERROR)
-   {
-       sprintf (ErrMsg, "Error reading MINC dimensions.\n");
-       return (ERR_BAD_MINC);
-   }
 
    /*
     * Now use the dimension position <-> z/y/x dimension mapping exhibited
@@ -623,6 +662,10 @@ int GetOrientation (int CDF, int nargin, Matrix *InArgs[], int *CurInArg,
    {
       strcpy (Orient, "coronal");
    }
+   else if ((HeightDim == ydim) && (WidthDim == zdim))
+   {
+      strcpy (Orient, "xyz");
+   }
    else
    {
       strcpy (Orient, "unknown");
@@ -636,7 +679,84 @@ int GetOrientation (int CDF, int nargin, Matrix *InArgs[], int *CurInArg,
 
    return (ERR_NONE);
 
-}     /* GetOrienatation () */
+}     /* GetOrientation () */
+
+
+/* ----------------------------- MNI Header -----------------------------------
+@NAME       : GetDimNames
+@INPUT      : (standard)
+@OUTPUT     : (standard) - next output argument will be list of dimensions 
+                           in the volume as a single MATLAB string
+@RETURNS    : ERR_NONE if all went well
+              otherwise, error code from get_dimension_info
+@DESCRIPTION: Gets list of dimensions in a MINC file, and concatenates
+              the dimension names into a single MATLAB string.
+@METHOD     : 
+@GLOBALS    : 
+@CALLS      : CMEX, netCDF, get_dimension_info
+@CREATED    : Aug 95, Greg Ward
+@MODIFIED   : 
+---------------------------------------------------------------------------- */
+int GetDimNames (int CDF, int nargin, Matrix *InArgs[], int *CurInArg,
+		 int nargout, Matrix *OutArgs[], int *CurOutArg)
+{
+   int       Result;
+   int       NumDims;                   /* number of image dimensions */
+   int       DimIDs [MAX_NC_DIMS];      /* dimension *id*'s for MIimage */
+   char    **NameList;		        /* list of dimension names */
+   int       Length;			/* cumulative length of dim names */
+   char     *DimNames;			/* all the dimension names concat'ed */
+   int       i;
+   int       xdim, ydim, zdim;          /* NetCDF dimension ID's */
+
+   Result = get_dimension_info (CDF, &NumDims, DimIDs, &xdim, &ydim, &zdim);
+   if (Result != ERR_NONE)
+   {
+      return (Result);
+   }
+
+   /*
+    * Now go through the list of dimensions for the image variable,
+    * getting the name of each dimension and the length of the name.
+    * (We add 1 to the length each time because there will be a space
+    * between the dimension names, except for the last one where we
+    * need the extra byte for the terminator).
+    */
+
+   NameList = (char **) mxCalloc (NumDims, sizeof (char *));
+   for (i = 0; i < NumDims; i++)
+   {
+      NameList[i] = (char *) mxCalloc (MAX_NC_NAME+2, sizeof (char));
+      ncdiminq (CDF, DimIDs[i], NameList[i], NULL);
+      Length += strlen (NameList[i]) + 1;
+   }
+
+   /*
+    * Now walk NameList[], copying into DimNames and freeing up NameList[].
+    */
+
+   DimNames = (char *) mxCalloc (Length+1, sizeof (char));
+   for (i = 0; i < NumDims; i++)
+   {
+      strcat (DimNames, NameList[i]);
+      if (i < NumDims-1)
+      {
+	 DimNames[strlen(DimNames)] = ' ';
+      }
+      
+      mxFree (NameList[i]);
+   }
+   mxFree (NameList);
+
+   OutArgs [*CurOutArg] = mxCreateString (DimNames);
+
+   (*CurOutArg)++;
+   (*CurInArg)++;
+
+   return (ERR_NONE);
+   
+}
+
 
 
 /* ----------------------------- MNI Header -----------------------------------
@@ -784,8 +904,12 @@ void mexFunction (int nargout, Matrix *outargs [],      /* output args */
          Result = GetOrientation (CDF, nargin, inargs, &cur_inarg,
                                   nargout,outargs,&cur_outarg);
       }
-      else if ((strcasecmp (Option, "dimnames") == 0)
-               ||(strcasecmp (Option, "varnames") == 0)
+      else if (strcasecmp (Option, "dimnames") == 0)
+      {
+	 Result = GetDimNames (CDF, nargin, inargs, &cur_inarg,
+                                  nargout,outargs,&cur_outarg);
+      }
+      else if ((strcasecmp (Option, "varnames") == 0)
                ||(strcasecmp (Option, "vardims") == 0)
                ||(strcasecmp (Option, "varatts") == 0)
                ||(strcasecmp (Option, "varvalues") == 0)
