@@ -9,10 +9,10 @@ function info = getimageinfo (handle, whatinfo)
 % The possible values of this string are numerous and ever-expanding.
 % 
 % The first possibility is the name of one of the standard MINC image
-% dimensions: 'time', 'zspace', 'yspace', or 'xspace'.  If these are
+% dimensions: "time", "zspace", "yspace", or "xspace".  If these are
 % supplied, getimageinfo will return the length of that dimension from
 % the MINC file, or 0 if the dimension does not exist.  Note that
-% requesting 'time' is equivalent to requesting 'NumFrames'; also,
+% requesting "time" is equivalent to requesting "NumFrames"; also,
 % the three spatial dimensions also have equivalences that are
 % somewhat more complicated.  For the case of transverse images,
 % zspace is equivalent to NumSlices, yspace to ImageHeight, and xspace
@@ -29,7 +29,7 @@ function info = getimageinfo (handle, whatinfo)
 %                    empty if data set has no associated MINC file.
 %
 %     NumFrames    - number of frames in the study, 0 if non-dynamic
-%                    study (equivalent to 'time')
+%                    study (equivalent to "time")
 %
 %     NumSlices    - number of slices in the study (0 if no slice
 %                    dimension)
@@ -59,14 +59,14 @@ function info = getimageinfo (handle, whatinfo)
 %     FrameLengths - vector with NumFrames elements - duration of
 %                    each frame in the study, in seconds.  This is
 %                    simply the contents of the MINC variable
-%                    'time-width'; if this variable does not exist in
+%                    "time-width"; if this variable does not exist in
 %                    the MINC file, then getimageinfo will return an
 %                    empty matrix.
 %
 %     FrameTimes   - vector with NumFrames elements - start time of
 %                    each frame, relative to start of study, in
 %                    seconds.  This comes from the MINC variable
-%                    'time'; again, if this variable is not found,
+%                    "time"; again, if this variable is not found,
 %                    then getimageinfo will return an empty matrix.
 %
 %     MidFrameTimes - time at the middle of each frame (calculated by
@@ -127,7 +127,7 @@ eval(['global ' whatinfo int2str(handle)])
 eval(['filename = Filename' int2str(handle) ';']);
 eval(['dimsizes = DimSizes' int2str(handle) ';']);
 
-% If 'whatinfo' is one of the MINC image dimension names, just do 
+% If "whatinfo" is one of the MINC image dimension names, just do 
 % an miinquire on the MINC file for the length of that dimension.
 % If miinquire returns an empty matrix, that means the dimension 
 % doesn't exist, so getimageinfo will return 0.
