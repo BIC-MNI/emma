@@ -27,8 +27,19 @@ function [fig_handle, image_handle, bar_handle] = ...
 %
 % Also by default, viewimage sets up a number of buttons and sliders
 % to facilitate image viewing.  You can change the colourmap, brighten
-% or darken the image, zoom in (if you have the Image Processing
-% Toolbox), or threshold the image.
+% or darken the image, zoom in, or threshold the image.  Most of
+% these are self-explanatory, but the image zoom option needs some
+% explanation: basically, when zooming is activated (by pushing the
+% "Zoom" button), you can select an area of the image by dragging
+% with the left mouse button.  When you let go of the button, the
+% selected rectangle will fill the display window.  This can be
+% repeated as often as you wish, and you can zoom back out again
+% (undoing one zoom step at a time) by clicking the middle mouse 
+% button on the image.  (Note that there currently appears to be
+% some sort of conflict between the MATLAB `zoom' function (which
+% is used by viewimage to do the zooming) and viewimage's own
+% user interface features; however, you can ignore the resulting 
+% error messages.)
 %
 % Currently, viewimage forces all images to a square aspect ratio,
 % regardless of their true size (either in voxel or world
@@ -248,15 +259,13 @@ if (~update)
 
 
   %
-  % Set up a zoom on/off pushbutton if we find the image
-  % processing toolbox
+  % Set up a zoom on/off pushbutton
   %
   
-  if (exist('imzoom') == 2)
-    imzoom ('off');
-    uicontrol('Units','normal','Position',[.84 .22 .14 .04],...
-	'Style','checkbox','callback','imzoom','String','Zoom');
-  end
+  zoom off
+  uicontrol('Units','normal','Position',[.84 .22 .14 .04], ...
+	    'Style','checkbox','callback','zoom','String','Zoom');
+
 
 
   %
