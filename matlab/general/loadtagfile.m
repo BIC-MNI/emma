@@ -59,9 +59,10 @@ while (curline ~= -1)            % while not eof(fid)
       curline (comment:length(curline)) = '';
    end
 
-   % Now, if the stripped line is not blank, we actually look at it
+   % Now, actually look at the line unless it's blank, 
+   % 2) we're in the list of points and the line is just a semicolon
    
-   if (~isempty (curline))
+   if (~ isempty (curline))
     
 %     fprintf (1, 'line %d (state=%d): "%s"\n', line_num, state, curline);      
       % If we're in state 1, 2, or 3, we're still looking for one
@@ -105,6 +106,7 @@ while (curline ~= -1)            % while not eof(fid)
                      line_num, tagfile, err);
                error (errmsg);
             end
+	    expected = 3*num_volumes;
          end     % if state == 3
 
       % Now, if we're not in any of the lower three states, then we're
@@ -113,14 +115,17 @@ while (curline ~= -1)            % while not eof(fid)
       % given is consistent with the number of volumes found in state 3.
                     
       elseif (state == 4)
-         [curpts,count,err,next] = sscanf (curline, ' %f');
-         if (length (curpts) ~= 3*num_volumes)
-            errmsg = sprintf ('Bad number of points (%d) on line %d of %s\',...
-                  length (curpts), line_num, tagfile);
-            error (errmsg);
-         end
+	 if (curline(1)~=';')
+	    [curpts,count,err,next] = sscanf (curline, ' %f');
+	    if (length (curpts) ~= expected & length(curpts) ~= expected+3)
+	       errmsg = sprintf ...
+   ('Bad number of points (expected %d or %d, found %d) on line %d of %s\n',...
+     expected, expected+3, length (curpts), line_num, tagfile);
+	       error (errmsg);
+	    end
          
-         pts = [pts, curpts(:)];       % put the two points in as a column
+	    pts = [pts, curpts(:)]; 		  % put the two points in as a column
+	 end     % if curline isn't ';' alone
       end     % if state == 4
    end     % if curline not empty
 
@@ -142,7 +147,7 @@ end     % while not eof
 % N.B. This check is redundant, as we check the number of coordinates
 % on each line in the loop above
 
-if (m ~= num_volumes * 3)
+if (m ~= expected & m ~= expected+3)
    error('Wrong number of coordinate fields in file');
 end
 points1 = [pts(1:3,:); ones(1,n)];
