@@ -1,30 +1,19 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <limits.h>		/* for limits on integer types */
-#include <float.h>		/* for limits on floating point types */
+#include <assert.h>
+#include <netcdf.h>
 #include "ParseArgv.h"
 #include "minc.h"
 #include "mincutil.h"           /* for NCErrMsg () */
-
+#include "time_stamp.h"
+#include "micreateimage.h"
+#include "args.h"
+#include "dimensions.h"
 #define PROGNAME      "micreateimage"
 
-#define NUM_SIZES 4             /* number of elements in Sizes array */
-#define NUM_VALID 2             /* number of elements in ValidRange array */
+#define ERROR_CHECK(success) { if (!(success)) { ErrAbort (ErrMsg, true, 1); }}
 
-#define DEBUG
-
-
-
-/* MI_SIGN_STR is used for passing signed/unsigned info to the MINC 
- * library; SIGN_STR is for passing it to the user.  (Because MI_* 
- * tacks on those ugly underscores.)
- */
-
-#define MI_SIGN_STR(sgn) ((sgn) ? (MI_SIGNED) : (MI_UNSIGNED))
-#define SIGN_STR(sgn) ((sgn) ? ("signed") : ("unsigned"))
-
-typedef enum { false, true } Boolean;
 
 
 /* Global variables */
@@ -33,10 +22,12 @@ char    *ErrMsg;
 
 /* These are needed for ParseArgv to work */
 
-int     Sizes [NUM_SIZES] = {-1,-1,-1,-1};
+int     Sizes [MAX_IMAGE_DIM] = {-1,-1,-1,-1};
 char   *TypeStr = "byte";
 double  ValidRange [NUM_VALID];
 char   *Orientation = "transverse";
+char   *ChildFile;
+char   *ParentFile;
 
 /* Type strings (from ~neelin/src/file/minc/progs/mincinfo/mincinfo.c) */
 
@@ -46,19 +37,17 @@ char *type_names[] =
 
 /* Function prototypes */
 
-Boolean GetArgs (int *pargc, char *argv[], char **MincFile,
-		 long *NumFrames, long *NumSlices, long *Height, long *Width,
-		 nc_type *Type, Boolean *Signed);
 void usage (void);
 void ErrAbort (char *msg, Boolean PrintUsage, int ExitCode);
-Boolean SetTypeAndVR (char *TypeStr, nc_type *TypeEnum, Boolean *Signed, 
-		      double ValidRange[]);
-void GetImageSize (char num_frames[], long *frames,
-                   char num_slices[], long *slices,
-                   char im_height[],  long *height,
-                   char im_width[],   long *width);
-Boolean CreateDims (int CDF, long Frames, long Slices, long Height, long Width,
-		    char *DimOrder, int *NumDims, int DimIDs[]);
+
+Boolean OpenFiles (char parent_file[], char child_file[],
+                   int *parent_CDF,    int *child_CDF);
+void FinishExclusionLists (int ParentCDF,
+			   int NumChildDims, char *ChildDimNames[],
+			   int *NumExDefn, int ExDefn[],
+			   int *NumExVal, int ExVal[]);
+Boolean CreateImageVars (int CDF, int NumDim, int DimIDs[], 
+			 nc_type NCType, Boolean Signed, double ValidRange[]);
 
 
 
@@ -77,8 +66,8 @@ Boolean CreateDims (int CDF, long Frames, long Slices, long Height, long Width,
 void usage (void)
 {
    fprintf (stderr, "\nUsage:\n");
-   fprintf (stderr, "%s <MINC file> [option] [option] ...\n\n");
-   fprintf (stderr, "options may come in any order; %s -help for descriptions\n", PROGNAME);
+   fprintf (stderr, "%s <MINC file> [option] [option] ...\n\n", PROGNAME);
+   fprintf (stderr, "options may come in any order; %s -help for descriptions\n\n", PROGNAME);
 }
 
 
@@ -86,7 +75,7 @@ void usage (void)
 @NAME       : ErrAbort
 @INPUT      : msg - a nice, descriptive error message to print before bombing
               PrintUsage - flag whether to print a syntax summary
-	      ExitCode - integer to return to caller [via exit()]
+              ExitCode - integer to return to caller [via exit()]
 @OUTPUT     : (N/A)  [does NOT return!]
 @RETURNS    : (void) [does NOT return!]
 @DESCRIPTION: Print out a usage summary, error message, and die.
@@ -104,445 +93,500 @@ void ErrAbort (char *msg, Boolean PrintUsage, int ExitCode)
 }
 
 
-/*
- * GetArgs and SetTypeAndVR - two functions for parsing and making sense
- * out of the command line. 
+#ifdef DEBUG
+void DumpInfo (int CDF)
+{
+   int     NumDims;
+   int     NumVars;
+   int     NumAtts;
+   int     i, j;
+   char    Name [MAX_NC_NAME];
+   long    Len;
+   nc_type Type;
+   int	   DimList [MAX_NC_DIMS];
+
+   if (CDF < 0) return;
+
+   ncinquire (CDF, &NumDims, &NumVars, &NumAtts, NULL);
+   printf ("%d dimensions, %d variables, %d global attributes\n",
+           NumDims, NumVars, NumAtts);
+
+   for (i = 0; i < NumDims; i++)
+   {
+      ncdiminq (CDF, i, Name, &Len);
+      printf ("Dim %d: %s (length %ld)\n", i, Name, Len);
+   }
+
+   for (i = 0; i < NumVars; i++)
+   {
+      ncvarinq (CDF, i, Name, &Type, &NumDims, DimList, &NumAtts);
+      printf ("Var %d: %s (%s) (%d dimensions:", 
+	      i, Name, type_names[Type], NumDims);
+      for (j = 0; j < NumDims; j++)
+      {
+	 ncdiminq (CDF, DimList[j], Name, NULL);
+	 printf (" %s", Name);
+      }
+      printf (")\n");
+   }	
+}
+#endif
+
+
+
+
+
+
+/* 
+ * Functions that actually Do Something to the new MINC file:
+ *   OpenFiles
+ *   CreateDims
+ *   CopyDimVar
+ *   CreateDimVars
  */
 
 
 
-/* ----------------------------- MNI Header -----------------------------------
-@NAME       : GetArgs
-@INPUT      : argc - pointer to the argc passed to main()
-              argv - just what is passed to main()
-@OUTPUT     : argc - decremented for every argument that ParseArgv handles
-              NumFrames, NumSlices, Height, Width - image size parameters
-	         will be parsed from the -size argument
-	      MincFile - whatever is left on the command line after calling
-	         ParseArgv.
-	      Type, ValidRange, Orientation - other parameters; each one
-	         has its own command-line argument and will be parsed
-		 out by ParseArgv.
-@RETURNS    : true on success
-              on failure (eg. if ParseArgv returns false), calls ErrAbort - 
-  	         does NOT return!
-@DESCRIPTION: Use ParseArgv to parse the command-line arguments.  The table
-              that drives ParseArgv lives here, so this is what needs to
-	      be changed to add more options.  Also, intelligent defaults
-	      should be set by whoever calls GetArgs if the argument is
-	      truly optional (this is how Type, ValidRange, and Orientation
-	      work); GetArgs should make sure that the value(s) set by
-	      ParseArgv are NOT the same as the defaults if an option
-	      is required to be set on the command line.
-@METHOD     : 
-@GLOBALS    : 
-@CALLS      : ParseArgv, ErrAbort (on error)
-@CREATED    : 93-10-16, Greg Ward
-@MODIFIED   : 
-@COMMENTS   : Currently no support for explicitly setting signed or
-              unsigned types.
----------------------------------------------------------------------------- */
-Boolean GetArgs (int *pargc, char *argv[], char **MincFile,
-		 long *NumFrames, long *NumSlices, long *Height, long *Width,
-		 nc_type *Type, Boolean *Signed)
-{
 
+/* ----------------------------- MNI Header -----------------------------------
+@NAME       : OpenFiles
+@INPUT      : parent_file -> The name of the minc file to create the child
+                             from, or NULL if there is no parent file.
+              child_file  -> The name of the child file to be created.
+              tm_stamp    -> A string to be prepended to the history attribute.
+@OUTPUT     : parent_CDF  -> The cdfid of the opened parent file, or -1 if
+                             no parent file was given.
+              child_CDF   -> The cdfid of the created child file.
+@RETURNS    : true if all went well
+              false if error opening parent file (but only if one was supplied)
+              false if error creating child file
+@DESCRIPTION: Opens the (optional) parent MINC file, and creates the (required)
+              new MINC file.  Also creates the root variable (using
+              micreate_std_variable) in the child file.
+@METHOD     :
+@GLOBALS    : none
+@CALLS      : NetCDF routines
+              MINC routines
+@CREATED    : May 31, 1993 by MW
+@MODIFIED   : Aug 11, 1993, GPW - added provisions for no parent file.
+              Oct 27, 1993, GPW - moved from micreate.c to micreateimage.c;
+              removed copying of attributes and history update; renamed
+              from CreateChild to OpenFiles.
+---------------------------------------------------------------------------- */
+Boolean OpenFiles (char parent_file[], char child_file[],
+                   int *parent_CDF,    int *child_CDF)
+{
+   int      child_root;
+   
    /*
-    * Define the valid command line arguments (-size, -type, -valid_range,
-    * -orientation, and -help); what type of arguments should follow them;
-    * and where to put those arguments when found.
+    * If a filename for the parent MINC file was supplied, open the file;
+    * else return -1 for *parent_CDF.
     */
    
-   ArgvInfo ArgTable [] = 
+   if (parent_file != NULL)
    {
-      {"-size", ARGV_INT, (char *) NUM_SIZES, (char *) Sizes, 
-       "lengths of the four image dimensions"},
-      {"-type", ARGV_STRING, NULL, (char *) &TypeStr,
-       "type of the image variable: byte, short, long, float, or double"},
-      {"-valid_range", ARGV_FLOAT, (char *) NUM_VALID, (char *) ValidRange,
-       "valid range of image data to be stored in the MINC file"},
-      {"-orientation", ARGV_STRING, NULL, (char *) &Orientation,
-       "orientation of the image dimensions: transverse, coronal, or sagittal"},
-      {"-help", ARGV_HELP, NULL, NULL, NULL},
-      {NULL, ARGV_END, NULL, NULL, NULL}
-   };
-
-#ifdef DEBUG
-   printf ("Default values:\n");
-   printf ("%ld frames, %ld slices, height %ld, width %ld\n",
-	   Sizes [0], Sizes [1], Sizes [2], Sizes [3]);
-   printf ("valid range min = %lg, max = %lg\n", 
-	   ValidRange [0], ValidRange [1]);
-   printf ("Image type = %s %s, Orientation = %s\n\n",
-	   SIGN_STR (*Signed), TypeStr, Orientation);
-#endif
-
-
-   /* Parse those command line arguments!  If any errors, die right now. */
-
-   if (ParseArgv (pargc, argv, ArgTable, 0))
-   {
-      ErrAbort ("", true, 1);
-   }
-
-   /* Break-down the elements of the Sizes[] array. */
-   
-   *NumFrames = (long) Sizes [0];
-   *NumSlices = (long) Sizes [1];
-   *Height = (long) Sizes [2];
-   *Width = (long) Sizes [3];
-
-   if (!SetTypeAndVR (TypeStr, Type, Signed, ValidRange))
-   {
-      ErrAbort (ErrMsg, true, 1);
-   }
-
-#ifdef DEBUG
-   printf ("\nValues after ParseArgv and SetTypeAndVR:\n");
-   printf ("%ld frames, %ld slices, height %ld, width %ld\n",
-	   Sizes [0], Sizes [1], Sizes [2], Sizes [3]);
-   printf ("valid range min = %lg, max = %lg\n", 
-	   ValidRange [0], ValidRange [1]);
-   printf ("Image type = %s %s, Orientation = %s\n",
-	   SIGN_STR (*Signed), TypeStr, Orientation);
-#endif
-   
-   if ((*pargc < 2) || (Sizes[0] == -1))
-   {
-      ErrAbort ("Require at least a MINC file name and image size", true, 1);
+      *parent_CDF = ncopen (parent_file, NC_NOWRITE);
+      if (*parent_CDF == MI_ERROR)
+      {
+         sprintf (ErrMsg, "Error opening input file %s: %s\n", 
+                  parent_file, NCErrMsg (ncerr));
+         return (false);
+      }
    }
    else
    {
-      *MincFile = argv [1];
+      *parent_CDF = -1;
    }
-}     /* GetArgs () */
+
+   /* Create the child file, bomb if any error */
+   
+   *child_CDF = nccreate (child_file, NC_CLOBBER);
+   if (*child_CDF == MI_ERROR) 
+   {
+      sprintf (ErrMsg, "Error creating child file %s: %s\n", 
+               child_file, NCErrMsg (ncerr));
+      ncclose (*parent_CDF);
+      return (false);
+   }
+   
+#ifdef DEBUG
+   printf ("OpenFiles:\n");
+   printf (" Parent file %s, CDF %d\n", parent_file, *parent_CDF);
+   printf (" Child file  %s, CDF %d\n\n", child_file, *child_CDF);
+#endif
+
+   /* The parent file is now open for reading, and the child file is */
+   /* created and opened for definition.                             */
+   
+   /* Create the root variable */
+   
+   child_root = micreate_group_variable (*child_CDF, MIrootvariable);
+
+   return (true);
+}      /* OpenFiles () */
 
 
-/* ----------------------------- MNI Header -----------------------------------
-@NAME       : SetTypeAndVR
-@INPUT      : TypeStr - the desired image type as a character string, must
-                 be one of "byte", "short", "long", "float", "double".
-	      ValidRange - the (possibly not-yet-set) valid range.
-@OUTPUT     : TypeEnum - the data type as one of the nc_type enumeration,
-                 i.e. NC_BYTE, NC_SHORT, etc.
-	      Signed - whether or not the type is signed (this is currently
-	         hard-coded to set bytes unsigned, all others signed)
-	      ValidRange - the (possibly unmodified) valid range.
+
+
+void FinishExclusionLists (int ParentCDF,
+			   int NumChildDims, char *ChildDimNames[],
+			   int *NumExDefn, int ExDefn[],
+			   int *NumExVal, int ExVal[])
+{
+   int	NumParentDims;
+   int	CurParentDim;
+   char ParentDimName [MAX_NC_NAME];
+   char ParentVarName [MAX_NC_NAME];
+   int	ParentVar;
+   int	WidthVar;
+   int	CurChildDim;
+   int	DimMatch;
+   int	i;
+
+#ifdef DEBUG
+   printf ("FinishExclusionLists\n");
+   printf (" Initial list of variables to exclude from copying definitions:\n");
+   for (i = 0; i < *NumExDefn; i++)
+   {
+      ParentVar = ExDefn [i];
+      ncvarinq (ParentCDF, ParentVar, ParentVarName, NULL, NULL, NULL, NULL);
+      printf ("  %s (ID %d)\n", ParentVarName, ParentVar);
+   }
+   printf (" Initial list of variables to exclude from copying values:\n");
+   for (i = 0; i < *NumExVal; i++)
+   {
+      ParentVar = ExVal [i];
+      ncvarinq (ParentCDF, ParentVar, ParentVarName, NULL, NULL, NULL, NULL);
+      printf ("  %s (ID %d)\n", ParentVarName, ParentVar);
+   }
+   putchar ('\n');
+#endif
+
+   /* 
+    * Find all dimensions in the parent file, and for any that do not
+    * have a corresponding dimension in the child file (using 
+    * ChildDimNames[] to match), add that parent dimension to both
+    * exclusion lists.
+    */
+
+#ifdef DEBUG
+   printf (" Looking for unmatched parent dimensions...\n");
+#endif
+
+   ncinquire (ParentCDF, &NumParentDims, NULL, NULL, NULL);
+   for (CurParentDim = 0; CurParentDim < NumParentDims; CurParentDim++)
+   {
+      ncdiminq (ParentCDF, CurParentDim, ParentDimName, NULL);
+
+#ifdef DEBUG
+      printf ("  Checking parent dimension %d (%s)\n", 
+	      CurParentDim, ParentDimName);
+#endif
+
+      /* 
+       * Get the ID's of the variables with the same name as this
+       * dimension, and with the dimension name + "-width" -- these
+       * will be needed if we are to add anything to the exclusion lists
+       */
+
+      strcpy (ParentVarName, ParentDimName);
+      ParentVar = ncvarid (ParentCDF, ParentVarName);
+
+      strcat (ParentVarName, "-width");
+      WidthVar = ncvarid (ParentCDF, ParentVarName);
+
+      /* Skip to next parent dimension if NEITHER one was found */
+
+      if ((ParentVar == -1) && (WidthVar == -1))
+      {
+	 continue;
+      }
+
+#ifdef DEBUG
+      printf ("  Dimension variable ID: %d; dimension-width variable ID: %d\n",
+	      ParentVar, WidthVar);
+#endif
+
+      /* 
+       * Loop through the names of the dimensions in the child file,
+       * stopping only when we find one that matches ParentDimName
+       * (or have gone through all the child's dimensions)
+       */
+
+      CurChildDim = 0;
+      do
+      {
+#ifdef DEBUG
+	 printf ("   Comparing with child dimension %d (%s)\n",
+		 CurChildDim, ChildDimNames[CurChildDim]);
+#endif
+	 DimMatch = strcmp (ParentDimName, ChildDimNames[CurChildDim]);
+	 CurChildDim++;
+      } while ((DimMatch != 0) && (CurChildDim < NumChildDims));
+
+      /*
+       * If we got here without finding a dimension in the child file  
+       * with the same name is the current dimension in the parent file,
+       * then add this dimension's dimension and dimension-width variables
+       * to both exclusion lists (but only if these variables actually
+       * exist!)
+       */
+
+      if (DimMatch != 0)
+      {
+	 if (ParentVar != -1)
+	 {
+	    ExDefn [(*NumExDefn)++] = ParentVar;
+	    ExVal [(*NumExVal)++] = ParentVar;
+	 }
+
+	 if (WidthVar != -1)
+	 {
+	    ExDefn [(*NumExDefn)++] = WidthVar;
+	    ExVal [(*NumExVal)++] = WidthVar;
+	 }
+      }
+   }     /* for CurParentDim */
+
+   /* Now add all the obvious ones: MIrootvariable, MIimage, MIimagemax, MIimagemin */
+
+   ParentVar = ncvarid (ParentCDF, MIrootvariable);
+   if (ParentVar != -1)
+   {
+      ExDefn [(*NumExDefn)++] = ParentVar;
+      ExVal [(*NumExVal)++] = ParentVar;
+   }
+   
+   ParentVar = ncvarid (ParentCDF, MIimage);
+   if (ParentVar != -1)
+   {
+      ExDefn [(*NumExDefn)++] = ParentVar;
+      ExVal [(*NumExVal)++] = ParentVar;
+   }
+   
+   ParentVar = ncvarid (ParentCDF, MIimagemax);
+   if (ParentVar != -1)
+   {
+      ExDefn [(*NumExDefn)++] = ParentVar;
+      ExVal [(*NumExVal)++] = ParentVar;
+   }
+   
+   ParentVar = ncvarid (ParentCDF, MIimagemin);
+   if (ParentVar != -1)
+   {
+      ExDefn [(*NumExDefn)++] = ParentVar;
+      ExVal [(*NumExVal)++] = ParentVar;
+   }
+   
+
+#ifdef DEBUG
+   printf (" Final list of variables to exclude from copying definitions:\n");
+   for (i = 0; i < *NumExDefn; i++)
+   {
+      ParentVar = ExDefn [i];
+      ncvarinq (ParentCDF, ParentVar, ParentVarName, NULL, NULL, NULL, NULL);
+      printf ("  %s (ID %d)\n", ParentVarName, ParentVar);
+   }
+   printf (" Final list of variables to exclude from copying values:\n");
+   for (i = 0; i < *NumExVal; i++)
+   {
+      ParentVar = ExVal [i];
+      ncvarinq (ParentCDF, ParentVar, ParentVarName, NULL, NULL, NULL, NULL);
+      printf ("  %s (ID %d)\n", ParentVarName, ParentVar);
+   }
+   putchar ('\n');
+#endif
+
+}     /* FinishExclusionLists () */
+
+
+
+/* ----------------------------- MNI Header -----------------------------------@NAME       : CreateImageVars
+@INPUT      : CDF - ID of the MINC file in which to create MIimagemax
+                    and MIimagemin variables
+              NumDim - *total* number of image dimensions (2,3, or 4)
+              DimIDs - ID's of the NumDim image dimensions
+	      NCType - type of the image variable
+	      Signed - true or false, for the image variable
+	      ValidRange - for the image variable
+@OUTPUT     : 
 @RETURNS    : true on success
-              false if TypeStr is invalid
-	      false if ValidRange is invalid for the given type
-	      (all error conditions set the global variable ErrMsg)
-@DESCRIPTION: Converts the character string TypeStr (from the command-line)
-              to an nc_type.  If ValidRange is {0, 0} (ie. not set on the
-	      command line), then it is set to the default valid range for
-	      the given type, namely the maximum range of the type.  If
-	      ValidRange was already set, then it is checked to make
-	      sure it's within the maximum range of the type.
+              false if any error creating either variable
+              (sets ErrMsg on error)
+@DESCRIPTION: Create the MIimagemax and MIimagemin variables in a newly
+              created MINC file (must be in definition mode!).  The 
+              variables will depend on the two lowest (slowest-varying) 
+              image dimensions, ie. frames and slices in the full 4-D
+              case.  If the file has no frames or no slices (or both),
+              that will be handled properly.
 @METHOD     : 
 @GLOBALS    : ErrMsg
-@CALLS      : 
-@CREATED    : 93-10-16, Greg Ward
-@MODIFIED   :
-@COMMENTS   : Currently no support for explicitly setting signed or
-              unsigned types; byte => unsigned, all others => signed.
+@CALLS      : MINC library
+@CREATED    : 93-10-28, Greg Ward: code moved from main()
+@MODIFIED   : 93-11-10, GPW: renamed and modified from CreateMinMax
 ---------------------------------------------------------------------------- */
-Boolean SetTypeAndVR (char *TypeStr, nc_type *TypeEnum, Boolean *Signed,
-		      double ValidRange[])
+Boolean CreateImageVars (int CDF, int NumDim, int DimIDs[], 
+			 nc_type NCType, Boolean Signed, double ValidRange[])
 {
-   double  DefaultMin;		/* maximum range of the type specified by */
-   double  DefaultMax;		/* TypeStr (used for setting/checking) */
-
-   /* First convert the character string type to the nc_type enumeration */
-
-   if (strcmp (TypeStr, "byte") == 0)
-   {
-      *TypeEnum = NC_BYTE;
-      *Signed = false;
-   }
-   else if (strcmp (TypeStr, "short") == 0)
-   {
-      *TypeEnum = NC_SHORT;
-      *Signed = true;
-   }
-   else if (strcmp (TypeStr, "long") == 0)
-   {
-      *TypeEnum = NC_LONG;
-      *Signed = true;
-   }
-   else if (strcmp (TypeStr, "float") == 0)
-   {
-      *TypeEnum = NC_FLOAT;
-      *Signed = true;
-   }
-   else if (strcmp (TypeStr, "double") == 0)
-   {
-      *TypeEnum = NC_DOUBLE;
-      *Signed = true;
-   }
-   else if (strcmp (TypeStr, "char") == 0)
-   {
-      sprintf (ErrMsg, "Unsupported NetCDF type: char");
-      return (false);
-   }
-   else
-   {
-      sprintf (ErrMsg, "Unknown data type: %s", TypeStr);
-      return (false);
-   }
+   int  image_id;
+   int  max_id, min_id;         /* ID's of the newly-created variables */
 
 #ifdef DEBUG
-   printf ("Supplied type was %s, this maps to nc_type as %s, and it's %s\n",
-	   TypeStr, type_names [*TypeEnum], SIGN_STR(*Signed));
+   printf ("CreateImageVars:\n");
+   printf (" Creating MIimage variable with %d dimensions\n", NumDim);
 #endif
 
+   image_id = micreate_std_variable (CDF, MIimage, NCType,
+                                     NumDim, DimIDs);
+   (void) miattputstr (CDF, image_id, MIsigntype, MI_SIGN_STR(Signed));
+   (void) miattputstr (CDF, image_id, MIcomplete, MI_FALSE);
+   
+   (void) ncattput (CDF, image_id, MIvalid_range, NC_DOUBLE, 2, ValidRange);
 
-   /* Now find the maximum range of the desired type; this will be 
-    * used to either set the valid range (if none was set on the command
-    * line) or to ensure that the given valid range is in fact valid.
+   /*
+    * Create the image-max and image-min variables.  They should be
+    * dependent on the "non-image" dimensions (ie. time and slices,
+    * if they exist), so pass NumDim-2 as the number of
+    * dimensions, and DimIDs as the list of dimension ID's -- 
+    * micreate_std_variable should then only look at the first one
+    * or two dimension IDs in the list.
     */
 
-   switch (*TypeEnum)
-   {
-      case NC_BYTE:
-      {
-	 DefaultMin = (double) CHAR_MIN;
-	 DefaultMax = (double) CHAR_MAX;
-	 break;
-      }
-      case NC_SHORT:
-      {
-	 DefaultMin = (double) SHRT_MIN;
-	 DefaultMax = (double) SHRT_MAX;
-	 break;
-      }
-      case NC_LONG:
-      {
-	 DefaultMin = (double) LONG_MIN;
-	 DefaultMax = (double) LONG_MAX;
-	 break;
-      }
-      case NC_FLOAT:
-      {
-	 DefaultMin = (double) -FLT_MAX;
-	 DefaultMax = (double) FLT_MAX;
-	 break;
-      }
-      case NC_DOUBLE:
-      {
-	 DefaultMin = -DBL_MAX;
-	 DefaultMax = DBL_MAX;
-	 break;
-      }
-   }
-
 #ifdef DEBUG
-   printf ("Maximum range (= default valid range) for this type: [%lg %lg]\n",
-	   DefaultMin, DefaultMax);
+   printf (" creating MIimagemin and MIimagemax with %d dimensions\n",
+           NumDim-2);
 #endif
-
-
-   /* If both the min and max of ValidRange are zero, then it was not
-    * set on the command line by the user -- so set it to the default
-    * range for the given type.  Otherwise, make sure that the given
-    * range is legal.
-    */
-
-   if ((ValidRange[0] == 0) && (ValidRange[1] == 0))
-   {
-      ValidRange [0] = DefaultMin;
-      ValidRange [1] = DefaultMax;
-
-#ifdef DEBUG
-      printf ("Valid range was all zero already, so set it to [%lg %lg]\n",
-	      ValidRange[0], ValidRange[1]);
-#endif
-
-   }     /* if ValidRange not set on command line */
-   else
-   {
-#ifdef DEBUG
-      printf ("Valid range already set, making sure it's in bounds\n");
-#endif
-
-      if ((ValidRange [0] < DefaultMin) ||
-	  (ValidRange [1] > DefaultMax))
-      {
-	 sprintf (ErrMsg, "Invalid range (%lg .. %lg) given for type %s",
-		  ValidRange[0], ValidRange[1], TypeStr);
-	 return (false);
-      }
+   
+   max_id = micreate_std_variable (CDF, MIimagemax, NC_DOUBLE,
+                                   NumDim-2, DimIDs);
+   min_id = micreate_std_variable (CDF, MIimagemin, NC_DOUBLE,
+                                   NumDim-2, DimIDs);
+   
+   if ((max_id == MI_ERROR) || (min_id == MI_ERROR))
+   {  
+      sprintf (ErrMsg, "Error creating image max/min variables: %s\n",
+               NCErrMsg (ncerr));
+      return (false);
    }
 
    return (true);
 
-}     /* SetTypeAndVR() */
+}     /* CreateImageVars () */
 
 
 
 
 /* ----------------------------- MNI Header -----------------------------------
-@NAME       : CreateDims
-@INPUT      : CDF    - handle to a CDF file open and in define mode
-              Frames - number of frames (possibly zero)
-              Slices - number of slices (possibly zero)
-              Height - image height (second-last image dimension)
-              Width  - image width (last image dimension, ie. fastest varying)
-              DimOrder - character string starting with either 't' 
-                         (transverse), 'c' (coronal), or 's' (sagittal)
-                         which determines how slices/height/width map 
-                         to zspace/yspace/xspace
-@OUTPUT     : NumDims - the number of image dimensions created (2, 3, or 4)
-              DimIDs  - list of dimension id's created, with DimIDs[0] being
-                        the slowest varying dimension (MItime if Frames>0),
-                        and DimIDs[NumDims-1] the fastest varying (MIxspace
-                        in the case of transverse images).
-@RETURNS    : true on success
-              false if an invalid orientation was given
-	      false if any errors occured while creating the dimensions
-	      (ErrMsg is set on error)
-@DESCRIPTION: Create up to four image dimensions in an open MINC file.
-              At least two dimensions, the "width" and "height" of the 
-              image, will always be created.  Note that width and height
-              here don't necessarily correspond to width and height of 
-              images when we view them on the screen -- width is simply
-              the fastest varying image dimension, and height is the
-              second fastest.  A slice dimension will be created if
-              Slices > 0, and the MItime dimension will be created if
-              Frames > 0.  DimOrder determines how slices/height/width map 
-              to zspace/yspace/xspace as follows:
- 
-                DimOrder     Slice dim    Height dim   Width dim
-                 transverse   MIzspace     MIyspace     MIxspace
-                 sagittal     MIxspace     MIzspace     MIyspace
-                 coronal      MIyspace     MIzspace     MIxspace
-
-              (Note that only the first character of DimOrder is looked at.)
+@NAME       : UpdateHistory
+@INPUT      : ChildCDF - the MINC file which will have TimeStamp prepended
+                         to its history attribute
+              TimeStamp - string to be added to history attribute in ChildCDF
+@OUTPUT     : (none)
+@RETURNS    : (void)
+@DESCRIPTION: Update the history of a MINC file by prepending a string
+              to it.  The history attribute will be created if it does
+              not exist in the file specified by CDF; otherwise, its
+              current value will be read in, the string TimeStamp will
+              be prepended to it, and it will be re-written.
 @METHOD     : 
-@GLOBALS    : ErrMsg
-@CALLS      : NetCDF library
-@CREATED    : 1993/8/16, Greg Ward
-@MODIFIED   : 1993/10/26: Civilised the error handling (GPW)
+@GLOBALS    : 
+@CALLS      : NetCDF, MINC libraries
+@CREATED    : 93-10-27, Greg Ward (from MW's code formerly in micreate)
+@MODIFIED   : 93-11-16, Greg Ward: removed references to parent file; the
+              attribute should now be copied from the parent file before
+	      UpdateHistory is ever called.
 ---------------------------------------------------------------------------- */
-Boolean CreateDims (int CDF, long Frames, long Slices, long Height, long Width,
-		    char *DimOrder, int *NumDims, int DimIDs[])
+void UpdateHistory (int ChildCDF, char *TimeStamp)
 {
-    int    CurDim = 0;        /* index into DimIDs */
-    char  *SliceDim;
-    char  *HeightDim;
-    char  *WidthDim;
-  
-    /* Calculate how many dimensions we will be creating, either 2 3 or 4. */
-
-    *NumDims = 4;
-    if (Frames == 0)
-    {
-        (*NumDims)--;
-    }
-
-    if (Slices == 0)
-    {
-        (*NumDims)--;
-    }
+   nc_type  HistType;
+   int      HistLen;
 
 #ifdef DEBUG
-    printf ("# frames %ld, # slices %ld, height %ld, width %ld\n",
-            Frames, Slices, Height, Width);
-    printf ("Will create %d dimensions\n", *NumDims);
-#endif    
-
-    /* Determine the dimension names corresponding to slices, height, width */
-
-    switch (toupper(DimOrder [0]))
-    {
-        case 'T':                     /* transverse */     
-        {
-            SliceDim = MIzspace;
-            HeightDim = MIyspace;
-            WidthDim = MIxspace;
-            break;
-        }
-        case 'S':                     /* sagittal */
-        {
-            SliceDim = MIxspace;
-            HeightDim = MIzspace;
-            WidthDim = MIyspace;
-            break;
-        }
-        case 'C':                     /* coronal */
-        {
-            SliceDim = MIyspace;
-            HeightDim = MIzspace;
-            WidthDim = MIxspace;
-            break;
-        }
-        default:
-        {
-            sprintf (ErrMsg, "Unknown orientation %s "
-		     "(must be one of transverse, coronal, or sagittal\n",
-		     DimOrder);
-	    return (false);
-        }
-    }
-
-#ifdef DEBUG
-    printf ("Slice dimension: %s\n", SliceDim);
-    printf ("Height dimension: %s\n", HeightDim);
-    printf ("Width dimension: %s\n", WidthDim);
+   printf ("UpdateHistory:\n");
 #endif
 
 
-    /* If applicable, create the time dimension */
-
-    if (Frames > 0)
-    {
-        DimIDs[CurDim] = ncdimdef (CDF, MItime, Frames);
-        CurDim++;
-    }
-
-    /* Likewise for slice dimension */
-
-    if (Slices > 0)
-    {
-        DimIDs[CurDim] = ncdimdef (CDF, SliceDim, Slices);
-        CurDim++;
-    }
-
-    /* Now create the two actual image dimensions - these must be created */
-
-    DimIDs[CurDim++] = ncdimdef (CDF, HeightDim, Height);
-    DimIDs[CurDim++] = ncdimdef (CDF, WidthDim, Width);
-
-    /* Scan through the elements of DimIDs making sure there were no errors */
-
-    for (CurDim = 0; CurDim < *NumDims; CurDim++)
-    {
-        if (DimIDs [CurDim] == MI_ERROR)
-        {
-            sprintf (ErrMsg, "Error creating dimensions (%s)\n",
-                     NCErrMsg (ncerr));
-	    return (false);
-        }
-    }
+   /* Update the history of the child file */
+   
+   if (ncattinq (ChildCDF,NC_GLOBAL,MIhistory,&HistType,&HistLen) == MI_ERROR)
+   {
+#ifdef DEBUG
+      printf (" creating history attribute\n");
+#endif
+      ncattput (ChildCDF, NC_GLOBAL, MIhistory, NC_CHAR, 
+                strlen(TimeStamp), TimeStamp);
+   }
+   else
+   {
+      char    *OldHist;
+      char    *NewHist;
 
 #ifdef DEBUG
-    printf ("Done creating %d dimensions\n", CurDim);
+      printf (" adding to history attribute\n");
 #endif
-    
-}      /* CreateDims () */    
+      OldHist = (char *) malloc ((size_t) (HistLen*sizeof(char)));
+      ncattget (ChildCDF, NC_GLOBAL, MIhistory, (char *)OldHist);
+      NewHist = (char *) malloc 
+         ((size_t) (HistLen*sizeof(char) + strlen(TimeStamp) + 1));
+      strcpy (NewHist, TimeStamp);
+      strcat (NewHist, OldHist);
+      ncattput (ChildCDF, NC_GLOBAL, MIhistory, NC_CHAR, 
+                strlen(NewHist), NewHist);
+      free (NewHist);
+      free (OldHist);
+   }
 
+}     /* UpdateHistory () */
+
+
+
+
+Boolean CopyOthers (int ParentCDF, int ChildCDF, 
+		    int NumExDefn, int ExDefn[],
+		    int NumExVal, int ExVal[],
+		    char *TimeStamp)
+{
+#ifdef DEBUG
+   printf ("CopyOthers:\n");
+   printf (" copying variable definitions...\n");
+#endif
+
+   if (micopy_all_var_defs(ParentCDF, ChildCDF, NumExVal, ExVal) == MI_ERROR)
+   {
+      sprintf (ErrMsg, "Error %d copying variable definitions: %s", 
+	       ncerr, NCErrMsg (ncerr));
+      ncclose (ChildCDF);
+      return (false);
+   }
+
+#ifdef DEBUG
+   printf (" updating history...\n");
+#endif 
+
+   UpdateHistory (ChildCDF, TimeStamp);
+
+#ifdef DEBUG
+   printf (" copying variable values...\n");
+#endif
+   ncendef (ChildCDF);
+
+   if (micopy_all_var_values(ParentCDF, ChildCDF, NumExVal, ExVal) == MI_ERROR)
+   {
+      sprintf (ErrMsg, "Error %d copying variable values: %s", 
+	       ncerr, NCErrMsg (ncerr));
+      ncclose (ChildCDF);
+      return (false);
+   }
+
+   return (true);
+
+}     /* CopyOthers () */
 
 
 
 /* ----------------------------- MNI Header -----------------------------------
 @NAME       : main
-@INPUT      : argv[1] - name of MINC file to create image variable in
-              argv[2] - number of frames (0 if no frames)
-              argv[3] - number of slices (0 if no slices)
-              argv[4] - image height (ie. yspace length if transverse)
-              argv[5] - image width (ie. xspace length if transverse)
-              argv[6] - (optional) one of transverse, coronal, or sagittal
-                      - only the first letter is looked at
-                      - defaults to transverse
+@INPUT      : 
 @OUTPUT     : none
 @RETURNS    : none
 @DESCRIPTION: Sets up a new MINC file so that it can contain image data.
@@ -557,119 +601,94 @@ Boolean CreateDims (int CDF, long Frames, long Slices, long Height, long Width,
 @CREATED    : June 3, 1993 by MW
 @MODIFIED   : 
 ---------------------------------------------------------------------------- */
-
 int main (int argc, char *argv[])
 {
+   char   *TimeStamp;           /* to be put in the history attribute */
    nc_type NCType;
    Boolean Signed;
 
-
-   long    NumFrames;		/* lengths of the various image dimensions */
+   long    NumFrames;           /* lengths of the various image dimensions */
    long    NumSlices;
    long    Height;
    long    Width;
-/* double  vrange[2];	    */  /* valid range of image data */
 
-   char   *MincFile;		/* name of MINC file from command line */
-   int     file_CDF;
-   int     Dim[4];		/* dimension ID's for the image */
-   int     NumDim;		/* 2, 3, or 4 based on whether frames */ 
-				/* slices, or both are zero */
+   int     ChildCDF;
+   int     ParentCDF;
 
-   int     image_id, max_id, min_id;
-   int     time_id, time_width_id;
+   /* NumDim will be the number of image dimensions actually created in
+    * the MINC file; DimIDs and DimNames will hold the ID's and names
+    * of these dimensions.  There will be 2 dimensions if both NumFrames
+    * and NumSlices are zero; 3 dimensions if either one but not both is
+    * zero; and 4 dimensions if neither are zero.  (Height and Width must
+    * always be non-zero.)
+    */
+
+   int     NumDim;       
+   int     DimIDs [MAX_IMAGE_DIM];
+   char   *DimNames [MAX_IMAGE_DIM];
+
+   int	   NumExDefn, NumExVal;
+   int	   ExDefn[MAX_NC_DIMS], ExVal[MAX_NC_DIMS];
 
 
    ErrMsg = (char *) calloc (256, sizeof (char));
+   TimeStamp = time_stamp (argc, argv);
+   GetArgs (&argc, argv,
+            &NumFrames, &NumSlices, &Height, &Width, 
+            &NCType, &Signed);
 
-   GetArgs (&argc, argv, &MincFile, &NumFrames, &NumSlices, &Height, &Width, 
-	    &NCType, &Signed);
+#ifdef DEBUG
+   printf ("main: Parent file: %s; new file: %s\n\n", ParentFile, ChildFile);
+#endif
 
-
-   printf ("File is: %s\n", MincFile);
-    
    ncopts = 0;
-   
-   /* Open the NetCDF file, bomb if error */
-   
-   file_CDF = ncopen (MincFile, NC_WRITE);
-   if (file_CDF == MI_ERROR)
-   {
-      sprintf (ErrMsg, "Error opening MINC file %s: %s\n",
-	       MincFile, NCErrMsg (ncerr));
-      ErrAbort (ErrMsg, true, 1);
-   }
-   
-   /* Bomb if the MIimage variable is already in the NetCDF file */
-   
-   if (ncvarid (file_CDF, MIimage) != MI_ERROR)
-   {
-      sprintf (ErrMsg, "Image variable already exists in file %s\n", MincFile);
-      ErrAbort (ErrMsg, true, 1);
-   }
 
-   /* Put the CDF file back into definition mode, and create the 
-    * image dimensions (either two, three, or four of them; how 
-    * many are actually created will be put into NumDim, and the 
-    * list of dimension ID's will be put into Dim[].
-    */
+   ERROR_CHECK 
+      (OpenFiles (ParentFile, ChildFile, &ParentCDF, &ChildCDF));
 
-   ncredef(file_CDF);
-   CreateDims (file_CDF, NumFrames, NumSlices, Height, Width, 
-	       Orientation, &NumDim, Dim);
+   ERROR_CHECK 
+      (CreateDims (ChildCDF, NumFrames, NumSlices, Height, Width, 
+		   Orientation, &NumDim, DimIDs, DimNames));
+   ERROR_CHECK
+      (CreateDimVars (ParentCDF, ChildCDF, NumDim, DimIDs, DimNames, 
+		      &NumExDefn, ExDefn, &NumExVal, ExVal));
+
+   ERROR_CHECK 
+      (CreateImageVars (ChildCDF, NumDim, DimIDs, NCType, Signed, ValidRange));
+
+#ifdef DEBUG
+   printf ("--------------------------------------------------------------\n");
+   printf ("State of %s immediately before entering CopyOthers:\n",ParentFile);
+   DumpInfo (ParentCDF);
+
+   printf ("--------------------------------------------------------------\n");
+   printf ("State of %s immediately before entering CopyOthers:\n", ChildFile);
+   DumpInfo (ChildCDF);
+#endif
 
 
    /*
-    * Create the image-max and image-min variables.  They should be
-    * dependent on the "non-image" dimensions (ie. time and slices,
-    * if they exist), so pass NumDim-2 as the number of
-    * dimensions, and Dim as the list of dimension ID's -- 
-    * micreate_std_variable should then only look at the first one
-    * or two dimension IDs in the list.
+    * Now, copy everything else of possible interest from the parent file
+    * (but only if it exists!) to the child file.
     */
-   
-   max_id = micreate_std_variable (file_CDF, MIimagemax, NC_DOUBLE,
-				   NumDim-2, Dim);
-   min_id = micreate_std_variable (file_CDF, MIimagemin, NC_DOUBLE,
-				   NumDim-2, Dim);
-   
-   if ((max_id == MI_ERROR) || (min_id == MI_ERROR))
-   {  
-      fprintf (stderr, "Error creating image max/min variables: %s\n",
-	       NCErrMsg (ncerr));
-      exit (-1);
-   }
 
-   /* If there are to be any frames present in the file, create time
-    * and time-width variables. */
-   
-   if (NumFrames > 0)
+   if (ParentCDF != -1)
    {
-      time_id = micreate_std_variable (file_CDF, MItime, NC_DOUBLE, 1, Dim);
-      time_width_id = micreate_std_variable (file_CDF, MItime_width, NC_DOUBLE, 1, Dim);
-      
-      if ((time_id == MI_ERROR) || (time_width_id == MI_ERROR))
-      {
-	 fprintf (stderr, "Error creating time/time-width variables: %s\n",
-		  NCErrMsg (ncerr));
-	 exit (-1);
-      }
+
+      FinishExclusionLists (ParentCDF, NumDim, DimNames,
+			    &NumExDefn, ExDefn, &NumExVal, ExVal);
+
+      ERROR_CHECK
+	 (CopyOthers (ParentCDF, ChildCDF, 
+		      NumExDefn, ExDefn, NumExVal, ExVal, TimeStamp));
    }
-   
 
-   /* Finally, we create the image variable, and put in the valid range,
-    * signtype, and complete attributes.
-    */
-  
-   image_id = micreate_std_variable (file_CDF, MIimage, NCType,
-				     NumDim, Dim);
-   (void) miattputstr (file_CDF, image_id, MIsigntype, SIGN_STR(Signed));
-   (void) miattputstr (file_CDF, image_id, MIcomplete, MI_FALSE);
-   
-   (void) ncattput (file_CDF, image_id, MIvalid_range, NC_DOUBLE, 2, ValidRange);
-
-   ncclose (file_CDF);
-   
+   ncclose (ChildCDF);
+   if (ParentCDF != -1)
+   {
+      ncclose (ParentCDF);
+   }
    return (0);
+
 }
 
