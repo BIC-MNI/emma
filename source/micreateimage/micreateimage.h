@@ -15,6 +15,8 @@
 @MODIFIED   : 
 ---------------------------------------------------------------------------- */
 
+#include "emmageneral.h"
+
 #define MIN_IMAGE_DIM 2         /* minimum number of image dimensions */
 #define MAX_IMAGE_DIM 4         /* maximum number of image dimensions */
 #define NUM_VALID 2             /* number of elements in ValidRange array */
@@ -27,8 +29,6 @@
 
 #define MI_SIGN_STR(sgn) ((sgn) ? (MI_SIGNED) : (MI_UNSIGNED))
 #define SIGN_STR(sgn) ((sgn) ? ("signed") : ("unsigned"))
-
-typedef enum { false=0, true=1 } Boolean;
 
 /* Global variables */
 
