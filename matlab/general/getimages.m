@@ -98,7 +98,7 @@ function images = getimages (handle, slices, frames, old_matrix, start_row, num_
 %@MODIFIED   : 6 July 1993, Greg Ward: 
 %             30 May 1994, Greg Ward: added start_row and num_rows, 
 %                          completely rewrote help section
-%@VERSION    : $Id: getimages.m,v 1.13 1997-10-20 18:23:19 greg Rel $
+%@VERSION    : $Id: getimages.m,v 1.14 1999-11-26 09:12:38 neelin Exp $
 %              $Name:  $
 %-----------------------------------------------------------------------------
 
@@ -139,6 +139,12 @@ end
 s = check_sf (handle, slices, frames);
 if ~isempty (s); error (s); end;
 
+% Do not try to re-use memory for matlab version 5 and later - it crashes
+v = version;
+if (str2num(v(1:3)) > 4),
+  old_matrix = [];
+end
+     
 % Now read the images!  (remembering to make slices and frames zero-based for
 % mireadimages).
 
