@@ -20,9 +20,12 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <float.h>
 #include "minc.h"
 #include "emmageneral.h"
+#include "mex.h"
 #include "mincutil.h"
+#include "mexutils.h"
 #include "mierrors.h"
 
 extern   char *ErrMsg;     /* should be defined in your main program */
@@ -429,6 +432,7 @@ int OpenImage (char Filename[], ImageInfoRec *Image, int mode)
    (void) miicv_setint (Image->ICV, MI_ICV_DO_DIM_CONV, TRUE);
    (void) miicv_setint (Image->ICV, MI_ICV_DO_SCALAR, FALSE);
    (void) miicv_setint (Image->ICV, MI_ICV_DO_FILLVALUE, TRUE);
+   (void) miicv_setdbl (Image->ICV, MI_ICV_FILLVALUE, CreateNaN());
    (void) miicv_attach (Image->ICV, Image->CDF, Image->ID);
 
    return (ERR_NONE);
