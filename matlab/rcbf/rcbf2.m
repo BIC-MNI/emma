@@ -46,6 +46,7 @@ if (nargin < 2)
    error ('Not enough input arguments');
 elseif (nargin < 3)
    progress = 0;
+   correction = 1;
 elseif (nargin < 4)
    correction = 1;
 elseif (nargin > 4)
