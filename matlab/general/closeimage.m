@@ -9,14 +9,12 @@ function closeimage (handles)
 % temporary file and directory used for the uncompressed data are
 % deleted.
 
-% $Id: closeimage.m,v 1.10 1997-10-20 18:23:19 greg Rel $
+% $Id: closeimage.m,v 1.11 2000-04-10 16:00:50 neelin Exp $
 % $Name:  $
 
 for handle = handles
-   eval(['global Flags' int2str(handle)]);
-   eval(['global Filename' int2str(handle)]);
-   eval(['Flags = Flags' int2str(handle) ';']);
-   eval(['Filename = Filename' int2str(handle) ';']);
+   Flags = handlefield(handle, 'Flags');
+   Filename = handlefield(handle, 'Filename');
    
    if (size(Flags) == [1 2])		% was it actually a compressed file?
       if (Flags(2))                     % then nuke the temp directory
@@ -28,9 +26,5 @@ for handle = handles
       fprintf (2, 'closeimage: warning: invalid image handle (%d)\n', handle);
    end
 
-   eval(['clear global Flags'        int2str(handle)]);
-   eval(['clear global Filename'     int2str(handle)]);
-   eval(['clear global DimSizes',    int2str(handle)]);
-   eval(['clear global FrameTimes'   int2str(handle)]);
-   eval(['clear global FrameLengths',int2str(handle)]);
+   handlefield(handle, 'Free');
 end

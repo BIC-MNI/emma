@@ -82,9 +82,6 @@ function handle = newimage (NewFile, DimSizes, ParentFile, ...
 %              data set from within MATLAB, and creates an 
 %              associated MINC file.
 %@METHOD     : 
-%@GLOBALS    : reads/increments: ImageCount
-%              creates: Filename#, DimSizes#, FrameTimes#, FrameLengths#
-%              (with the latter two empty)
 %@CALLS      : (if a MINC filename is supplied) micreate, micreateimage
 %@CREATED    : June 1993, Greg Ward & Mark Wolforth
 %@MODIFIED   : 6-17 Aug 1993 - totally overhauled (GPW).
@@ -93,7 +90,7 @@ function handle = newimage (NewFile, DimSizes, ParentFile, ...
 %                              image type/valid range/orientation;
 %                              a few more fixes to the argument handling code
 %              27 May 1997   - Modified to work with Matlab 5 (MW)
-%@VERSION    : $Id: newimage.m,v 2.15 1999-07-20 18:36:32 neelin Exp $
+%@VERSION    : $Id: newimage.m,v 2.16 2000-04-10 16:00:52 neelin Exp $
 %              $Name:  $
 %-----------------------------------------------------------------------------
 
@@ -275,16 +272,6 @@ if (Parent ~= -1 & CloseParent)
    closeimage (Parent);
 end
 
-% Figure out what the handle to return should be
-
-global ImageCount
-
-if ~isempty (ImageCount)
-   ImageCount = ImageCount + 1;
-else
-   ImageCount = 1;
-end
-
 % Set the flags for the new volume: read-write, not compressed
 
 Flags = [1 0];
@@ -292,16 +279,4 @@ Flags = [1 0];
 % MINC file is now created (if applicable), so we must create the
 % MATLAB variables that will be used by putimages
 
-eval(['global Filename'     int2str(ImageCount)]);
-eval(['global Flags'        int2str(ImageCount)]);
-eval(['global DimSizes'     int2str(ImageCount)]);
-eval(['global FrameTimes'   int2str(ImageCount)]);
-eval(['global FrameLengths',int2str(ImageCount)]);
-
-eval(['Filename'     int2str(ImageCount) ' = NewFile;']);
-eval(['Flags'        int2str(ImageCount) ' = Flags;']);
-eval(['DimSizes'     int2str(ImageCount) ' = DimSizes;']);
-eval(['FrameTimes'   int2str(ImageCount) ' = [];']);
-eval(['FrameLengths' int2str(ImageCount) ' = [];']);
-
-handle = ImageCount;
+handle = handlefield([], 'Create', NewFile, DimSizes, Flags, [], []);

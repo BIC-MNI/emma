@@ -131,7 +131,6 @@ function info = getimageinfo (handle, whatinfo)
 %              MATLAB or read from the associated MINC file
 %@DESCRIPTION: Read and return various data about an image set.
 %@METHOD     : 
-%@GLOBALS    : Filename#, DimSizes#, FrameLengths#, FrameTimes#
 %@CALLS      : mireadvar (CMEX), miinquire (CMEX)
 %@CREATED    : 93-06-17, Greg Ward
 %@MODIFIED   : 93-06-17, Greg Ward: added standard MINC dimension names,
@@ -144,7 +143,7 @@ function info = getimageinfo (handle, whatinfo)
 %              other info item -- so they too are now case insensitive!
 %              95-09-21, Greg Ward: added MinMax, AllMin, and AllMax
 %              95-11-07, Greg Ward: added Steps, Starts, DirCosines
-%@VERSION    : $Id: getimageinfo.m,v 1.15 1997-10-20 18:23:19 greg Rel $
+%@VERSION    : $Id: getimageinfo.m,v 1.16 2000-04-10 16:00:51 neelin Exp $
 %              $Name:  $
 %-----------------------------------------------------------------------------
 
@@ -162,15 +161,10 @@ end
 
 lwhatinfo = lower (whatinfo);
 
-% Make global the three image-size variables so we can access them easily
+% Get basic file info
 
-eval(['global Filename' int2str(handle)]);
-eval(['global DimSizes' int2str(handle)]);
-eval(['global FrameTimes' int2str(handle)]);
-eval(['global FrameLengths' int2str(handle)]);
-
-eval(['filename = Filename' int2str(handle) ';']);
-eval(['dimsizes = DimSizes' int2str(handle) ';']);
+filename = handlefield(handle, 'Filename');
+dimsizes = handlefield(handle, 'DimSizes');
 
 if (size(filename) == [0 0] | size(dimsizes) == [0 0])
    error ('handle does not specify an open image volume');
@@ -216,7 +210,8 @@ elseif (strcmp (lwhatinfo, 'dimsizes'))
 % Now check if it's an option calculated from other options
 
 elseif (strcmp (lwhatinfo, 'midframetimes'))
-   info = eval(['FrameTimes' int2str(handle) ' + FrameLengths' int2str(handle) ' / 2']);
+   info = handlefield(handle, 'FrameTimes') + ...
+       handlefield(handle, 'FrameLengths') / 2;
 elseif (strcmp (lwhatinfo, 'minmax'))
    allmin = sort (mireadvar (filename, 'image-min'));
    allmax = sort (mireadvar (filename, 'image-max'));
@@ -256,14 +251,14 @@ elseif (strcmp (lwhatinfo, 'dircosines'))
 elseif (strcmp (lwhatinfo, 'permutation'))
    info = miinquire (filename, 'permutation');
 
-% Finally check for one of the default global variables for this volume
+% Finally check for one of the default fields for this volume
 
 elseif (strcmp (lwhatinfo, 'filename'))
-   info = eval(['Filename' int2str(handle)]);
+   info = handlefield(handle,'Filename');
 elseif (strcmp (lwhatinfo, 'framelengths'))
-   info = eval(['FrameLengths' int2str(handle)]);
+   info = handlefield(handle,'FrameLengths');
 elseif (strcmp (lwhatinfo, 'frametimes'))
-   info = eval(['FrameTimes' int2str(handle)]);
+   info = handlefield(handle,'FrameTimes');
    
 % Well, nothing else it could be ... so give up!
    

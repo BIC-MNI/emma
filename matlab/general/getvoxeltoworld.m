@@ -109,7 +109,7 @@ function xfm = getvoxeltoworld (volume)
 % SEE ALSO
 %   voxeltoworld, worldtovoxel
 
-% $Id: getvoxeltoworld.m,v 1.4 1997-10-20 18:23:24 greg Rel $
+% $Id: getvoxeltoworld.m,v 1.5 2000-04-10 16:00:52 neelin Exp $
 % $Name:  $
 
 % by Greg Ward 95/3/10
@@ -119,8 +119,7 @@ function xfm = getvoxeltoworld (volume)
 %
 
 if (size(volume) == [1,1])
-   eval(['global Filename',int2str(volume),';']);
-   eval(['filename = Filename',int2str(volume),';']);
+   filename = handlefield(volume, 'Filename');
 else
    error ('volume argument must be an image handle');
 end

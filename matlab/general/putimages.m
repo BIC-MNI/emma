@@ -54,7 +54,7 @@ function putimages (handle, images, slices, frames)
 %@CREATED    : June 1993, Greg Ward & Mark Wolforth
 %@MODIFIED   : 93-7-5, Greg Ward: foisted most of the work onto miwriteimages
 %              (the .m file, not the CMEX routine).
-%@VERSION    : $Id: putimages.m,v 1.8 1997-10-20 18:23:22 greg Rel $
+%@VERSION    : $Id: putimages.m,v 1.9 2000-04-10 16:00:53 neelin Exp $
 %              $Name:  $
 %-----------------------------------------------------------------------------
 
@@ -64,8 +64,7 @@ if ((nargin < 2) | (nargin >4))
     error ('Incorrect number of arguments.');
 end
  
-eval(['global Flags' int2str(handle)]);
-eval(['Flags = Flags' int2str(handle) ';']);
+Flags = handlefield(handle, 'Flags');
 if (~ Flags(1))
    error ('Cannot write to a read-only file');
 end
@@ -105,10 +104,9 @@ if (num_required ~= num_im)
    error (errmsg);
 end
 
-% make the MINC file's name global and copy to a local variable
+% Get the file name
 
-eval(['global Filename' int2str(handle)]);
-eval(['filename = Filename' int2str(handle) ';']);
+filename = handlefield(handle, 'Filename');
 
 if ~isempty (filename)        % write images to MINC file if there is one
    miwriteimages (filename, images, slices, frames);

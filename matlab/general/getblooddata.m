@@ -53,12 +53,11 @@ function [activity, mid_times] = getblooddata (study)
 %              if either the file doesn't exist or doesn't contain the
 %              blood analysis data.
 %@METHOD     : 
-%@GLOBALS    : Filename#, if study is a handle
 %@CALLS      : mireadvar (CMEX)
 %@CREATED    : June 1993, Greg Ward & Mark Wolforth
 %@MODIFIED   : 6 July 1993, Greg Ward: greater flexibility wrt. handling
 %              both MINC and BNC files
-%@VERSION    : $Id: getblooddata.m,v 1.7 1997-10-20 18:23:21 greg Rel $
+%@VERSION    : $Id: getblooddata.m,v 1.8 2000-04-10 16:00:50 neelin Exp $
 %              $Name:  $
 %-----------------------------------------------------------------------------
 
@@ -91,15 +90,14 @@ else                        % study is a number, so use it
         error ('Image handle must be a scalar')
     end    
 
-    eval(['global Filename' int2str(study)]);
-    if exist (['Filename' int2str(study)]) ~= 1
+    if (~handlefield(study))
         disp ('getblooddata: unknown image handle (image not opened)');
         return;
     end
     
     % copy Filename# to local variable, check if it's empty
 
-    filename = eval(['Filename' int2str(study)]);
+    filename = handlefield(study, 'Filename');
     if isempty (filename)
         disp ('getblooddata: no filename associated with given image, cannot read blood data');
         return;

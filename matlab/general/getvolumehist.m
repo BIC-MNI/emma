@@ -6,7 +6,7 @@ function [no,xo] = getvolumehist (handle,bins)
 %
 %
 
-% $Id: getvolumehist.m,v 1.3 1997-10-20 18:23:22 greg Rel $
+% $Id: getvolumehist.m,v 1.4 2000-04-10 16:00:51 neelin Exp $
 % $Name:  $
 
 % @COPYRIGHT  :
@@ -38,8 +38,7 @@ end
 slices = getimageinfo(handle,'NumSlices');
 
 if (length(bins) == 1)
-  eval(['global Filename',int2str(handle),';']);
-  eval(['filename = Filename',int2str(handle),';']);
+  filename = handlefield(handle,'Filename');
   mins=mireadvar(filename,'image-min');
   min_val = min(mins);
   maxs=mireadvar(filename,'image-max');

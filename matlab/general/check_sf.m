@@ -22,15 +22,14 @@ function msg = check_sf (handle, slices, frames)
 %
 %  If there are no problems, then the empty matrix is returned.
 
-% $Id: check_sf.m,v 1.7 1997-10-20 18:23:20 greg Rel $
+% $Id: check_sf.m,v 1.8 2000-04-10 16:00:50 neelin Exp $
 % $Name:  $
 
 msg = [];
 
-% First retrieve the number of frames and slices from the global workspace
+% First retrieve the number of frames and slices
 
-eval(['global DimSizes' int2str(handle)]);
-dim_sizes = eval(['DimSizes' int2str(handle)]);
+dim_sizes = handlefield(handle, 'DimSizes');
 num_frames = dim_sizes(1);
 num_slices = dim_sizes(2);
 

@@ -91,14 +91,13 @@ function images = getimages (handle, slices, frames, old_matrix, start_row, num_
 %              warning and then read the data.  
 %
 %@METHOD     : 
-%@GLOBALS    : Filename#
 %@CALLS      : check_sf to check validity of slices/frames arguments
 %              mireadimages (CMEX)
 %@CREATED    : June 1993, Greg Ward & Mark Wolforth
 %@MODIFIED   : 6 July 1993, Greg Ward: 
 %             30 May 1994, Greg Ward: added start_row and num_rows, 
 %                          completely rewrote help section
-%@VERSION    : $Id: getimages.m,v 1.14 1999-11-26 09:12:38 neelin Exp $
+%@VERSION    : $Id: getimages.m,v 1.15 2000-04-10 16:00:51 neelin Exp $
 %              $Name:  $
 %-----------------------------------------------------------------------------
 
@@ -118,16 +117,15 @@ if (nargin < 3)         % no frames vector given, so make it empty
 end
 
 
-% Make the handle's filename global, and check that it exists
+% Check that the handle exists
 
-eval(['global Filename' int2str(handle)]);
-if exist (['Filename' int2str(handle)]) ~= 1
+if (~handlefield(handle))
    disp ('getimages: image unknown - use openimage');
 end 
 
-% and copy it to a local variable for ease of use
+% and copy the filename to a local variable for ease of use
 
-filename = eval (['Filename' int2str(handle)]);
+filename = handlefield(handle,'Filename');
 
 if isempty (filename)
    disp ('getimages: no MINC file associated with image, cannot read images');
@@ -141,7 +139,7 @@ if ~isempty (s); error (s); end;
 
 % Do not try to re-use memory for matlab version 5 and later - it crashes
 v = version;
-if (str2num(v(1:3)) > 4),
+if (str2num(v(1:3)) >= 5),
   old_matrix = [];
 end
      

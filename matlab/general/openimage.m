@@ -42,37 +42,20 @@ function ImHandle = openimage (filename, mode)
 %              putimages, getimageinfo, etc.)
 %@DESCRIPTION: Prepares for reading/writing a MINC file from within
 %              MATLAB by generating a handle and creating a number of
-%              global variables for use by getimages, putimages, etc.
+%              fields for use by getimages, putimages, etc.
 %@METHOD     : (Note: none of this needs to be known by the end user.  It
 %              is only here to document the inner workings of the
 %              open/get/put/close image functions.)  
 %
-%              Increments the global variable ImageCount, and uses the
-%              new ImageCount as a handle to the image.  Handles are
-%              simply integers that are appended to various names to
-%              give the names of various global variables; eg., the
-%              global variable Filename3 is the name of the MINC file
-%              tagged by the handle 3.  This appending is universally
-%              done by the MATLAB string concatenation: eg., for
-%              handle=3, ['Filename' int2str(handle)] yields
-%              Filename3.  This is frequently combined with the eval
-%              function to access the per-handle global variables.
-%              
-%              This convention is followed for the variables Filename,
-%              NumFrames, NumSlices, ImageSize, FrameTimes,
+%              A handle is created with handlefield to which is associated
+%              a number of fields, including Filename, DimSizes, FrameTimes,
 %              FrameLengths, and Flags.
 %              
 %              The functions getimages, putimages, getimageinfo,
 %              viewimage, getblooddata, check_sf, and closeimage also
-%              follow this convention for retrieving/storing data in
-%              these global variables.
+%              use handlefield for retrieving/storing data associated with
+%              the file handle.
 %              
-%              Note that in the documentation for all of these
-%              functions, we will use the convention (e.g.) Filename#
-%              to refer to the "instance" of those (or other) image
-%              variables associated with the current handle.
-%@GLOBALS    : reads/increments: ImageCount
-%              creates: Filename#, DimSizes#, FrameTimes#, FrameLengths#
 %@CALLS      : mireadvar (CMEX)
 %              miinquire (CMEX)
 %@CREATED    : June 1993, Greg Ward & Mark Wolforth
@@ -84,23 +67,9 @@ function ImHandle = openimage (filename, mode)
 %              97-5-27 Mark Wolforth: Minor modification to work with
 %                                     Matlab 5, which handles global
 %                                     variables differently from Matlab 4.x
-%@VERSION    : $Id: openimage.m,v 1.25 1999-10-07 13:02:04 neelin Exp $
+%@VERSION    : $Id: openimage.m,v 1.26 2000-04-10 16:00:52 neelin Exp $
 %              $Name:  $
 %-----------------------------------------------------------------------------
-
-
-% Note that the effects of 'global' on a brand-new variable are subtly
-% different between MATLAB 4 and 5.  In both cases, 'global foo' makes
-% 'foo' spring into existence as an empty (0x0) matrix.  However, in
-% MATLAB 4, exist ('foo') would still return false; in retrospect, this
-% doesn't make a lot of sense, and it was a mistake to rely on this
-% behaviour (as openimage used to do).  MATLAB 5 is more sensible: after
-% 'foo' is sprung into existence by 'global foo', exist ('foo') is true.
-% In both versions, isempty (foo) is true, as expected -- when a
-% variable is created by 'globale', it is indeed an empty matrix.
-
-global ImageCount
-
 
 
 error (nargchk (1, 2, nargin));
@@ -195,14 +164,6 @@ if (filename (1) ~= '/')
 end
 
    
-% The file exists, so we will be opening it... so figure out the handle.
-
-if ~isempty (ImageCount)
-   ImageCount = ImageCount + 1;
-else
-   ImageCount = 1;
-end
-
 % Get sizes of ALL possible image dimensions. Time/frames, slices, 
 % height, width will be the elements of DimSizes where height and
 % width are the two image dimensions.  DimSizes WILL have four 
@@ -224,22 +185,7 @@ Width = DimSizes (4);
 FrameTimes = mireadvar (filename, 'time');
 FrameLengths = mireadvar (filename, 'time-width');
 
-% Now make "numbered" copies of the four variables we just created
-% (Filename, DimSizes, FrameTimes, and FrameLengths); the number used
-% is ImageCount, and the effect of the following statements is to
-% declare these numbered variables as global (so other functions can
-% access them) and to copy the local data to the global variables.
+% Create a handle that stores the file information
+ImHandle = handlefield([], 'Create', filename, DimSizes, Flags, ...
+    FrameTimes, FrameLengths);
 
-eval(['global Filename'     int2str(ImageCount)]);
-eval(['global DimSizes'     int2str(ImageCount)]);
-eval(['global FrameTimes'   int2str(ImageCount)]);
-eval(['global FrameLengths',int2str(ImageCount)]);
-eval(['global Flags',       int2str(ImageCount)]);
-
-eval(['Filename'     int2str(ImageCount) ' = filename;']);
-eval(['FrameTimes'   int2str(ImageCount) ' = FrameTimes;']);
-eval(['FrameLengths' int2str(ImageCount) ' = FrameLengths;']);
-eval(['DimSizes'     int2str(ImageCount) ' = DimSizes;']);
-eval(['Flags'        int2str(ImageCount) ' = Flags;']);
-
-ImHandle = ImageCount;
