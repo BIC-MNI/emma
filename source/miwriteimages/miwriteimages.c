@@ -32,7 +32,7 @@ typedef enum { false=0, true=1 } Boolean;
  */
 
 Boolean    debug = false;       /* for mincutil.c only */
-char       ErrMsg [256];        /* set as close to the occurence of the */
+char       *ErrMsg;		/* set as close to the occurence of the */
                                 /* error as possible; displayed by whatever */
                                 /* code exits */
 
@@ -190,24 +190,66 @@ void GVErrMsg (char *Buffer, char *Descr, int GVReturn)
               Image - pointer to struct describing the image:
                 # of frames/slices, etc.
 @OUTPUT     : 
-@RETURNS    : true if no member of Slices[] or Frames[] is invalid (i.e.
-              larger than, respectively, Images->Slices or Images->Frames)
-              false otherwise
-@DESCRIPTION: 
+@RETURNS    : false if any member of Slices[] or Frames[] is out-of-bounds
+	      false if the user does not supply a list of slices/frames
+	         for a dimension that is present in the file
+	      true otherwise
+@DESCRIPTION: Ensures that no slice or frame number is out of bounds (i.e.
+              less than zero, or greater than or equal to the number of
+	      slices/frames: note zero-based!).  Also checks to see
+	      if 1) user supplied slices (frames) and file has no slices
+	      (frames); and 2) file does contain slices (frames), and user
+	      supplied none.  If the first holds, a warning that the 
+	      user-supplied slice (frame) list will be ignored is printed.
+	      If the second holds, it's an error.
 @METHOD     : 
 @GLOBALS    : ErrMsg
 @CALLS      : 
 @CREATED    : 
-@MODIFIED   : 
+@MODIFIED   : 94-12-17, GW: added check for missing/extra slice/frame lists
 ---------------------------------------------------------------------------- */
 Boolean CheckBounds (long Slices[], long Frames[],
-                       int NumSlices, int NumFrames,
-                       ImageInfoRec *Image)
+		     int NumSlices, int NumFrames,
+		     ImageInfoRec *Image)
 {
    int   i;
 
+   /* Check if the user supplied list for a non-present image dimension */
+
+   if ((Image->SliceDim == -1) && (NumSlices > 0))
+   {
+      fprintf (stderr, "Warning: file has no slice dimension; supplied slice "
+	       "list will be ignored\n");
+   }
+
+   if ((Image->FrameDim == -1) && (NumFrames > 0))
+   {
+      fprintf (stderr, "Warning: file has no frame dimension; supplied frame "
+	       "list will be ignored\n");
+   }
+
+   /* Now check if the user did not supply a list for an image dimension
+    * that IS present (this is an error; the above merely a warning)
+    */
+
+   if ((Image->SliceDim != -1) && (NumSlices == 0))
+   {
+      sprintf (ErrMsg, "File contains slice dimension; "
+	       "slice list must be provided");
+      return (false);
+   }
+
+   if ((Image->FrameDim != -1) && (NumFrames == 0))
+   {
+      sprintf (ErrMsg, "File contains frame dimension; "
+	       "frame list must be provided");
+      return (false);
+   }
+
+
 #ifdef DEBUG
-   printf ("Checking slices (%d of them) and frames (%d of them) for validity...\n", NumSlices, NumFrames);
+   printf("Checking slices (%d listed) and frames (%d listed) for validity\n",
+	  NumSlices, NumFrames);
    printf ("No slice >= %ld or frame >= %ld allowed\n",
            Image->Slices, Image->Frames);
 #endif
@@ -215,7 +257,7 @@ Boolean CheckBounds (long Slices[], long Frames[],
    for (i = 0; i < NumSlices; i++)
    {
 #ifdef DEBUG
-      printf ("User slice %d is study slice %d\n", i, Slices[i]);
+      printf ("User slice %d is study slice %ld\n", i, Slices[i]);
 #endif
       if ((Slices [i] >= Image->Slices) || (Slices [i] < 0))
       {
@@ -228,7 +270,7 @@ Boolean CheckBounds (long Slices[], long Frames[],
    for (i = 0; i < NumFrames; i++)
    {
 #ifdef DEBUG
-      printf ("User frame %d is study frame %d\n", i, Frames[i]);
+      printf ("User frame %d is study frame %ld\n", i, Frames[i]);
 #endif
       if ((Frames [i] >= Image->Frames) || (Frames [i] < 0))
       {
@@ -298,7 +340,7 @@ Boolean ReadNextImage (double *Buffer, long ImageSize, FILE *InFile)
    AmtRead = fread (Buffer, sizeof (double), (size_t) ImageSize, InFile);
 
 #ifdef DEBUG
-   printf ("Read an image from temp file; file position now at byte %d\n", 
+   printf ("Read an image from temp file; file position now at byte %ld\n",
            ftell(InFile));
    printf ("%d doubles read; wanted %ld\n", AmtRead, ImageSize);
 
@@ -594,6 +636,10 @@ int main (int argc, char *argv [])
    ncopts = 0;
 #endif
 
+   ncopts = NC_VERBOSE;
+   ErrMsg = (char *) malloc (256);
+
+   strcpy (ErrMsg, "Hello! I am an error message!");
 
    if (argc != NUM_ARGS + 1)        /* +1 because argv[0] counts! */
    {
@@ -627,7 +673,7 @@ int main (int argc, char *argv [])
    printf ("Slices specified: ");
    for (i = 0; i < NumSlices; i++)
    {
-      printf ("%8d", Slice[i]);
+      printf ("%8ld", Slice[i]);
    }
    printf ("\n");
    
@@ -636,7 +682,7 @@ int main (int argc, char *argv [])
    {
 /*      printf ("i = %d, &(Frame) = %p, &(Frame[d]) = %p\n",
 	      i, &Frame, &(Frame[i]));  */
-      printf ("%8d", Frame[i]); 
+      printf ("%8ld", Frame[i]); 
    }
    printf ("\n");
 #endif
@@ -660,7 +706,7 @@ puts("Checking bounds");
       ErrAbort (ErrMsg, true, ERR_ARGS);
    }
 
-puts("CHecking for max/min variables");
+puts("Checking for max/min variables");
    if ((ImInfo.MaxID == MI_ERROR) || (ImInfo.MinID == MI_ERROR))
    {
       sprintf (ErrMsg, "Missing image-max or image-min variable in file %s", 
