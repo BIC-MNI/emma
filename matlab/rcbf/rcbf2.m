@@ -1,33 +1,31 @@
-function [K1,k2,V0] = rcbf2 (filename, slice, progress, correction)
+function [K1,k2,V0,delta] = rcbf2 (filename, slice, progress, correction)
 
-% RCBF2  a two-compartment (triple-weighted integral) rCBF model.
-%
-%                [K1,k2,V0] = rcbf2 (filename, slice)
-%
-% rcbf2 implements the three-weighted integral method of calculating k2,
-% K1, and V0 (in that order) for a particular slice.  It first reads in
-% a great mess of data (viz., the brain activity for every frame of the
-% slice, frame start times and lengths, blood sample activity, and blood
-% sample times).  Then, a simple mask is created and used to filter out
-% roughly all points outside the head.
-%
-% The actual calculations follow the procedure outlined in Ohta et. al.
-% (see the references section in the document "RCBF Analysis Using
-% Matlab").  Thus, all equation numbers cited in this M-file refer to
-% that paper.
-%
-% Starting with Eq. 23, we calculate the ratio on the left-hand side,
-% rL, for every pixel.  Then, we generate lookup table for the
-% right-hand ratio, rL, for a series of k2 values.  The calculated rL
-% values are used to lookup in this table (since rL == rR) to find k2
-% for every pixel.  Then, Eq. 24 is used to calculate K1.  This 
-% requires calculating the moderately complicated int_activity (left
-% hand side of Eq. 24) and the extremely complicated k2_conv_ints
-% (right hand side).  However, the expression for k2_conv_ints
-% appeared already in the numerator of rR, so we preserve that lookup
-% table as conv_int1 and use it to lookup k2_conv_ints.  These
-% two long vectors (with one number for every pixel) are then
-% divided to get K1.  Finally, V0 is calculated via Eq. 26.
+% RCBF2 a two-compartment (triple-weighted integral) rCBF model.  %
+% [K1,k2,V0,delta] = rcbf2 (filename, slice) % rcbf2 implements the
+% three-weighted integral method of calculating k2, K1, and V0 (in that
+% order) for a particular slice.  This function also returns the delay value
+% calculated for blood correction.  It first reads in a great mess of data
+% (viz., the brain activity for every frame of the slice, frame start times
+% and lengths, blood sample activity, and blood sample times).  Then, a
+% simple mask is created and used to filter out roughly all points outside
+% the head.
+% 
+% The actual calculations follow the procedure outlined in Ohta
+% et. al.  (see the references section in the document "RCBF Analysis Using
+% Matlab").  Thus, all equation numbers cited in this M-file refer to that
+% paper.  
+% 
+% Starting with Eq. 23, we calculate the ratio on the left-hand
+% side, rL, for every pixel.  Then, we generate lookup table for the
+% right-hand ratio, rL, for a series of k2 values.  The calculated rL values
+% are used to lookup in this table (since rL == rR) to find k2 for every
+% pixel.  Then, Eq. 24 is used to calculate K1.  This requires calculating
+% the moderately complicated int_activity (left hand side of Eq. 24) and the
+% extremely complicated k2_conv_ints (right hand side).  However, the
+% expression for k2_conv_ints appeared already in the numerator of rR, so we
+% preserve that lookup table as conv_int1 and use it to lookup k2_conv_ints.
+% These two long vectors (with one number for every pixel) are then divided
+% to get K1.  Finally, V0 is calculated via Eq. 26.
 
 
 % Input argument checking
