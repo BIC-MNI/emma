@@ -19,6 +19,8 @@
 
 SHELL = /bin/sh
 
+include ../Makefile.site		# for DOC_INSTALL_DIR
+
 # Implicit rule: .dvi -> .ps
 .dvi.ps:
 	dvips -o $@ $<
@@ -78,6 +80,14 @@ simul.toc simul.aux: simul.tex
 simul.dvi: simul.toc simul.aux
 	latex simul
 	latex simul
+
+# 
+# Installation: we only install emma.ps and rcbf.ps, because the other
+# two documents are short, specialized, and of limited interest.
+# 
+
+install: emma.ps rcbf.ps
+	cp emma.ps rcbf.ps $(DOC_INSTALL_DIR)
 
 
 # 
