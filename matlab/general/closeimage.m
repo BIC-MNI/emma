@@ -20,7 +20,7 @@ for handle = handles
 	 delete (Filename);
 	 slashes = find (Filename == '/');
 	 lastslash = slashes (length (slashes));
-	 delete (Filename(1:(lastslash-1)));
+	 unix (['\rm -rf ' Filename(1:(lastslash-1))]);
       end
    else
       fprintf (2, 'closeimage: warning: invalid image handle (%d)\n', handle);
