@@ -1,6 +1,5 @@
 function [activity, start_times, stop_times] = getblooddata (study)
 %  GETBLOODDATA  - retrieve blood activity and sample times from a study
-%  [activity, start_times, stop_times] = getblooddata (study)
 %
 %  The study variable can be a handle to an open image, or the name of 
 %  a NetCDF (MNC or BNC) file containing the blood activity data for
@@ -12,40 +11,48 @@ function [activity, start_times, stop_times] = getblooddata (study)
 %  the data from that filename only.  Eventually, we should add enough
 %  smarts to make it look in both the BNC and MNC files, and NOT barf
 %  if the variables are not found!  I don't feel up to today though.
+%
+%  [activity, start_times, stop_times] = getblooddata (study)
+
+if (nargin ~= 1)
+    help getblooddata;
+    error ('Incorrect number of input arguments.');
+end
+
 
 % If study is a string, just use it as the filename.
 
 if isstr (study)
-	filename = study;
+    filename = study;
 else
 
-	% study is a number, so use it as a handle to access Filename#
+    % study is a number, so use it as a handle to access Filename#
 
-	eval(['global Filename' int2str(study)]);
-	if exist (['Filename' int2str(study)]) ~= 1
-		error ('study is not the handle for an open image')
-	end
-	
-	% copy Filename# to local variable, check if it's empty
+    eval(['global Filename' int2str(study)]);
+    if exist (['Filename' int2str(study)]) ~= 1
+        error ('study is not the handle for an open image')
+    end
+    
+    % copy Filename# to local variable, check if it's empty
 
-	filename = eval(['Filename' int2str(study)]);
-	if isempty (filename)
-		error ('Image does not have an associated filename');
-	end
+    filename = eval(['Filename' int2str(study)]);
+    if isempty (filename)
+        error ('Image does not have an associated filename');
+    end
 
-	% Now we wish to strip off the extension (presumable .mnc) and tack on .bnc
-	
-	dot = find(filename=='.');			% location of . in filename
-	if isempty(dot)						% no extension found (not too likely!)
-		filename = [filename '.bnc'];
-	else
-		filename = [filename(1:(dot(length(dot))-1)) '.bnc'];
-	end
+    % Now we wish to strip off the extension (presumable .mnc) and tack on .bnc
+    
+    dot = find(filename=='.');          % location of . in filename
+    if isempty(dot)                     % no extension found (not too likely!)
+        filename = [filename '.bnc'];
+    else
+        filename = [filename(1:(dot(length(dot))-1)) '.bnc'];
+    end
 end
 
 % Now we have a filename to use - check that it exists, and if so read it
 if exist (filename) ~= 2
-	error (['File ' filename ' not found']);
+    error (['File ' filename ' not found']);
 end
 
 activity = mireadvar (filename, 'corrected_activity');
