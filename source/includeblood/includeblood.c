@@ -340,4 +340,7 @@ int main (int argc, char *argv[])
     FillBloodStructures (mincHandle, bloodHandle);
 
     ncclose (mincHandle);
-    ncclose
+    ncclose (bloodHandle);
+    
+    return 0;
+}
