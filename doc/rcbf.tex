@@ -1,4 +1,4 @@
-\documentstyle[12pt,fullpage]{article}
+\documentstyle[12pt,fullpage,psfig]{article}
 
 \title{rCBF Analysis Using MATLAB}
 \author{Mark Wolforth \and Greg Ward}
@@ -280,6 +280,38 @@ model (neglecting $V_0$), and the full two-compartment model were
 implemented numerically in MATLAB.
 
 \subsection{Program Structure}
+
+\begin{figure}
+\centerline{
+\psfig{figure=flow.ps,angle=90,height=3.0in}}
+\vspace{.25in}
+\centerline{Figure 1: General program flow for rCBF analysis}
+\end{figure}
+
+The diagram in figure 1 shows the general flow of performing rCBF
+analysis using MATLAB.  First, the blood data is prepared for
+analysis by performing delay and dispersion correction.  Next the
+lookup tables used in the analysis are calculated.  Finally, the
+actual images are generated through table lookup using the lookup
+tables computed in the previous step.
+
+\begin{figure}
+\centerline{
+\psfig{figure=structure.ps,angle=90,height=3.0in}}
+\vspace{.25in}
+\centerline{Figure 2: Structure of rcbf2}
+\end{figure}
+
+Of course, the actual program implementation is slightly more complex
+than this.  Figure 2 shows the full structure of the \code{rcbf2}
+MATLAB function, which performs a full two-compartment rCBF analysis.
+All of the main functions that are called by \code{rcbf2} are shown.
+The \code{resampleblood} function returns the blood data to
+\code{rcbf2} in an evenly sampled time domain (sampled every $1/2$
+second).  This blood data is then passed to \code{correctblood},
+which performs dispersion correction, and then delay correction by
+calling \code{fit\_b\_curve}.  Finally, useful lookup tables are
+calculated by \code{findintconvo}.
 
 \subsection{Annotated Program Listings}
 
