@@ -16,7 +16,7 @@
 @CREATED    : June, 1993: Greg Ward
 @MODIFIED   : 25 August, 1993, GPW: removed global extern variable debug,
                  and changed all debugging info to #ifdef DEBUG
-@VERSION    : $Id: mincutil.c,v 1.25 1997-10-20 18:30:44 greg Exp $
+@VERSION    : $Id: mincutil.c,v 1.26 1997-10-20 20:08:40 greg Rel $
               $Name:  $
 ---------------------------------------------------------------------------- */
 #include <stdlib.h>
@@ -26,9 +26,7 @@
 #include <errno.h>
 #include "minc.h"
 #include "emmageneral.h"
-#include "mex.h"
 #include "mincutil.h"
-#include "mexutils.h"
 #include "mierrors.h"
 
 extern   char *ErrMsg;     /* should be defined in your main program */
