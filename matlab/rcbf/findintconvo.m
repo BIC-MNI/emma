@@ -91,7 +91,6 @@ if isempty (w1)
    w1 = ones (size(NumFrames));
 end
 
-
 for i = 1:TableSize
 
    fprintf('.')
@@ -101,22 +100,24 @@ for i = 1:TableSize
 
    integrand = nframeint (ts_even, convo(1:length(ts_even)), fstart, flengths);
 
+   select = ~isnan(integrand);
+
    % w1 given?
 
    if (nargin >= 6)
-      int1 (i) = ntrapz(midftimes, (w1 .* integrand));
+      int1 (i) = ntrapz(midftimes(select), (w1(select) .* integrand(select)));
    end
    
    % w2 given?
 
    if (nargin >= 7)
-      int2 (i) = ntrapz(midftimes, (w2 .* integrand));
+      int2 (i) = ntrapz(midftimes(select), (w2(select) .* integrand(select)));
    end
 
    % w3 given?
    
    if (nargin == 8)
-       int3 (i) = ntrapz(midftimes, (w3 .* integrand));
+      int3 (i) = ntrapz(midftimes(select), (w3(select) .* integrand(select)));
    end
 end
 

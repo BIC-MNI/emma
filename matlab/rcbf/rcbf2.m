@@ -49,7 +49,10 @@ function [K1,k2,V0,delta] = rcbf2_slice (filename, slices, progress, ...
 % @GLOBALS    : 
 % @CALLS      : 
 % @CREATED    : 
-% @MODIFIED   : 
+% @MODIFIED   : November 22, 1993 by MW:
+%                  Fixed a bug that would show up when the blood did not
+%                  span the frames.  We now ignore the frames that are
+%                  not spanned, and print a warning for the user.
 % @COPYRIGHT  :
 %             Copyright 1993 Mark Wolforth and Greg Ward, McConnell Brain
 %             Imaging Centre, Montreal Neurological Institute, McGill
@@ -71,9 +74,11 @@ if (nargin < 2)
    help rcbf2
    error ('Not enough input arguments');
 elseif (nargin < 3)
-   progress = 0;
+   progress = 1;
    correction = 1;
+   batch = 1;   
 elseif (nargin < 4)
+   batch = 1;
    correction = 1;
 elseif (nargin < 5)
    batch = 1;
@@ -195,9 +200,20 @@ for current_slice = 1:total_slices
 
   Ca_mft = nframeint (ts_even, Ca_even, FrameTimes, FrameLengths);      
 
-  Ca_int1 = ntrapz(MidFTimes, (w1 .* Ca_mft));
-  Ca_int2 = ntrapz(MidFTimes, (w2 .* Ca_mft));
-  Ca_int3 = ntrapz(MidFTimes, (w3 .* Ca_mft));
+  % NaN's will occur if the blood data does not span the frames.
+  % We eliminate them here, thus ignoring the frames that are npt
+  % spanned by the blood data.  We print a warning message to
+  % inform the user.
+  
+  select = ~isnan(Ca_mft);
+
+  if (sum(select) ~= length(FrameTimes))
+       disp('Warning: Blood data does not span frames.');
+  end
+  
+  Ca_int1 = ntrapz(MidFTimes(select), (w1(select) .* Ca_mft(select)));
+  Ca_int2 = ntrapz(MidFTimes(select), (w2(select) .* Ca_mft(select)));
+  Ca_int3 = ntrapz(MidFTimes(select), (w3(select) .* Ca_mft(select)));
   
   % Find the value of rL for every pixel of the slice.
   rL = ((Ca_int3 .* PET_int1) - (Ca_int1 .* PET_int3)) ./ ...
