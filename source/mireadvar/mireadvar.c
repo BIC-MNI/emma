@@ -383,14 +383,13 @@ void mexFunction (int nlhs, Matrix *plhs [],
    Result = OpenFile (Filename, &CDFid, NC_NOWRITE);
    if (Result != ERR_NONE)
    {
-      ncclose (CDFid);
       ErrAbort (ErrMsg, TRUE, Result);
    }
+
    Result = GetVarInfo (CDFid, Varname, &VarInfo);
    if (Result != ERR_NONE)       /* variable does not exist */
    {                             /* so return empty matrix */
-   /* printf ("GetVarInfo returned %d - variable %s not found (?)\n",
-              Result, Varname); */
+      ncclose (CDFid);
       RET_VECTOR = mxCreateFull (0, 0, REAL);
       return;
    }
@@ -428,7 +427,9 @@ void mexFunction (int nlhs, Matrix *plhs [],
    }
 
    Result = ReadValues (&VarInfo, Start, Count, &RET_VECTOR);
+
    ncclose (CDFid);
+
    if (Result != ERR_NONE)
    {
       ErrAbort (ErrMsg, TRUE, Result);
