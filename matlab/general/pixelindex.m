@@ -23,6 +23,8 @@ function index = pixelindex (img,x,y)
 
 % by Greg Ward 95/3/16 (from the obsolete calpix.m)
 
+error (nargchk (3, 3, nargin));
+
 if (size(img) == [1 1])
    imgsize = getimageinfo (img, 'imagesize');
 elseif (size(img) == [1 2] | size(img) == [2 1])
