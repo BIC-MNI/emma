@@ -56,7 +56,7 @@ function [fig_handle, image_handle, bar_handle] = ...
 % colourbar - if 0, the colour bar will not be drawn [default: 1].
 % uiflag    - if 0, the buttons and sliders will not be drawn [default: 1]
 
-% $Id: viewimage.m,v 1.21 1997-10-20 18:23:21 greg Rel $
+% $Id: viewimage.m,v 1.22 1999-11-30 13:40:14 neelin Exp $
 % $Name:  $
 
 %  Copyright 1993,1994 Mark Wolforth and Greg Ward, McConnell Brain
@@ -341,6 +341,7 @@ if (colourbar)
   end
 
   lab = linspace(lo, hi, 9);
+  labels = [];
   for i=1:9,
     labels = str2mat(labels,num2str(lab(i)));
   end;
