@@ -34,6 +34,7 @@
 #include <stdlib.h>
 #include "mex.h"
 #include "minc.h"
+#include "emmageneral.h"
 #include "mierrors.h"
 #include "mexutils.h"         /* be sure to link in mexutils.o */
 #include "mincutil.h"         /* and mincutil.o */
