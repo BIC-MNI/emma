@@ -58,3 +58,11 @@
 % Rat Data Analysis
 %   ratbrain      - Analyze rat data.
 %   ratdemo       - Rat data analysis demo.
+%
+% Region of Interest (ROI) functions
+%   drawboxroi    - Draw a simple box ROI
+%   drawpolyroi   - Draw a general polygonal ROI
+%   drawroi       - Draws a given ROI on a given figure
+%   getroi        - Get the normalized vertices of a ROI
+%   makeroimask   - Create a mask from a set of ROIs
+%   transferroi   - Copies ROIs from one figure to another
