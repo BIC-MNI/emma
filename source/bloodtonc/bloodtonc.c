@@ -82,27 +82,25 @@ void usage (void)
 
 Boolean GetRecord (FILE *input_stream, char record[])
 {
-    unsigned char field_length, bytes_read;
+    int character;
+    int i;
     
-    field_length = (unsigned char) fgetc (input_stream);
-    (void) fgetc (input_stream);
-    (void) fgetc (input_stream);
-    
-    field_length--;
+    i = 0;
 
-    bytes_read = (unsigned char) fread (record, sizeof (char), (size_t) field_length,
-					input_stream);
-
-    if (fgetc(input_stream) != NULL)
+    character = fgetc(input_stream);
+    if (character == EOF) 
     {
-	fseek(input_stream, ftell(input_stream)-1, SEEK_SET);
+	return (FALSE);
     }
 
-    if (bytes_read == field_length)
+    while ((character != EOF) && ((char)character != '\n'))
     {
-	return (TRUE);
+	record[i] = (char)character;
+        character = fgetc(input_stream);
+	i++;
     }
-    return (FALSE);
+
+    return (TRUE);
 }
 
 
@@ -125,10 +123,10 @@ int TokenizeRecord (char record[], char *tokens[])
 
     counter = 0;
     
-    tokens[counter] = strtok (record, " ,");
+    tokens[counter] = strtok (record, " ,:");
     while (tokens[counter] != NULL)
     {
-	tokens[++counter] = strtok (NULL, " ,");
+	tokens[++counter] = strtok (NULL, " ,:");
     }
     return (counter);
 }
