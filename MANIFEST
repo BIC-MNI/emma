@@ -1,15 +1,18 @@
 # Manifest file for EMMA
-# $Id: MANIFEST,v 1.3 1997-10-20 21:23:33 greg Rel $
+# $Id: MANIFEST,v 1.4 2004-03-11 15:44:12 bert Exp $
 # $Name:  $
 README
 CHANGES
 MANIFEST
+MANIFEST.SKIP
 Makefile
 Makefile.site
 Makefile.irix5
 Makefile.irix4
 Makefile.linux
 Makefile.sun4
+Makefile.macosx
+Makefile.irix6
 Makefile.version
 source/makefile.cmex
 source/makefile.std
@@ -38,6 +41,7 @@ source/miwriteimages/miwriteimages.c
 source/miwriteimages/00Description
 source/miwritevar/Makefile
 source/miwritevar/miwritevar.c
+source/miwritevar/00Description
 source/rescale/Makefile
 source/rescale/rescale.c
 source/rescale/00Description
@@ -81,6 +85,11 @@ source/include/emmageneral.h
 source/include/emmaproto.h
 source/include/ncblood.h
 source/include/time_stamp.h
+source/include/cvterr
+matlab/general/dispimage.m
+matlab/general/getcwd.m
+matlab/general/handlefield.m
+matlab/general/unix.m
 matlab/general/getblooddata.m
 matlab/general/check_sf.m
 matlab/general/getmask.m
@@ -99,7 +108,7 @@ matlab/general/maketac.m
 matlab/general/newimage.m
 matlab/general/openimage.m
 matlab/general/putimages.m
-matlab/general/table.m
+matlab/general/emma_table.m
 matlab/general/viewimage.m
 matlab/general/getvoxeltoworld.m
 matlab/general/Contents.m
@@ -149,6 +158,7 @@ matlab/roi/getroi.m
 matlab/roi/makeroimask.m
 matlab/roi/transferroi.m
 doc/Makefile
+doc/gen_html_docs
 doc/emma-help.tex
 doc/emma.dvi
 doc/rcbf.dvi
