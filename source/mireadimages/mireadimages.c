@@ -71,7 +71,7 @@ double  NaN;                    /* NaN in native C format */
 #define OLD_MEMORY     prhs[OLD_MEMORY_POS-1]   /* old memory space to re-use */
 #define VECTOR_IMAGES  plhs[0]                  /* array of images: one per columns */
 
-#define MAX_READABLE   160           /* max number of slices or frames that
+#define MAX_READABLE   256           /* max number of slices or frames that
                                         can be read at a time */
 
 /*
