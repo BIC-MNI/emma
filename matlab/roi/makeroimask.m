@@ -1,10 +1,50 @@
 function mask = makeroimask (wantedROIs, fig, dim)
 
+% MAKEROIMASK  Create a mask from a set of ROI's
 %
 %
 %        mask = makeroimask (ROIs [,fig[,dim]])
 %
 %
+%  Create a mask from a set of ROI's associated with an image.  The ROI's
+%  are either specified by number (referenced to the current figure), or by
+%  handle.  For example, to create a mask from ROI's 1 to 3 in the current
+%  figure, specify:
+%
+%           mask = makeroimask (1:3);
+%
+%  The figure to use as the current figure may also be specified.  For
+%  example, to create a mask from ROI's 2:5 in figure 2, specify:
+%
+%           mask = makeroimask (2:5,2);
+%
+%  In both of the above cases, the mask produced will be the same dimensions
+%  as the figure used.  However, this is not always desirable, as in the
+%  case where the ROI's are drawn on a 256x256 MRI, but are applied to a
+%  128x128 PET.  To solve this, it is possible to specify the desired
+%  dimensions of the resulting mask.  In the following example, we request
+%  ROI's 2:4 from figure 1, but with a specified dimension of the mask of
+%  128x128:
+%
+%           mask = makeroimask (2:4,1,[128 128]);
+%
+%  Finally, it is possible to specify that a mask for ALL ROI's is desired.
+%  This is done by passing an empty array for the desired ROIs:
+%
+%           mask = makeroimask ([]);
+%
+
+% @COPYRIGHT  :
+%             Copyright 1993,1994 Mark Wolforth and Greg Ward, McConnell
+%             Brain Imaging Centre, Montreal Neurological Institute, McGill
+%             University.
+%             Permission to use, copy, modify, and distribute this software
+%             and its documentation for any purpose and without fee is
+%             hereby granted, provided that the above copyright notice
+%             appear in all copies.  The authors and McGill University make
+%             no representations about the suitability of this software for
+%             any purpose.  It is provided "as is" without express or
+%             implied warranty.
 
 
 if (nargin<1)
@@ -45,10 +85,34 @@ end
 
 mask = zeros(Xrange,Yrange);
 
+%
+% See if the ROIs are specified by handle
+%
+
+if (min(wantedROIs>100))
+  fig = floor(wantedROIs/100);
+  fig = fig(1);
+  wantedROIs = wantedROIs - (fig*100);
+  
+  %
+  % Make sure that all ROIs specified by handle are
+  % related to the same figure.
+  %
+  
+  if (max(wantedROIs) > 100)
+    error ('All ROIs specified by handle must be from the same figure!');
+  end
+end
+
+
 eval (['global ROIs',int2str(fig)]);
 eval (['ROIs = ROIs',int2str(fig),';']);
 index = find(ROIs==-1);
 numROIs = length(index)-1;
+
+%
+% Did the user want ALL ROI's?
+%
 
 if (length(wantedROIs) == 0)
   wantedROIs = 1:numROIs;
@@ -152,3 +216,5 @@ for i=wantedROIs
 
   end
 end
+
+mask = reshape (mask',Xrange*Yrange,1);
