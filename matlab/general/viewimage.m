@@ -1,25 +1,49 @@
 function [fig_handle, image_handle, bar_handle] = ...
    viewimage (img, update, colourbar, uiflag)
 
-% VIEWIMAGE  displays a PET image from a vector or square matrix.
+% VIEWIMAGE  displays an image from a vector or square matrix.
 %
 %    [fig_handle, image_handle, bar_handle] = ...
 %        viewimage (img [, update [, colourbar_flag [, uiflag]]])
+% 
 %
-%  viewimage (img) displays an image using the MATLAB image function.
-%  Works on either colour or monochrome displays.
+% Displays an image using the MATLAB image function.  The only required
+% argument, img, must be either a column vector representing an image
+% (in the standard EMMA way), or a matrix containing the image in 2D.
+% If the image is passed as a vector, it must be square; that is, the
+% vector must have N^2 elements where the image is NxN pixels.  If the
+% image is passed as an MxN matrix, then it will be displayed as MxN
+% pixels.
 %
-%  Images are scaled so that the high points are white and the low
-%  points black.
+% Before displaying, the image is scaled to fill the default
+% colour map, and any NaN's or infinities in the image are set to the
+% image minimum, so that they will display as black (with most
+% colour maps, at least).  The default colour map is spectral on colour
+% displays, or gray on monochrome displays.  (This is determined by
+% the display depth; viewimage doesn't know about gray-scale displays,
+% and will treat them as colour.)  The colour map can be changed,
+% either with the MATLAB colormap function, or through viewimage's
+% user interface features.
 %
-%  viewimage (img, update) chooses the update mode.  The default is to erase
-%  all elements of the figure window, and recreate everything.  By
-%  specifying update = 1, only the image itself will be changed.
+% Also by default, viewimage sets up a number of buttons and sliders
+% to facilitate image viewing.  You can change the colourmap, brighten
+% or darken the image, zoom in (if you have the Image Processing
+% Toolbox), or threshold the image.
 %
-%  viewimage (img, [], colourbar_flag) turns the colourbar on or off.
-%  The default is on, but by specifying colourbar flag = 0, the
-%  colourbar will be turned off.
+% Currently, viewimage forces all images to a square aspect ratio,
+% regardless of their true size (either in voxel or world
+% coordinates).  This will probably be fixed soon.  Also, it knows
+% nothing about world coordinates anyway, so even if it did display
+% non-square images properly, it still wouldn't get the aspect ratio
+% right for images with anisotropic pixels.
 %
+% The optional arguments should all be either 0 or 1, and are:
+% update    - if 1, viewimage will not redraw the user interface
+%             buttons and sliders, nor will it redraw the colour bar.
+%             Setting update to 1 when drawing new images can cause
+%             errors.  [default: 0]
+% colourbar - if 0, the colour bar will not be drawn [default: 1].
+% uiflag    - if 0, the buttons and sliders will not be drawn [default: 1]
 
 %  Copyright 1993,1994 Mark Wolforth and Greg Ward, McConnell Brain
 %  Imaging Centre, Montreal Neurological Institute, McGill
@@ -32,6 +56,17 @@ function [fig_handle, image_handle, bar_handle] = ...
 %  software for any purpose.  It is provided "as is" without
 %  express or implied warranty.
 
+% IDEAS...
+%  - need a way to know both the image size (so we can properly reshape      
+%    a vector) and the physical size of each pixel
+%  - easily fetched from the MINC file, but what if image isn't 
+%    associated with any MINC file?
+%  - also need whole new calling convention for viewimage, e.g.
+%    viewimage (img, 'handle', h, 'uiflag', 0, 'update', 1);  or
+%    viewimage (img, 'imgsize', [128 15], 'pixelsize', [2 6.5]);
+%    This is nicely extensible and elegant, but is it too cumbersome
+%    for the user?  Would having a long list of required parameters
+%    really be any easier, though?
 
 if (nargin < 1)
   help viewimage
@@ -55,15 +90,15 @@ end
 % Reshape the image appropriately
 [x,y] = size (img);
 
-if ((x > 1) & (y > 1))
+if ((x > 1) & (y > 1))             % image passed as a matrix, so accept size
     xsize = x;
-else
+else                               % image passed as a vector - must be square
     xsize= x^.5;
     if (xsize ~= floor (xsize))
-        error('Image must be square.');
+        error('If image is passed as a vector, it must have N^2 elements for some integer N');
     end
     if (y ~= 1)
-        error('Image must be a vector if not square.');
+        error('Image cannot be a row vector (must be either a matrix or column vector)');
     end
     img = reshape (img, xsize, xsize);
 end
@@ -85,9 +120,7 @@ else
 end
 
 
-% Set the default colourmap, and shift/scale img so that it maps onto
-% 1..length(colourmap).  We have different setups depending on whether
-% or not we are diplaying in colour.
+% Set the default colourmap, and setup all the UI buttons and sliders
 
 if (~update)
 
@@ -260,6 +293,8 @@ else
   upper_slide = -1;
   lower_slide = -1;
 end
+
+% Shift/scale img so that it maps onto 1..length(colourmap).
 
 num_colors = length (colormap);
 img = ((img - lo) * ((num_colors-1) / (hi-lo))) + 1;
