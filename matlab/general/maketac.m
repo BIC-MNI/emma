@@ -3,14 +3,16 @@ function tac = maketac (x,y,pet)
 %
 %     tac = maketac(x,y,pet)
 %
-%     Generate a time-activity curve from a set of data.
+% Generate a time-activity curve from a set of data.
+% 
+% Warning: assumes the data is 128x128.
 
 if (nargin ~= 3)
   help maketac
   error ('Incorrect number of input arguments');
 end
 
-center_pixel = calpix(floor(x), floor(y));
+center_pixel = pixelindex ([128 128], floor(x), floor(y));
 line_length  = length(pet) ^ .5;
 if (line_length ~= floor(line_length))
    error ('Image must be square.');
