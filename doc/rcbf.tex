@@ -1,0 +1,141 @@
+\documentstyle[12pt,fullpage]{article}
+
+\title{rCBF Analysis Using Matlab}
+\author{Mark Wolforth and Greg Ward}
+\date{Wednesday July 21, 1993}
+
+\begin{document}
+
+\maketitle
+\newpage
+
+\tableofcontents
+
+%--------------------------------------------------------------
+\newpage
+\section{Introduction}
+
+
+\section{Mathematical Analysis}
+
+\subsection{Introduction}
+
+The two-compartment blood flow problem can be characterized by the
+following three equations:
+
+\begin{equation}
+\frac{dM}{dt} = K_{1}C_{a}(t) - k_{2}M(t)      \label{eq:2comp1}
+\end{equation}
+\begin{equation}
+M(t) = K_{1}C_{a}(t) \otimes e^{-k_{2}t}       \label{eq:2comp2}
+\end{equation}
+\begin{equation}
+A(t) = M(t) + C_{a}(t)V_{0}                    \label{eq:2comp3}
+\end{equation}
+
+In these equations, A(t) is the PET data collected over a set of
+frames, $C_{a}(t)$ is the delay and dispersion corrected arterial
+blood sample data, and M(t) is the radioactive activity present in
+cerebral tissue.  We know both A(t) and $C_{a}(t)$, but cannot know
+M(t) without knowing $V_{0}$.  We wish to solve these equations for
+$K_{1}$, $k_{2}$, and $V_{0}$.  Of course, one approach would be to
+try and perform a curve fitting using these three equations.  However,
+this approach would be quite computationally intensive since the
+fitting would need to be performed for every pixel of a 128x128 pixel
+image.
+
+\subsection{Double-Weighted Integration Method}
+
+\label{sec:double_weight}
+
+Since the time required to perform a curve fitting would be
+prohibitive, a simpler approach to solving the problem is required.
+This is to use a weighted integration method.  We initially approached
+the problem by assuming that $V_{0}$ was negligibly small.  In this
+case, A(t) and M(t) become equal, and equation (\ref{eq:2comp3}) is
+eliminated.  Taking equation (\ref{eq:2comp2}) and integrating both
+sides from 0 to the end of the last frame, we get:
+
+\begin{equation}
+\int_{0}^{T} A(t) dt = K_{1} \int_{0}^{T} C_{a}(t) \otimes e^{-k_{2}t} dt
+\end{equation}
+
+We can then take this equation, and divide it by a weighted version of
+the same function:
+
+\begin{equation}
+\frac{\int_{0}^{T} A(t) dt}{\int_{0}^{T} A(t) t dt} = \frac{K_{1} \int_{0}^{T} C_{a}(t) \otimes e^{-k_{2}t} dt}{K_{1} \int_{0}^{T} C_{a}(t) \otimes e^{-k_{2}t} t dt}  \label{eq:1comp}
+\end{equation}
+
+$K_{1}$ cancels out of this equation, leaving us with an equation that
+only involves $k_{2}$.  The left side of equation (\ref{eq:1comp}) is
+easily evaluated by integrating a slice over its frames.  The right
+side of equation (\ref{eq:1comp}) is not easily solved for $k_{2}$, so
+a different approach was taken.  A look-up table was generated
+relating values of $k_{2}$ to resulting values of the right hand side
+of equation (\ref{eq:1comp}).  A linear interpolation was then
+performed to choose values of $k_{2}$ from this look-up table for each
+point in the left hand side of equation (\ref{eq:1comp}).
+
+
+\subsection{Triple-Weighted Integration Method}
+
+In order to model the complete two-compartment system, we must be able
+to solve:
+
+\begin{equation}
+A(t) = K_{1}C_{a}(t) \otimes e^{-k_{2}t} + C_{a}(t)V_{0}  \label{eq:full}
+\end{equation}
+
+In section \ref{sec:double_weight}, we solved the equation by
+multiplying by two different weights and then dividing.  We can take a
+similar approach with the full two-compartment equation.  We can
+weight equation (\ref{eq:full}) with three different weights and then
+integrate:
+
+\begin{equation}
+\int_{0}^{T} w_{1}A(t)dt = K_{1} \int_{0}^{T} w_{1}C_{a}(t) \otimes e^{-k_{2}t} dt + V_{0} \int_{0}^{T}w_{1}C_{a}(t) dt  \label{eq:fullweight1}
+\end{equation}
+
+\begin{equation}
+\int_{0}^{T} w_{2}A(t)dt = K_{1} \int_{0}^{T} w_{2}C_{a}(t) \otimes e^{-k_{2}t} dt + V_{0} \int_{0}^{T}w_{2}C_{a}(t)dt  \label{eq:fullweight2}
+\end{equation}
+
+\begin{equation}
+\int_{0}^{T} w_{3}A(t)dt = K_{1} \int_{0}^{T} w_{3}C_{a}(t) \otimes e^{-k_{2}t} dt + V_{0} \int_{0}^{T}w_{3}C_{a}(t) dt  \label{eq:fullweight3}
+\end{equation}
+
+By multiplying equation (\ref{eq:fullweight1}) by $V_{0} \int_{0}^{T}
+w_{3}Ca(t) dt$ and equation (\ref{eq:fullweight3}) by $V_{0}
+\int_{0}^{T} w_{1}Ca(t) dt$, and then subtracting the two, we may eliminate the
+$V_{0}$ term.  A similar operation can be performed on equation
+(\ref{eq:fullweight2}) and equation (\ref{eq:fullweight3}).  This
+leaves two equations that do not contain $V_{0}$.  They may then be
+divided to produce:
+
+\begin{equation}
+\frac{\int_{0}^{T} w_{3}C_{a}(t)dt \cdot \int_{0}^{T} w_{1}A(t)dt - \\
+      \int_{0}^{T} w_{1}C_{a}(t)dt \cdot \int_{0}^{T} w_{3}A(t)dt}
+     {\int_{0}^{T} w_{3}C_{a}(t)dt \cdot \int_{0}^{T} w_{2}A(t)dt - \\
+      \int_{0}^{T} w_{2}C_{a}(t)dt \cdot \int_{0}^{T} w_{3}A(t)dt}
+=
+\frac{K_{1}\left\{\int_{0}^{T} w_{3}C_{a}(t)dt \cdot \int_{0}^{T} w_{1}C_{a}(t)\otimes e^{-k_{2}t} dt - \\
+                  \int_{0}^{T} w_{1}C_{a}(t)dt \cdot \int_{0}^{T} w_{3}C_{a}(t)\otimes e^{-k_{2}t} dt
+           \right\}}
+     {K_{1}\left\{\int_{0}^{T} w_{3}C_{a}(t)dt \cdot \int_{0}^{T} w_{2}C_{a}(t)\otimes e^{-k_{2}t} dt - \\
+                  \int_{0}^{T} w_{2}C_{a}(t)dt \cdot \int_{0}^{T} w_{3}C_{a}(t)\otimes e^{-k_{2}t} dt
+           \right\}}
+\end{equation}
+
+
+
+\subsection{Delay and Dispersion Correction}
+
+
+\end{document}
+
+
+
+
+
+
