@@ -1,9 +1,38 @@
 function putimages (handle, images, slices, frames)
 %PUTIMAGES  Writes whole images to an open MINC file.
-%  putimages (handle, images, slices, frames)  writes images
-%  (a matrix with each column containing a whole image) to the
-%  MINC file specified by handle, at the slices/frames specfied
+%
+%      putimages (handle, images [, slices [, frames]])
+%
+%  writes images (a matrix with each column containing a whole image)
+%  to the MINC file specified by handle, at the slices/frames specfied
 %  by the slices/frames vectors.
+%
+%  Note that only one of the vectors slices or frames may have multiple
+%  elements; ie., you may not write multiple slices and multiple frames
+%  simultaneously.  (This should not be a problem, since you cannot *read*
+%  multiple frames and slices simultaneously either.)  If both slices
+%  and frames are present in the MINC file, then both slices and frames
+%  vectors must be supplied and be non-empty.  If either of those 
+%  dimensions are not present, though, then the associated vector must
+%  be either omitted or empty.  
+%
+%  EXAMPLES
+%    
+%    To write zeros to an entire slice (say, 21 frames of slice 7) of
+%    a full dynamic MINC file with 128x128 images [already opened with
+%    handle = newimage (...)]:
+%
+%      images = zeros (16384,21);
+%      putimages (handle, images, 7, 1:21);
+%
+%    To write random data to a single slice (7) of a non-dynamic file 
+%    (again 128x128 images):
+%
+%      image = rand (16384, 1);
+%      putimages (handle, image, 7);
+%
+%  SEE ALSO  newimage, openimage, getimages
+
 
 % ------------------------------ MNI Header ----------------------------------
 %@NAME       : putimages
@@ -25,16 +54,20 @@ function putimages (handle, images, slices, frames)
 %@CALLS      : miwriteimages (if there is a MINC file)
 %@CREATED    : June 1993, Greg Ward & Mark Wolforth
 %@MODIFIED   : 93-7-5, Greg Ward: foisted most of the work onto miwriteimages
-               (the .m file, not the CMEX routine).
+%              (the .m file, not the CMEX routine).
 %-----------------------------------------------------------------------------
 
 
-
-if ((nargin < 3) | (nargin >4))
+if ((nargin < 2) | (nargin >4))
+    help putimages
     error ('Incorrect number of arguments.');
 end
 
 % if frames not supplied; make it empty
+
+if (nargin < 3)
+   slices = [];
+end
 
 if (nargin < 4)
    frames = [];
@@ -46,8 +79,7 @@ num_required = max (length(slices), length(frames));
 
 % check that slices and frames are valid
 
-stat = check_sf (handle, slices, frames);
-if (isstr(stat)); error (stat); end;
+error (check_sf (handle, slices, frames));
 
 % N.B. number of rows in images is the image length (eg., 16384 for 
 % 128 x 128 images); number of columns is the number of images specified.
@@ -57,7 +89,8 @@ if (isstr(stat)); error (stat); end;
 [im_len, num_im] = size (images);
 
 if (num_required ~= num_im)
-   error (['Number of images given was ' int2str(num_im) '; number expected was ' int2str(num_required)]);
+   errmsg = sprintf ('Expected %d images because of slices/frames arguments; only found %d images in images matrix', num_required, num_im);
+   error (errmsg);
 end
 
 % make the MINC file's name global and copy to a local variable
