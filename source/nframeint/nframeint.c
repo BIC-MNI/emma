@@ -37,6 +37,9 @@ extern void Lookup2 (double *oldX, double *oldY,
 		     int TableRows, int OutputRows);
 extern void TrapInt (int num_bins, double *times, double *values,
 		     double *area);
+extern void IntFrames (int Length, double *X, double *Y,
+                       int NumFrames, double *FrameStarts,
+                       double *FrameLengths, double *Integrals);
 
 
 double  NaN;                    /* NaN in native C format */
@@ -154,7 +157,6 @@ void mexFunction (int nlhs, Matrix *plhs [],
    double *Y;			/* of various MATLAB Matrix objects */
    double *FStarts;
    double *FLengths;
-   double *Int;
 
    int NumFrames;		/* size of FStart and FLength */
    int Length;			/* size of X and Y */
