@@ -537,7 +537,7 @@ int GetAttValue (int CDF, int nargin, Matrix *InArgs[], int *CurInArg,
                  Previously, the program would only handle 2D (2
                  spatial dimensions) data if it was stored transverse
                  (x and y dimensions only).  Since 2D data is also
-                 sometimes stored in either coronal or transverse
+                 sometimes stored in either coronal or sagittal
                  orientation, the program would bomb.
 ---------------------------------------------------------------------------- */
 /* ARGSUSED */
