@@ -1,8 +1,9 @@
-function [fig_handle, image_handle, bar_handle] = viewimage (img, update, colourbar)
+function [fig_handle, image_handle, bar_handle] = ...
+   viewimage (img, update, colourbar, uiflag)
 % VIEWIMAGE  displays a PET image from a vector or square matrix.
 %
-%    [fig_handle, image_handle, bar_handle] = viewimage (img, update,
-%                                                        colourbar_flag)
+%    [fig_handle, image_handle, bar_handle] = ...
+%        viewimage (img [, update [, colourbar_flag [, uiflag]]])
 %
 %  viewimage (img) displays an image using the MATLAB image function.
 %  Works on either colour or monochrome displays.
@@ -37,12 +38,18 @@ if (nargin < 1)
 elseif (nargin == 1)
   update = 0;
   colourbar = 1;
+  uiflag = 1;
 elseif (nargin == 2)
   colourbar = 1;
+  uiflag = 1;
   if (length (update) == 0)
     update = 0;
   end;
-end;
+elseif (nargin == 3)
+  uiflag = 1;
+elseif (nargin > 4)
+  error ('Too many input arguments');
+end    
 
 % Reshape the image appropriately
 [x,y] = size (img);
@@ -88,33 +95,37 @@ if (~update)
   
   if (get (0, 'ScreenDepth') > 1)
     default_colormap = ['colormap (spectral)'];
-    
-    b = ['colormap(spectral)'];
-    uicontrol('Units','normal','Position',[.12 0.87 .09 .04], ...
-	'String','Spectral','callback',b)
-    h = ['colormap(hotmetal)'];
-    uicontrol('Units','normal','Position',[.22 0.87 .09 .04], ...
-	'String','Hot','callback',h)
-    g = ['colormap(gray)'];
-    uicontrol('Units','normal','Position',[.32 0.87 .09 .04], ...
-	'String','Gray','callback',g)
-    u = ['brighten(0.3)'];
-    uicontrol('Units','normal','Position',[.42 0.87 .09 .04], ...
-	'String','Bright','callback',u)
-    l = ['brighten(-0.3)'];
-    uicontrol('Units','normal','Position',[.52 0.87 .09 .04], ...
-	'String','Dark','callback',l)
+
+    if (uiflag)    
+      b = ['colormap(spectral)'];
+      uicontrol('Units','normal','Position',[.12 0.87 .09 .04], ...
+  	'String','Spectral','callback',b)
+      h = ['colormap(hotmetal)'];
+      uicontrol('Units','normal','Position',[.22 0.87 .09 .04], ...
+  	'String','Hot','callback',h)
+      g = ['colormap(gray)'];
+      uicontrol('Units','normal','Position',[.32 0.87 .09 .04], ...
+        'String','Gray','callback',g)
+      u = ['brighten(0.3)'];
+      uicontrol('Units','normal','Position',[.42 0.87 .09 .04], ...
+        'String','Bright','callback',u)
+      l = ['brighten(-0.3)'];
+      uicontrol('Units','normal','Position',[.52 0.87 .09 .04], ...
+        'String','Dark','callback',l)
+    end
   else
     default_colormap = ['colormap (gray .^ 1.5)'];
-    
-    u = ['brighten(0.3)'];
-    uicontrol('Units','normal','Position',[.12 0.87 .09 .04], ...
-	'String','Bright','callback',u)
-    l = ['brighten(-0.3)'];
-    uicontrol('Units','normal','Position',[.22 0.87 .09 .04], ...
-	'String','Dark','callback',l)
-    uicontrol('Units','normal','Position',[.32 0.87 .09 .04], ...
-	'String','Default','callback',default_colormap)
+
+    if (uiflag)    
+      u = ['brighten(0.3)'];
+      uicontrol('Units','normal','Position',[.12 0.87 .09 .04], ...
+  	'String','Bright','callback',u)
+      l = ['brighten(-0.3)'];
+      uicontrol('Units','normal','Position',[.22 0.87 .09 .04], ...
+  	'String','Dark','callback',l)
+      uicontrol('Units','normal','Position',[.32 0.87 .09 .04], ...
+  	'String','Default','callback',default_colormap)
+    end
   end
   eval(default_colormap);
 end
