@@ -76,7 +76,8 @@ end
 % it onto filename, and make sure filename exists.
 
 if (filename (1) ~= '/')
-   curdir = exec ('pwd');
+   curdir = pwd;
+%   curdir = mexec ('pwd');
    curdir (find (curdir == 10)) = [];        % strip out newline
    filename = [curdir '/' filename];
 end
