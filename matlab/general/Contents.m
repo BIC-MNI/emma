@@ -1,4 +1,4 @@
-% PET image analysis
+% EMMA - general medical image analysis tool ($Name:  $)
 %
 % High-level MINC I/O functions
 %   openimage     - Open an image volume stored in a MINC file.
@@ -70,3 +70,5 @@
 %   getroi        - Get the normalized vertices of a ROI
 %   makeroimask   - Create a mask from a set of ROIs
 %   transferroi   - Copies ROIs from one figure to another
+
+% $Id: Contents.m,v 1.14 1997-10-21 20:37:38 greg Rel $
