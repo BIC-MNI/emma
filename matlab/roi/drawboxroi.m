@@ -3,7 +3,7 @@ function [roiHandle,Xi,Yi,lineHandle] = drawboxroi (line_color, fig)
 % DRAWBOXROI  draw a simple rectangular ROI
 %
 %
-%     [roiHandle,Xi,Yi,lineHandle] = box ([line_color [,fig]])
+%     [roiHandle,Xi,Yi,lineHandle] = drawboxroi ([line_color [,fig]])
 %
 %
 %  This function allows the user to draw simple rectangular ROI's on an
