@@ -1,26 +1,41 @@
-function rcbf1 (filename)
+function [k1,k2] = rcbf1 (filename, slice)
 % RCBF1  
 %        a first try at a two-compartment rCBF model (without V0
 %        or shifting) implemented as a MATLAB function.
 %
-%        rcbf1 (filename)
+%        [k1,k2] = rcbf1 (filename, slice)
 
-if (nargin ~= 1)
+% Input argument checking
+
+if (nargin ~= 2)
     help rcbf1
-    error('Filename must be specified.');
+    error('Incorrect number of arguments.');
 end
+
+if (length(slice)~=1)
+    help rcbf1
+    error('<Slice> must be a scalar.');
+end
+
+% Input arguments are checked, so now we can do some REAL work.
 
 img = openimage(filename);
 FrameTimes = getimageinfo (img, 'FrameTimes');
 FrameLengths = getimageinfo (img, 'FrameLengths');
 MidFrameTimes = FrameTimes + (FrameLengths / 2);
-PET = getimages (img, 1, 1:length(FrameTimes));
-
-disp ('RCBF1: calling findrl');
+PET = getimages (img, slice, 1:length(FrameTimes));
 
 rL = findrl (PET, MidFrameTimes, FrameLengths);
-[k2, rr] = findrr (img, MidFrameTimes, FrameLengths);
+[k2_lookup, rR, Ca] = findrr (img, MidFrameTimes, FrameLengths);
+
+% Generate K1 and K2 images
+
+k2 = lookup(rR, k2_lookup, rL);
+k1 = zeros(length(PET),1);
+
 
 keyboard
+
+% Cleanup
 
 closeimage (img);
