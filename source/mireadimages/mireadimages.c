@@ -17,6 +17,7 @@
                  pass old memory.  If this old memory is the same size as
                  the memory needed for the image(s), it is reused.  This
                  reduces the risk of memory fragmentation.
+@COMMENTS   : For full usage documentation, see mireadimages.m
 ---------------------------------------------------------------------------- */
 
 
@@ -49,9 +50,9 @@
 
 #define SLICES_POS         2
 #define FRAMES_POS         3
+#define OLD_MEMORY_POS     4
 #define START_ROW_POS      5
 #define NUM_ROWS_POS       6
-#define OLD_MEMORY_POS     4
 
 /*
  * Macros to access the input and output arguments from/to MATLAB
@@ -106,7 +107,7 @@ void ErrAbort (char msg[], Boolean PrintUsage, int ExitCode)
    if (PrintUsage)
    {
       (void) mexPrintf ("Usage: %s ('MINC_file' [, slices", PROGNAME);
-      (void) mexPrintf (" [, frames [, start_line [, num_lines]]]])\n");
+      (void) mexPrintf (" [, frames [, old_matrix [, start_row [, num_rows]]]]])\n");
    }
    (void) mexErrMsgTxt (msg);
 }
@@ -197,6 +198,8 @@ Boolean CheckBounds (long Slices[], long Frames[],
               Frames[] - vector of zero-based frame numbers to read
               NumSlices - number of elements in Slices[]
               NumFrames - number of elements in Frames[]
+              StartRow - starting row ('height' dimension) (zero-based!)
+              NumRows - number of rows to read
 @OUTPUT     : *Mimages - pointer to MATLAB matrix (allocated by ReadImages)
               containing the images specified by Slices[] and Frames[].
               The matrix will have Image->ImageSize rows, and each column
@@ -431,6 +434,8 @@ void mexFunction(int    nlhs,
    long         NumFrames;
    long         StartRow;
    long         NumRows;
+   Boolean      StartRowGiven;   /* so we can have an 'intelligent' default */
+                                 /* for NumRows */
    double      *junk_data;
    int          Result;
 
@@ -688,10 +693,12 @@ void mexFunction(int    nlhs,
    if (nrhs >= START_ROW_POS)
    {
       StartRow = (long) *(mxGetPr (START_ROW));
+      StartRowGiven = TRUE;
    }
    else
    {
       StartRow = 0;
+      StartRowGiven = FALSE;
    }
 
    if (nrhs >= NUM_ROWS_POS)
@@ -700,7 +707,10 @@ void mexFunction(int    nlhs,
    }
    else   
    {
-      NumRows = ImInfo.Height;
+      if (StartRowGiven)	/* if the user supplied a starting row */
+         NumRows = 1;		/* (regardless of which row) we default to */
+      else			/* reading a single row only; otherwise, */
+	 NumRows = ImInfo.Height; /* read entire images */
    }
 
 #ifdef DEBUG
