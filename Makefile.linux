@@ -10,5 +10,5 @@ CC          = cc
 # Options for GCC compiler.  CMEX_OPT is for CMEX programs,
 # STD_OPT is for standalone programs.
 
-CFLAGS_MEX  = -O3 -m486
-CFLAGS_STD  = -O3 -m486
+CFLAGS_MEX  = -O3 -m486 -funsigned-char
+CFLAGS_STD  = -O3 -m486 -funsigned-char
