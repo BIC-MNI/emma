@@ -129,6 +129,8 @@ K1 (nuke) = zeros (size (nuke));
 rescale (K1, 100*60/1.05);    % convert from g_blood / (g_tissue * sec)
                               % to mL_blood / (100 g_tissue * min)
 
+disp ('WARNING!!! rcbf1 now calculates K1 in mL_blood / (100 g_tissue * min)');
+
 % Cleanup
 
 closeimage (img);
