@@ -16,14 +16,16 @@
               make no representations about the suitability of this
               software for any purpose.  It is provided "as is" without
               express or implied warranty.
-@VERSION    : $Id: delaycorrect.c,v 1.6 1997-10-20 18:30:46 greg Rel $
+@VERSION    : $Id: delaycorrect.c,v 1.7 2001-09-25 20:12:27 neelin Exp $
               $Name:  $
 ---------------------------------------------------------------------------- */
 
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#ifdef sgi
 #include <nan.h>
+#endif
 #include <math.h>
 #include "mex.h"
 #include "emmageneral.h"
