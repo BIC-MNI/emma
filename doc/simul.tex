@@ -5,7 +5,7 @@
 
 \def\code#1{{\tt #1}}
 
-\def\simuldir{~greg/matlab/testing}
+% \def\simuldir{~greg/matlab/testing}
 \newcommand{\units}[1]{\mbox{$\rm{#1}$}}
 \newcommand{\funits}[2]{\mbox{$\rm\frac{#1}{#2}$}}
 
@@ -117,9 +117,9 @@ single step, try \code{solve (y = sin (x), x);}.)
 
 Remember that you must always end a Maple statement with a semicolon
 or a colon.  The only difference between the two is that using a colon
-will cause Maple to suppress the output of the command.  This can be handy
-scripts (see below) when you do not want to mess up the display with 
-intermediate steps.
+will cause Maple to suppress the output of the command.  This can be
+handy in scripts (see below) when you do not want to mess up the
+display with intermediate steps.
 
 If you now want to make sure that f is in fact {\em logically} equivalent
 to \verb|sin (x) / x^2|, just type \code{f;} and Maple will report on

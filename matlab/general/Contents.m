@@ -28,6 +28,7 @@
 %
 % General utility functions
 %   calpix        - Generate a vector index for a point in an image vector.
+%   getpixel      - Use this instead of ginput.
 %   viewimage     - View an image.
 %   spectral      - Generate the RGB numbers for a spectral colourmap.
 %   hotmetal      - Generate the RGB numbers for a hotmetal colourmap.
