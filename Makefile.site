@@ -3,7 +3,7 @@
 # included by a makefile that has already defined EMMA_ROOT, which must
 # either be empty or a directory with a trailing slash.
 #
-# $Id: Makefile.site,v 1.6 2001-09-25 13:05:41 neelin Exp $
+# $Id: Makefile.site,v 1.7 2001-09-25 13:10:18 neelin Exp $
 #
 
 SHELL       = /bin/sh
@@ -15,7 +15,7 @@ SHELL       = /bin/sh
 # EMMA).
 #
 
-MACHINE     = develop
+MACHINE     = irix6
 
 # 
 # If you need to define any preprocessor tokens, go ahead and do it here.
