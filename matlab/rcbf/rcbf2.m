@@ -1,10 +1,10 @@
 function [K1,k2,V0,delta] = rcbf2 (filename, slices, progress, ...
-                                         correction, batch)
+                                         correction, batch, tau)
 
 % RCBF2 a two-compartment (triple-weighted integral) rCBF model.
 %
 %       [K1,k2,V0,delta] = rcbf2 (filename, slices ...
-%                  [, progress [, correction [, batch]]] )
+%                  [, progress [, correction [, batch [, tau]]]]] )
 % 
 % rcbf2 implements the three-weighted integral method of calculating
 % k2, K1, and V0 (in that order) for a particular slice.  This
@@ -19,7 +19,9 @@ function [K1,k2,V0,delta] = rcbf2 (filename, slices, progress, ...
 % correction, and automatically select the grey-matter mask used for
 % delay/dispersion correction.  These all default to 1 (true); the
 % latter two should only be set to 0 (false) in exceptional
-% circumstances (i.e. never).
+% circumstances (i.e. never).  tau is also an optional argument
+% that sets the dispersion constant; if it is not given, 4 seconds
+% is assumed.
 % 
 % The actual calculations follow the procedure outlined in the
 % document "RCBF Analysis Using MATLAB" (http://www.mni.mcgill/system/
@@ -97,12 +99,17 @@ elseif (nargin < 3)
    progress = 1;
    correction = 1;
    batch = 1;   
+   tau = 4;
 elseif (nargin < 4)
    batch = 1;
    correction = 1;
+   tau = 4;
 elseif (nargin < 5)
    batch = 1;
-elseif (nargin > 5)
+   tau = 4;
+elseif (nargin < 6)
+   tau = 4;
+elseif (nargin > 6)
    help rcbf2
    error('Incorrect number of arguments.');
 end
@@ -207,12 +214,11 @@ for current_slice = 1:total_slices
     A = (mean (PET (find(mask),:)))';
     clear mask;
     
-    % Perform the actual correction.  The magic numbers here are 
-    % tau (4), default delta (unused), and do_delay (1=true).
+    % Perform the actual correction.
     
     [ts_even, Ca_even, delta(:,current_slice)] = correctblood ...
 	  (A, FrameTimes, FrameLengths, g_even, ts_even, ...
-	  4, [], 1, progress);
+	  tau, [], 1, progress);
   else
     if (progress)
       disp ('Skipping delay correction.');
@@ -328,7 +334,8 @@ rescale (K1, 100*60/1.05);    % convert from g_blood / (g_tissue * sec)
 rescale (k2, 60);             % from 1/sec to 1/min
 rescale (V0, 100/1.05);       % from g_blood/g_tissue to mL_b / (100 g_t)
 
-disp ('WARNING!!! rcbf2 now calculates K1 in mL_blood / (100 g_tissue * min)');
+disp('WARNING!!! rcbf2 now calculates K1 in mL_blood / (100 g_tissue * min),');
+disp('k2 in 1/min, and V0 in mL_blood / (100 g_tissue)');
 
 % Cleanup
 
