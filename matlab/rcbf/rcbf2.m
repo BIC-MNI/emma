@@ -75,6 +75,9 @@ function [K1,k2,V0,delta] = rcbf2 (filename, slices, progress, ...
 %                  Fixed a bug that would show up when the blood did not
 %                  span the frames.  We now ignore the frames that are
 %                  not spanned, and print a warning for the user.
+%               May 27, 1997 by MW:
+%                  Made a minor modification so that this code now works
+%                  with Matlab 5.x and 4.x.
 % @COPYRIGHT  :
 %             Copyright 1993 Mark Wolforth and Greg Ward, McConnell Brain
 %             Imaging Centre, Montreal Neurological Institute, McGill
@@ -168,7 +171,12 @@ for current_slice = 1:total_slices
   
   ts_even = orig_ts_even;
   
-  PET = getimages (img, slices(current_slice), 1:length(FrameTimes), PET);
+  if exist('PET')
+      PET = getimages (img, slices(current_slice), 1:length(FrameTimes), PET);
+  else
+      PET = getimages (img, slices(current_slice), 1:length(FrameTimes));
+  end
+
   rescale (PET, (37/1.05));             % convert to decay / (g_tissue * sec)
 
 
