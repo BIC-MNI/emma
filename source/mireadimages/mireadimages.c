@@ -1,12 +1,34 @@
+/* ----------------------------- MNI Header -----------------------------------
+@NAME       : mireadimages (CMEX)
+@INPUT      : 
+@OUTPUT     : 
+@RETURNS    : 
+@DESCRIPTION: CMEX routine to read images from a MINC file.  See 
+              mireadimages.m (or type "help mireadimages" in MATLAB)
+	      for details.
+@METHOD     : 
+@GLOBALS    : 
+@CALLS      : 
+@CREATED    : June 1993, Greg Ward.
+@MODIFIED   : 25 August, 1993, GPW: changed if (debug) to #ifdef DEBUG,
+              and added this header.
+---------------------------------------------------------------------------- */
+
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include "gpw.h"
 #include "mex.h"
 #include "minc.h"
 #include "mierrors.h"         /* mine and Mark's */
 #include "mexutils.h"         /* N.B. must link in mexutils.o */
 #include "mincutil.h"
+
+#define TRUE 1
+#define FALSE 0
+
+#define min(A, B) ((A) < (B) ? (A) : (B))
+#define max(A, B) ((A) > (B) ? (A) : (B))
 
 #define PROGNAME "mireadimages"
 
@@ -14,11 +36,9 @@
  * Constants to check for argument number and position
  */
 
-/* mireadimages ('minc_file', slice_vector, frame_vector[, start_line[, num_lines[, options]]]) */
 
-#define MAX_OPTIONS        3        /* # of elements in options vector */
 #define MIN_IN_ARGS        1
-#define MAX_IN_ARGS        6
+#define MAX_IN_ARGS        5
 
 /* ...POS macros: 1-based, used to determine if input args are present */
 
@@ -26,7 +46,6 @@
 #define FRAMES_POS         3
 #define START_ROW_POS      4
 #define NUM_ROWS_POS       5
-#define OPTIONS_POS        6
 
 /*
  * Macros to access the input and output arguments from/to MATLAB
@@ -38,7 +57,6 @@
 #define FRAMES         prhs[2]       /* ditto for frames */
 #define START_ROW      prhs[3]
 #define NUM_ROWS       prhs[4]
-#define OPTIONS        prhs[5]
 #define VECTOR_IMAGES  plhs[0]       /* array of images: one per columns */
 
 #define MAX_READABLE   160           /* max number of slices or frames that
@@ -51,7 +69,6 @@
  * allocating it seems to work fine, though... go figure.
  */
 
-Boolean    debug;
 char       *ErrMsg ;             /* set as close to the occurence of the
                                     error as possible; displayed by whatever
                                     code exits */
@@ -81,8 +98,8 @@ void ErrAbort (char msg[], Boolean PrintUsage, int ExitCode)
 {
    if (PrintUsage)
    {
-      (void) mexPrintf ("Usage: %s ('MINC_file'[, slices", PROGNAME);
-      (void) mexPrintf ("[, frames[, options]]])\n");
+      (void) mexPrintf ("Usage: %s ('MINC_file' [, slices", PROGNAME);
+      (void) mexPrintf (" [, frames [, start_line [, num_lines]]]])\n");
    }
    (void) mexErrMsgTxt (msg);
 }
@@ -115,13 +132,12 @@ Boolean CheckBounds (long Slices[], long Frames[],
 {
    int   i;
 
-   if (debug)
-   { 
-      printf ("Checking %d slices and %d frames for validity...\n",
-              NumSlices, NumFrames);
-      printf ("No slice >= %ld or frame >= %ld allowed\n",
-              Image->Slices, Image->Frames);
-   }
+#ifdef DEBUG
+   printf ("Checking %d slices and %d frames for validity...\n",
+	   NumSlices, NumFrames);
+   printf ("No slice >= %ld or frame >= %ld allowed\n",
+	   Image->Slices, Image->Frames);
+#endif
 
    if ((NumSlices > 1) && (NumFrames > 1))
    {
@@ -183,6 +199,8 @@ Boolean CheckBounds (long Slices[], long Frames[],
               block of the output matrix will correspond to one row 
               of the image.
 @RETURNS    : ERR_NONE if all went well
+              ERR_NO_MEM if mxCreateFull (to allocate the image buffer)
+	        returned NULL, indicating out-of-memory
               ERR_IN_MINC if there was an error reading the MINC file;
                 this should NOT happen!!  Any errors in the input
                 (eg. invalid slices or frames) should be detected before
@@ -197,7 +215,7 @@ Boolean CheckBounds (long Slices[], long Frames[],
 	      (whichever applies, possibly both) should be zero.  ReadImages
 	      will read the "only" slice/frame in the file then.
 @METHOD     : 
-@GLOBALS    : debug, ErrMsg
+@GLOBALS    : ErrMsg
 @CALLS      : standard library, MINC functions
 @CREATED    : 93-6-6, Greg Ward
 @MODIFIED   : 93-8-23, GPW: added support for missing slice dimension 
@@ -215,11 +233,14 @@ int ReadImages (ImageInfoRec *Image,
 {
    long     slice, frame;
    long     Start [MAX_NC_DIMS], Count [MAX_NC_DIMS];
+   long     Size;		/* the number of doubles per image (taking
+				   NumRows into account!) */
    double   *VectorImages;
    Boolean  DoFrames;		/* false if NumFrames (NumSlices) == 0, so we*/
-   Boolean  DoSlices;		/* to not set a frame (slice) number */
+   Boolean  DoSlices;		/* know to not set a frame (slice) number */
    int      RetVal;		/* from miicv_get -- if this is MI_ERROR */
 				/* we have a problem!!  Should NOT!!! happen */
+   int      i;
 
    /*
     * Setup start/count vectors.  We will always read from one image at
@@ -233,6 +254,8 @@ int ReadImages (ImageInfoRec *Image,
    Count [Image->HeightDim] = NumRows;
    Start [Image->WidthDim] = 0L;
    Count [Image->WidthDim] = Image->Width;
+
+   Size = Image->Width * NumRows;
 
    /* 
     * If the caller has set NumFrames (NumSlices) to 0, that REALLY means
@@ -264,21 +287,32 @@ int ReadImages (ImageInfoRec *Image,
       DoSlices = TRUE;
    }
 
-   if (debug)
-   {
-      printf ("Reading %ld slices, %ld frames: %ld total images.",
-              NumSlices, NumFrames, NumSlices*NumFrames);
-      printf ("  Any frame dimension: %s\n", DoFrames ? "YES" : "NO");
-      printf ("  Any slice dimension: %s\n", DoSlices ? "YES" : "NO");
-   }
+#ifdef DEBUG
+   printf ("Reading %ld slices, %ld frames: %ld total images.\n",
+	   NumSlices, NumFrames, NumSlices*NumFrames);
+   printf ("  Any frame dimension: %s\n", DoFrames ? "YES" : "NO");
+   printf ("  Any slice dimension: %s\n", DoSlices ? "YES" : "NO");
+   printf ("Reading from row %ld, for %ld rows.\n", StartRow, NumRows);
+#endif
 
    /* 
     * Now allocate a MATLAB matrix to put the images into, and point our local
     * VectorImages at the real part of it.
     */
 
-   *Mimages = mxCreateFull(Image->Width*NumRows, NumSlices*NumFrames, REAL);
+   *Mimages = mxCreateFull(Size, NumSlices*NumFrames, REAL);
+   if (*Mimages == NULL)
+   {
+      sprintf (ErrMsg, "Error allocating %ld x %ld image matrix!\n", 
+	       Size, NumSlices*NumFrames);
+      return (ERR_NO_MEM);
+   }
    VectorImages = mxGetPr (*Mimages);
+
+#ifdef DEBUG
+   printf ("Successfully allocated %ld x %ld image matrix; about to read:",
+	   Size, NumSlices*NumFrames);
+#endif
 
    /*
     * Now loop through slices and frames to read in the images, one at a time.
@@ -304,6 +338,11 @@ int ReadImages (ImageInfoRec *Image,
 
 	 /* Now read the image */
 
+#ifdef DEBUG
+	 printf ("Start: %ld %ld %ld %ld;  Count: %ld %ld %ld %ld\n",
+		 Start [0], Start [1], Start [2], Start [3],
+		 Count [0], Count [1], Count [2], Count [3]);
+#endif
          RetVal = miicv_get (Image->ICV, Start, Count, VectorImages);
          if (RetVal == MI_ERROR)
          {
@@ -312,11 +351,15 @@ int ReadImages (ImageInfoRec *Image,
             return (ERR_IN_MINC);
          }
 
-         VectorImages += Image->ImageSize;
+         VectorImages += Size;
 
       }     /* for frame */
 
    }     /* for slice */
+
+#ifdef DEBUG
+   putchar ('\n');
+#endif
 
    return (ERR_NONE);
 
@@ -351,10 +394,8 @@ void mexFunction(int    nlhs,
    long         NumFrames;
    long         StartRow;
    long         NumRows;
-   FILE        *InFile;
    int          Result;
 
-   debug = FALSE;
    ncopts = 0;
    ErrMsg = (char *) mxCalloc (256, sizeof (char));
 
@@ -366,17 +407,6 @@ void mexFunction(int    nlhs,
       ErrAbort (ErrMsg, TRUE, ERR_ARGS);
    }
 
-
-   /* If anything was given as an options vector, parse it. */
-
-   if (nrhs >= OPTIONS_POS)
-   {
-      Result = ParseOptions (OPTIONS, 1, &debug);
-      if (!(Result > 0)) 
-      {
-         ErrAbort ("Error parsing options vector", TRUE, ERR_ARGS);
-      }
-   }
 
    /*
     * Parse the filename option (N.B. we know it's there because we checked
@@ -478,10 +508,9 @@ void mexFunction(int    nlhs,
       }
    }
 
-   if (debug)
-   {
-      printf ("Will read %d slices, %d frames\n", NumSlices, NumFrames);
-   }
+#ifdef DEBUG
+   printf ("Will read %d slices, %d frames\n", NumSlices, NumFrames);
+#endif
 
    /* If starting row number supplied, fetch it; likewise for row count */
 
@@ -503,10 +532,9 @@ void mexFunction(int    nlhs,
       NumRows = ImInfo.Height;
    }
 
-   if (debug)
-   {
-      printf ("Starting row: %ld; Number of rows: %ld\n", StartRow, NumRows);
-   }
+#ifdef DEBUG
+   printf ("Starting row: %ld; Number of rows: %ld\n", StartRow, NumRows);
+#endif
 
    /* Make sure the supplied slice, frame, and row numbers are within bounds */
 
