@@ -18,8 +18,9 @@ function krn = kernel (fwhm, style)
 % have an odd number of rows/columns so that the Gaussian function
 % is centred in the kernel.
 %
-% The kernel is always normalised such that the total area under 
-% it is one.
+% The kernel is always normalised such that convolving with it 
+% (using conv2) preserves the magnitude of the other function
+% (ie. the image).
 % 
 % SEE ALSO
 %   conv2, smooth
