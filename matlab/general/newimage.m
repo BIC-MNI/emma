@@ -1,80 +1,167 @@
-function handle = newimage (new_file, parent_image, numslices, numframes)
-% NEWIMAGE   create a new image and possibly an associated MINC file.
+function handle = newimage (NewFile, DimSizes, ParentFile, ...
+                            ImageType, ValidRange, DimOrder)
+% NEWIMAGE  create a new MINC file, possibly descended from an old one
 %
-% handle = newimage (new_file, parent_file, numslices, numframes)
+%  handle = newimage (NewFile, DimSizes, ParentFile, ...
+%                     ImageType, ValidRange, DimOrder)
 %
-%  Creates a new image.  If the character string new_file is not
-%  empty, then a MINC file is also created; data will be written to
-%  the MINC file at some stage.  (It is possible that it will not be
-%  written until closeimage is called, so be extra sure to call
-%  closeimage!)  Otherwise, data will simply be accumulated in
-%  memory -- it can be queried via getimages and getnextline if
-%  desired.  (Note that if data is deposited using putnextline, then
-%  you should call rewindimage or setimageline before using
-%  getnextline, as getnextline will attempt to return data that has
-%  not yet been written!)
+% creates a new MINC file.  NewFile and DimSizes must always be given,
+% although the number of elements required in DimSizes varies
+% depending on whether ParentFile is given (see below).  All other
+% parameter are optional, and, if they are not included or are
+% empty, default to values sensible for PET studies at the MNI.
 %
-%  parent_file can be either the name of a MINC file or a handle to an
-%  image already open within MATLAB.  In the former case (which only
-%  applies if you are creating a new MINC file by supplying new_file),
-%  the "parent" MINC file is used as a skeleton to create the new MINC
-%  file.  See micreate and micreateimages for more information.  All
-%  you need to know to work with the new image in MATLAB is that the
-%  image size (eg. 128x128 or 256x256) of the new MINC file will be
-%  the same as that of its parent file.  When parent_image is a handle
-%  to an already existing image, then newimage again simply copies the
-%  image size to the new image.  An error will result if the specified
-%  handle or filename is invalid.
+% The optional arguments are:
 %
-%  numslices and numframes describe the size of both the image data in
-%  MATLAB memory and the MINC file, if applicable.  To create a
-%  non-dynamic image or MINC file (ie. no time dimension), simply make
-%  numframes 0.
+%   ParentFile - the name of an already existing MINC file.  If this
+%                is given, then a number of items are inherited from
+%                the parent file and included in the new file; note
+%                that this can possibly change the defaults of all
+%                following optional arguments.
+%
+%   DimSizes   - a vector containing the lengths of the image
+%                dimensions.  If ParentFile is not given, then all
+%                four image dimensions (in the order frames, slices,
+%                height, and width) must be specified.  Either or both
+%                of frames and slices may be zero, in which case the
+%                corresponding MINC dimension (MItime for frames, and
+%                one of MIzspace, MIyspace, or MIxspace for slices)
+%                will not be created.  If ParentFile is given, then
+%                only the number of frames and slices are required; if
+%                the height and width are not given, they will default
+%                to the height/width of the parent MINC file.  In no
+%                case can the height or width be zero -- these two
+%                dimensions must always exist in a MINC file.  See
+%                below, under "DimOrder", for details on how slices,
+%                width, and height are mapped to MIzspace, MIyspace,
+%                and MIxspace for the various conventional image
+%                viewpoints.
+%
+%   ImageType  - a string, containing a C-like type dictating how the
+%                image is to be stored.  Currently, this may be one of
+%                'byte', 'short', 'long', 'float', or 'double'; plans
+%                are afoot to add 'signed' and 'unsigned' options for
+%                the three integer types.  Currently, 'byte' images will
+%                be unsigned and 'short' and 'long' images will be
+%                signed.  If this option is empty or not supplied, it
+%                will default to 'byte'.  NOTE: this parameter is currently
+%                ignored.
+%                
+%   ValidRange - a two-element vector describing the range of possible 
+%                values (which of course depends on ImageType).  If
+%                not provided, ValidRange defaults to the maximum
+%                range of ImageType, eg. [0 255] for byte, [-32768
+%                32767] for short, etc.  NOTE: this parameter is currently
+%                ignored.
+%
+%   DimOrder   - a string describing the orientation of the images,
+%                one of 'transverse' (the default), 'sagittal', or
+%                'coronal'.  Transverse images are the default if
+%                DimOrder is not supplied.  Recall that in the MINC
+%                standard, zspace, yspace, and xspace all have
+%                definite meanings with respect to the patient: z
+%                increases from inferior to superior, x from left to
+%                right, and y from posterior to anterior.  However,
+%                the concepts of slices, width, and height are
+%                relative to a set of images, and the three possible 
+%                image orientations each define a mapping from
+%                slices/width/height to zspace/yspace/xspace as
+%                follows:
+%
+%                    Orientation  Slice dim    Height dim   Width dim
+%                     transverse   MIzspace     MIyspace     MIxspace
+%                     sagittal     MIxspace     MIzspace     MIyspace
+%                     coronal      MIyspace     MIzspace     MIxspace
+
 
 % ------------------------------ MNI Header ----------------------------------
 %@NAME       : newimage
-%@INPUT      : new_file - string for name of new MINC file, or empty
-%					if no MINC file is to be created
-%					parent_image - either a handle for an already open image,
-%					or name of an already existing MINC file.  The size of the
-%					new image will in either case be inherited from the parent
-%					image, and if there is a MINC file associated with the handle
-%					or the name of a MINC file is given, then the new image 
-%					will inherit the parent MINC file's  history attribute
-%					and patient, study, and acquisition variables.
-%					numslices - number of slices to go in the new image
-%					numframes - number of frames for the new image.  Note that
-%					numslices and numframes must be supplied, but they currently
-%					have no effect if a MINC file is not created for the image.
+%@INPUT      : 
 %@OUTPUT     : 
 %@RETURNS    : handle - a handle to the new image created in MATLAB
 %@DESCRIPTION: Creates the appropriate variables for accessing an image
-%					data set from within MATLAB, and optionally creates an 
-%					associated MINC file.
+%              data set from within MATLAB, and creates an 
+%              associated MINC file.
 %@METHOD     : 
 %@GLOBALS    : reads/increments: ImageCount
-%					creates: Filename#, NumFrames#, NumSlices#, ImageSize#,
-%					PETimages#, FrameTimes#, FrameLengths#, AvailFrames#,
-%					AvailSlices#, CurLine#
+%              creates: Filename#, NumFrames#, NumSlices#, ImageSize#,
+%              PETimages#, FrameTimes#, FrameLengths#, AvailFrames#,
+%              AvailSlices#, CurLine#
 %@CALLS      : (if a MINC filename is supplied) micreate, micreateimage
 %@CREATED    : June 1993, Greg Ward & Mark Wolforth
-%@MODIFIED   : 
+%@MODIFIED   : 6-17 Aug 1993 - totally overhauled (GPW).
 %-----------------------------------------------------------------------------
 
 
 % Check validity of input arguments
 
-if (nargin ~= 4)
-	error ('Incorrect number of arguments');
+if (nargin < 2)
+   error ('You must supply at least a new filename and dimension sizes');
 end
 
-if ~isstr (new_file)
-	error ('new_file must be a string; empty if you do not want to create a MINC file');
+% If none of the optional arguments are supplied, assign all defaults
+% Otherwise, at least ParentFile was given, so open it for future querying.
+if (nargin < 3)
+   ParentFile = '-';                % "-" alone means NO parent file
+   ImageType = 'byte';
+   ValidRange = [0 255];
+   DimOrder = 'transverse';
+else
+   Parent = openimage (ParentFile);
+   ImageType = 'byte';              % these should (somehow) be taken from 
+   ValidRange = [0 255];            % the parent file !!!!
+   DimOrder = 'transverse';
 end
 
-if (length(numslices) ~= 1) | (length(numframes) ~= 1)
-	error ('numslices and numframes must both be integer scalars');
+s = size(DimSizes);
+if (min(s) ~= 1) | ( (max(s) ~= 2) & (max(s) ~= 4) )
+   error ('DimSizes must be a vector with either 2 or 4 elements');
 end
+
+if (max (s) == 2)
+   if (isempty (ParentFile))
+      error ('Must supply all 4 dimension sizes if parent file is not given');
+   else
+      DimSizes (3) = getimageinfo(Parent,'ImageHeight');
+      DimSizes (4) = getimageinfo(Parent,'ImageWidth');
+   end
+end
+
+% At this point, we have a four-element DimSizes, and if ParentFile was
+% given then Parent contains the handle to the open MINC file.  Also, if
+% ParentFile was not given, ImageType, ValidRange, and DimOrder are
+% set.  So let's create the new MINC file, copying the patient, study
+% and acquisition variables if possible.
+
+%disp (['New file: ' NewFile]);
+%disp (['Old file: ' ParentFile]);    % will be set to '' if none given by caller
+%disp ('DimSizes: ');
+%disp (DimSizes);
+%disp (['Image type: ' ImageType]);
+%disp ('Valid range:');
+%disp (ValidRange);
+%disp (['Orientation: ', DimOrder]);
+
+execstr = sprintf ('micreate %s %s patient study acquisition', ...
+                   ParentFile, NewFile);
+[result,output] = unix (execstr);
+if (result ~= 0)
+   error (['Error running ' execstr ' to create file ' NewFile]);
+end
+
+% Now create the image variable in the new MINC file, using the current
+% values of DimSizes and DimOrder.  Note that the sprintf implicitly
+% assumes that DimSizes has exactly four elements!
+
+execstr = sprintf ('micreateimage %s %d %d %d %d %s', ...
+                   NewFile, DimSizes, DimOrder);
+[result,output] = unix (execstr);
+if (result ~= 0)
+   error (['Error running ' execstr ' to create image in file ' NewFile]);
+end
+
+closeimage (Parent);
+
 
 % Figure out what the handle to return should be
 
@@ -86,35 +173,8 @@ else
    ImageCount = 1;
 end
 
-% If the supplied parent_image was a filename, get the image size from
-% it (assuming square images!!!), else assume parent_image is a handle
-% and use that handle to get the image size and the filename of the
-% parent.
-
-if isstr (parent_image)
-	[res, out] = unix (['mincinfo -dimlength xspace ' parent_image]);
-	imagesize = sscanf (out, '%d');
-else
-	imagesize = getimageinfo (parent_image, 'ImageSize');
-	parent_image = getimageinfo (parent_image, 'Filename');
-end
-
-% If a non-empty string was supplied for new_file, create a MINC file
-% with that name.  Note that parent_image will ALWAYS be a string
-% going into this, because of the second getimageinfo call just above.
-
-if ~isempty (new_file)
-
-	unix (['micreate ' parent_image ' ' new_file ' patient study acquisition']);
-	if (numframes == 0)
-		unix (['micreateimage ' new_file ' ' int2str(imagesize) ' ' int2str(numslices)]);
-	else
-		unix (['micreateimage ' new_file ' ' int2str(imagesize) ' ' int2str(numslices) ' ' int2str(numframes)]);
-	end
-end
-
 % MINC file is now created (if applicable), so we must create the
-% MATLAB variables that will be used by putnextline, etc.
+% MATLAB variables that will be used by putimages
 
 eval(['global Filename'     int2str(ImageCount)]);
 eval(['global NumFrames',   int2str(ImageCount)]);
@@ -127,35 +187,12 @@ eval(['global AvailFrames', int2str(ImageCount)]);
 eval(['global AvailSlices', int2str(ImageCount)]);
 eval(['global CurLine',    int2str(ImageCount)]);
 
-eval(['Filename'     int2str(ImageCount) ' = new_file;']);
-eval(['NumFrames'    int2str(ImageCount) ' = numframes;']);
-eval(['NumSlices'    int2str(ImageCount) ' = numslices;']);
-eval(['ImageSize'    int2str(ImageCount) ' = imagesize;']);
-eval(['FrameTimes'   int2str(ImageCount) ' = zeros(numframes, 1);']);
-eval(['FrameLengths' int2str(ImageCount) ' = zeros(numframes, 1);']);
+eval(['Filename'     int2str(ImageCount) ' = NewFile;']);
+eval(['NumFrames'    int2str(ImageCount) ' = DimSizes(1);']);
+eval(['NumSlices'    int2str(ImageCount) ' = DimSizes(2);']);
+eval(['ImageSize'    int2str(ImageCount) ' = DimSizes(3);']);
+eval(['FrameTimes'   int2str(ImageCount) ' = zeros(DimSizes(1), 1);']);
+eval(['FrameLengths' int2str(ImageCount) ' = zeros(DimSizes(1), 1);']);
 eval(['CurLine'      int2str(ImageCount) ' = 1;']);
-
-% If there are multiple slices or no frames, create PETimages and
-% Avail{...} so that the columns of PETimages correspond to the
-% slices.  Otherwise, make columns of PETimages correspond to frames.
-
-imagelen = imagesize * imagesize;
-if (numslices > 1) | (numframes == 0)
-	if (numframes == 0)
-		eval(['AvailFrames'  int2str(ImageCount) ' = [];']);
-	else
-		eval(['AvailFrames'  int2str(ImageCount) ' = 1;']);
-	end
-	eval(['AvailSlices'  int2str(ImageCount) ' = 1:numslices;']);
-	eval(['PETimages'    int2str(ImageCount) ' = zeros(imagelen, numslices);']);
-else
-	if (numslices == 0)
-		eval(['AvailSlices'  int2str(ImageCount) ' = [];']);
-	else
-		eval(['AvailSlices'  int2str(ImageCount) ' = 1;']);
-	end
-	eval(['AvailFrames'  int2str(ImageCount) ' = 1:numframes;']);
-	eval(['PETimages'    int2str(ImageCount) ' = zeros(imagelen, numframes);']);
-end
 
 handle = ImageCount;
