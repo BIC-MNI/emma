@@ -3,7 +3,7 @@
 # included by a makefile that has already defined EMMA_ROOT, which must
 # either be empty or a directory with a trailing slash.
 #
-# $Id: Makefile.site,v 1.7 2001-09-25 13:10:18 neelin Exp $
+# $Id: Makefile.site,v 1.8 2004-03-11 15:46:25 bert Exp $
 #
 
 SHELL       = /bin/sh
@@ -41,7 +41,7 @@ MATLABINC   = $(MATLAB_ROOT)/extern/include
 # MEX_FLAGS   = 
 # for MATLAB 5 and 6:
 MEX         = $(MATLAB_ROOT)/bin/mex
-MEX_FLAGS   = -V4
+MEX_FLAGS   = 
 
 
 # 
