@@ -61,6 +61,11 @@ int_activity = PET * FrameLengths;
 k2_conv_ints = lookup (k2_lookup, conv_int1, k2);
 k1 = int_activity ./ k2_conv_ints;
 
+nuke = find (isnan (k1));
+k1 (nuke) = zeros (size (nuke));
+nuke = find (isinf (k1));
+k1 (nuke) = zeros (size (nuke));
+
 % Cleanup
 
 closeimage (img);
