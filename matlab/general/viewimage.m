@@ -118,13 +118,6 @@ img = ((img - lo) * ((num_colors-1) / (hi-lo))) + 1;
 
 fig_handle = gcf;
 
-image_handle = subplot(1,2,1);
-image (img');
-
-% Set the direction of the axes to what we're used to, and
-% make the aspect ratio square
-axis('xy','square');
-
 % Draw a colourbar beside the image
   
 if (colourbar)
@@ -158,6 +151,15 @@ if (colourbar)
   set(bar_handle,'Yticklabels', labels);
 end
 
+% We draw the image last so that it will be the
+% current axis
+
+image_handle = subplot(1,2,1);
+image (img');
+
+% Set the direction of the axes to what we're used to, and
+% make the aspect ratio square
+axis('xy','square');
+
 % Make the main image a reasonable size
 set(image_handle,'Position', [.1, .1, .6, .75]);
-
