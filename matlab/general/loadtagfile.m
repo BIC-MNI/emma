@@ -11,7 +11,7 @@ function [points1, points2] = loadtagfile(tagfile);
 % The tag points are returned as homogeneous coordinates (ie. of the
 % form [x y z 1]) in columns.
 
-% $Id: loadtagfile.m,v 1.4 1997-10-20 18:23:24 greg Rel $
+% $Id: loadtagfile.m,v 1.5 2001-05-29 12:29:41 neelin Exp $
 % $Name:  $
 
 % originally by Peter Neelin; rewritten 95/3/20 Greg Ward.
@@ -52,7 +52,7 @@ pts = [];
 
 % Now loop through the input file until eof (or error condition)
 
-while (curline ~= -1)            % while not eof(fid)
+while (isstr(curline))            % while not eof(fid)
 
    % First thing to do is strip off trailing blanks and comments
 
