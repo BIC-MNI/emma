@@ -29,6 +29,7 @@
 #include <sys/stat.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <float.h>
 #include <errno.h>
 #include <string.h>
 #include <assert.h>
@@ -60,7 +61,7 @@ char    *ErrMsg;
  * argv[]), but I've made it global for consistency.  (Also, this way
  * functions that set ErrMsg and need to know the name of the child
  * file can do so without yet another argument being added to that 
- * function.  Also, the "g" in all these just stands for "global".
+ * function.)  Also, the "g" in all these just stands for "global".
  */
 
 int     gSizes [MAX_IMAGE_DIM] = {-1,-1,-1,-1};
@@ -69,6 +70,8 @@ double  gValidRange [NUM_VALID];
 char   *gOrientation = "transverse";
 char   *gChildFile;
 char   *gParentFile;
+double  gImageVal = DBL_MAX;
+int     gClobberFlag = FALSE;
 
 /* Type strings (borrowed from Peter Neelin's mincinfo.c) */
 
@@ -251,7 +254,8 @@ Boolean OpenFiles (char parent_file[], char child_file[],
     * message here.
     */
    
-   *child_CDF = nccreate (child_file, NC_NOCLOBBER);
+   *child_CDF = nccreate (child_file, 
+			  gClobberFlag ? NC_CLOBBER : NC_NOCLOBBER);
    if (*child_CDF == MI_ERROR) 
    {
       sprintf (ErrMsg, "Error creating file %s: %s\n",
@@ -509,8 +513,7 @@ Boolean CreateImageVars (int CDF, int NumDim, int DimIDs[],
    printf (" Creating MIimage variable with %d dimensions\n", NumDim);
 #endif
 
-   image_id = micreate_std_variable (CDF, MIimage, NCType,
-                                     NumDim, DimIDs);
+   image_id = micreate_std_variable (CDF, MIimage, NCType, NumDim, DimIDs);
    (void) miattputstr (CDF, image_id, MIsigntype, MI_SIGN_STR(Signed));
    (void) miattputstr (CDF, image_id, MIcomplete, MI_FALSE);
    
@@ -685,6 +688,115 @@ Boolean CopyOthers (int ParentCDF, int ChildCDF,
 
 
 /* ----------------------------- MNI Header -----------------------------------
+@NAME       : FillImage
+@INPUT      : CDF
+              NumDim - number of image dimensions in the child file
+	      DimIDs - list of image dimension IDs
+	      Value  - value with which to fill the image variable
+@OUTPUT     : 
+@RETURNS    : TRUE if successful, FALSE on error
+@DESCRIPTION: Fills the image variable in the child file with 
+              a given value.  File must be in data mode.
+@METHOD     : 
+@GLOBALS    : 
+@CALLS      : 
+@CREATED    : 95/6/28, Greg Ward
+@MODIFIED   : 
+---------------------------------------------------------------------------- */
+Boolean FillImage (int CDF, int NumDim, int DimIDs[], double Value)
+{
+   int   i, j;
+   long  start[MAX_NC_DIMS], count[MAX_NC_DIMS];
+   int   image_elt = 1;		/* # elements in MIimage variable */
+   int   maxmin_elt = 1;	/* # elements in MIimage{max,min} vars */
+   double *values;
+   int   var_id;
+   
+   
+   /* 
+    * First compute the total number of elements in the image, and
+    * also make a count vector for passing to mivarput().
+    */
+
+   for (i = 0; i < NumDim; i++)
+   {
+      long   dimlength;
+      char   dimname [MAX_NC_NAME];
+
+      ncdiminq (CDF, DimIDs[i], dimname, &dimlength);
+      if (dimlength > 0)
+      {
+	 image_elt *= dimlength;
+	 if (i < NumDim-2) maxmin_elt *= dimlength;
+	 start[i] = 0;
+	 count[i] = dimlength;
+      }
+      else
+      {
+	 fprintf (stderr, "Image dimension %s has length %d\n",
+		  dimname, dimlength);
+	 return (FALSE);
+      }
+   }
+   assert (maxmin_elt <= image_elt);
+
+   /*
+    * Now allocate and fill a big chunk of memory that will hold
+    * image_elt copies of Value.
+    */
+
+   values = (double *) malloc (image_elt * sizeof (double));
+   for (i = 0; i < image_elt; i++)
+      values[i] = Value;
+   
+   /* Put the values into the image variable */
+   
+   var_id = ncvarid (CDF, MIimage);
+   if (var_id == MI_ERROR)
+   {
+      fprintf (stderr, "Could not find image variable in %s\n", gChildFile);
+      return (FALSE);
+   }
+
+   ncopts = NC_VERBOSE;
+   printf ("Trying to put a single value:\n");
+   if (mivarput1 (CDF, var_id, start, NC_DOUBLE, NULL, values)
+       == MI_ERROR)
+   {
+      fprintf (stderr, "Error writing image values to %s: %s\n",
+	       gChildFile, NCErrMsg(ncerr, errno));
+   }
+   
+   printf ("Trying a whole hyperslab:\n");
+   if (mivarput (CDF, var_id, start, count, NC_DOUBLE, NULL, values)
+       == MI_ERROR)
+   {
+      fprintf (stderr, "Error writing image values to %s: %s\n",
+	       gChildFile, NCErrMsg(ncerr, errno));
+/*      return (FALSE);*/
+   }
+
+   /* 
+    * Now do the same for the image-max and image-min variables.
+    * Since we've just filled image with a single value, we can use
+    * that same value for all elememts of image-max and image-min.
+    * In fact, since maxmin_elt has to be <= image_elt, we can 
+    * just reuse the values array that we've just created.
+    */
+
+   var_id = ncvarid (CDF, MIimagemax);
+   mivarput (CDF, var_id, start, count, NC_DOUBLE, MI_SIGNED, values);
+   var_id = ncvarid (CDF, MIimagemin);
+   mivarput (CDF, var_id, start, count, NC_DOUBLE, MI_SIGNED, values);
+
+   free (values);
+   return (TRUE);
+}
+
+
+
+
+/* ----------------------------- MNI Header -----------------------------------
 @NAME       : main
 @INPUT      : 
 @OUTPUT     : none
@@ -780,6 +892,9 @@ int main (int argc, char *argv[])
       ERROR_CHECK
 	 (CopyOthers (ParentCDF, ChildCDF, NumExclude, Exclude, TimeStamp));
    }
+
+   if (gImageVal != DBL_MAX)
+      ERROR_CHECK (FillImage (ChildCDF, NumDim, DimIDs, gImageVal));
 
    ncclose (ChildCDF);
    if (ParentCDF != -1)
