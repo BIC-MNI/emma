@@ -23,22 +23,39 @@ end
 % Input arguments are checked, so now we can do some REAL work.
 
 if (progress); disp ('Reading image information'); end
+
 img = openimage(filename);
-fstarts = getimageinfo (img, 'FrameTimes');
-flengths = getimageinfo (img, 'FrameLengths');
-midftimes = fstarts + (flengths / 2);
-PET = getimages (img, slice, 1:length(fstarts));
+FrameTimes = getimageinfo (img, 'FrameTimes');
+FrameLengths = getimageinfo (img, 'FrameLengths');
+MidFTimes = FrameTimes + (FrameLengths / 2);
+
+[g_even, ts_even] = resampleblood (img, 'even');
+g_even = g_even * 1.05;                 % convert to decay / (mL_blood * sec)
+Ca_even = g_even;                       % no delay/dispersion correction!!!
+
+PET = getimages (img, slice, 1:length(FrameTimes));
+PET = PET * 37 / 1.05;                  % convert to decay / (g_tissue * sec)
 PET = PET .* (PET > 0);			% set all negative values to zero
 
-if (progress); disp ('Calculating rL image'); end
-rL = findrl (PET, midftimes, flengths);
+if (progress); disp ('Calculating mask and rL image'); end
+
+PET_int1 = trapz (MidFTimes, PET')';
+PET_int2 = trapz (MidFTimes, PET' .* (MidFTimes * ones(1,length(PET))));
+
+%PET_int1 = PET * FrameLengths;
+%PET_int2 = PET * (MidFTimes .* FrameLengths);
+
+mask = PET_int1 > mean (PET_int1);
+PET_int1 = PET_int1 .* mask;
+PET_int2 = PET_int2 .* mask;
+
+rL = PET_int1 ./ PET_int2;
 
 if (progress); disp ('Calculating k2/rR lookup table'); end
-[Ca_even, ts_even] = resampleblood (img, 'even');
 
 k2_lookup = (0.001:0.02:5) / 60;
 [conv_int1, conv_int2] = findintconvo (Ca_even, ts_even, k2_lookup,...
-                            midftimes, flengths, [], midftimes);
+                            MidFTimes, FrameLengths, 1, MidFTimes);
 rR = conv_int1 ./ conv_int2;
 
 % Generate K1 and k2 images
@@ -47,9 +64,8 @@ if (progress); disp ('Calculating k2 image'); end
 k2 = lookup(rR, k2_lookup, rL);
 
 if (progress); disp ('Calculating K1 image'); end
-int_activity = PET * flengths;
-k2_conv_ints = lookup (k2_lookup, conv_int1, k2);
-K1 = int_activity ./ k2_conv_ints;
+K2_conv_ints = lookup (k2_lookup, conv_int1, k2);
+K1 = PET_int1 ./ k2_conv_ints;
 
 nuke = find (isnan (K1) | isinf (K1));
 K1 (nuke) = zeros (size (nuke));
