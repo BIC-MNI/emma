@@ -1,10 +1,32 @@
 function [Xi,Yi] = getroi (handle)
 
+% GETROI - Get the normalized vertices of a ROI
 %
 %
 %      [Xi,Yi] = getroi (handle)
 %
 %
+%  This function gets the normalized coordinates of the vertices of a given
+%  ROI.  It takes the ROI handle, and returns vectors for the X and Y
+%  coordinates.
+%
+
+% @COPYRIGHT  :
+%             Copyright 1993,1994 Mark Wolforth and Greg Ward, McConnell
+%             Brain Imaging Centre, Montreal Neurological Institute, McGill
+%             University.
+%             Permission to use, copy, modify, and distribute this software
+%             and its documentation for any purpose and without fee is
+%             hereby granted, provided that the above copyright notice
+%             appear in all copies.  The authors and McGill University make
+%             no representations about the suitability of this software for
+%             any purpose.  It is provided "as is" without express or
+%             implied warranty.
+
+if (nargin<1)
+  help getroi
+  error('Too few input arguments');
+end
 
 setHandle = floor(handle/100);
 
