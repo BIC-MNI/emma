@@ -36,11 +36,12 @@ Ca_even = g_even;                       % no delay/dispersion correction!!!
 PET = getimages (img, slice, 1:length(FrameTimes));
 PET = PET * 37 / 1.05;                  % convert to decay / (g_tissue * sec)
 PET = PET .* (PET > 0);			% set all negative values to zero
+ImLen = size (PET, 1);                  % num of rows = length of image
 
 if (progress); disp ('Calculating mask and rL image'); end
 
 PET_int1 = trapz (MidFTimes, PET')';
-PET_int2 = trapz (MidFTimes, PET' .* (MidFTimes * ones(1,length(PET))));
+PET_int2 = trapz (MidFTimes, PET' .* (MidFTimes * ones(1,ImLen)))';
 
 %PET_int1 = PET * FrameLengths;
 %PET_int2 = PET * (MidFTimes .* FrameLengths);
@@ -53,7 +54,7 @@ rL = PET_int1 ./ PET_int2;
 
 if (progress); disp ('Calculating k2/rR lookup table'); end
 
-k2_lookup = (0.001:0.02:5) / 60;
+k2_lookup = (0:0.02:3) / 60;
 [conv_int1, conv_int2] = findintconvo (Ca_even, ts_even, k2_lookup,...
                             MidFTimes, FrameLengths, 1, MidFTimes);
 rR = conv_int1 ./ conv_int2;
@@ -64,21 +65,11 @@ if (progress); disp ('Calculating k2 image'); end
 k2 = lookup(rR, k2_lookup, rL);
 
 if (progress); disp ('Calculating K1 image'); end
-K2_conv_ints = lookup (k2_lookup, conv_int1, k2);
+k2_conv_ints = lookup (k2_lookup, conv_int1, k2);
 K1 = PET_int1 ./ k2_conv_ints;
 
 nuke = find (isnan (K1) | isinf (K1));
 K1 (nuke) = zeros (size (nuke));
-
-% Magic number time: convert the values to the correct units.
-% k2 is currently expressed in units of 1/sec but should be expressed
-% 1/min; K1 is in (nCi * sec * (g blood)) / ((mL tissue) * counts * sec)
-% and should be (mL blood) / ((g tissue) * minute).  Since blood and
-% tissue are both taken to be 1.05 g / mL, and 1 nCi = 37 count/sec, and
-% of course 1 min = 60 sec, the conversion factor is 2013.605442176871
-
-k2 = k2 * 60;
-K1 = K1 * 2013.605442176871;
 
 % Cleanup
 
