@@ -5,13 +5,18 @@
 @RETURNS    : 
 @DESCRIPTION: CMEX routine to read images from a MINC file.  See 
               mireadimages.m (or type "help mireadimages" in MATLAB)
-	      for details.
+              for details.
 @METHOD     : 
 @GLOBALS    : 
 @CALLS      : 
 @CREATED    : June 1993, Greg Ward.
 @MODIFIED   : 25 August, 1993, GPW: changed if (debug) to #ifdef DEBUG,
-              and added this header.
+                 and added this header.
+	      06 October, 1993, MW: Got around some MATLAB memory use
+	         problems by subterfuge.  This function now allows you to
+	         pass old memory.  If this old memory is the same size as
+	         the memory needed for the image(s), it is reused.  This
+	         reduces the risk of memory fragmentation.
 ---------------------------------------------------------------------------- */
 
 
@@ -38,14 +43,15 @@
 
 
 #define MIN_IN_ARGS        1
-#define MAX_IN_ARGS        5
+#define MAX_IN_ARGS        6
 
 /* ...POS macros: 1-based, used to determine if input args are present */
 
 #define SLICES_POS         2
 #define FRAMES_POS         3
-#define START_ROW_POS      4
-#define NUM_ROWS_POS       5
+#define START_ROW_POS      5
+#define NUM_ROWS_POS       6
+#define OLD_MEMORY_POS     4
 
 /*
  * Macros to access the input and output arguments from/to MATLAB
@@ -53,11 +59,12 @@
  */
 
 #define MINC_FILENAME  prhs[0]
-#define SLICES         prhs[1]       /* slices to read - vector */
-#define FRAMES         prhs[2]       /* ditto for frames */
-#define START_ROW      prhs[3]
-#define NUM_ROWS       prhs[4]
-#define VECTOR_IMAGES  plhs[0]       /* array of images: one per columns */
+#define SLICES         prhs[SLICES_POS-1]       /* slices to read - vector */
+#define FRAMES         prhs[FRAMES_POS-1]       /* ditto for frames */
+#define START_ROW      prhs[START_ROW_POS-1]
+#define NUM_ROWS       prhs[NUM_ROWS_POS-1]
+#define OLD_MEMORY     prhs[OLD_MEMORY_POS-1]   /* old memory space to re-use */
+#define VECTOR_IMAGES  plhs[0]                  /* array of images: one per columns */
 
 #define MAX_READABLE   160           /* max number of slices or frames that
                                         can be read at a time */
@@ -134,14 +141,14 @@ Boolean CheckBounds (long Slices[], long Frames[],
 
 #ifdef DEBUG
    printf ("Checking %d slices and %d frames for validity...\n",
-	   NumSlices, NumFrames);
+           NumSlices, NumFrames);
    printf ("No slice >= %ld or frame >= %ld allowed\n",
-	   Image->Slices, Image->Frames);
+           Image->Slices, Image->Frames);
 #endif
 
    if ((NumSlices > 1) && (NumFrames > 1))
    {
-      sprintf (ErrMsg, "Cannot read both multiple slices and multiple frames");
+      strcpy (ErrMsg, "Cannot read both multiple slices and multiple frames");
       return (FALSE);
    }
 
@@ -200,7 +207,7 @@ Boolean CheckBounds (long Slices[], long Frames[],
               of the image.
 @RETURNS    : ERR_NONE if all went well
               ERR_NO_MEM if mxCreateFull (to allocate the image buffer)
-	        returned NULL, indicating out-of-memory
+                returned NULL, indicating out-of-memory
               ERR_IN_MINC if there was an error reading the MINC file;
                 this should NOT happen!!  Any errors in the input
                 (eg. invalid slices or frames) should be detected before
@@ -211,9 +218,9 @@ Boolean CheckBounds (long Slices[], long Frames[],
               images from the MINC file.  The Slices and Frames vectors
               should contain valid zero-based slice and frame numbers for
               the given MINC file.  If either the slice or frame dimension
-	      is missing from the MINC file, NumSlices or NumFrames
-	      (whichever applies, possibly both) should be zero.  ReadImages
-	      will read the "only" slice/frame in the file then.
+              is missing from the MINC file, NumSlices or NumFrames
+              (whichever applies, possibly both) should be zero.  ReadImages
+              will read the "only" slice/frame in the file then.
 @METHOD     : 
 @GLOBALS    : ErrMsg
 @CALLS      : standard library, MINC functions
@@ -233,13 +240,13 @@ int ReadImages (ImageInfoRec *Image,
 {
    long     slice, frame;
    long     Start [MAX_NC_DIMS], Count [MAX_NC_DIMS];
-   long     Size;		/* the number of doubles per image (taking
-				   NumRows into account!) */
+   long     Size;               /* the number of doubles per image (taking
+                                   NumRows into account!) */
    double   *VectorImages;
-   Boolean  DoFrames;		/* false if NumFrames (NumSlices) == 0, so we*/
-   Boolean  DoSlices;		/* know to not set a frame (slice) number */
-   int      RetVal;		/* from miicv_get -- if this is MI_ERROR */
-				/* we have a problem!!  Should NOT!!! happen */
+   Boolean  DoFrames;           /* false if NumFrames (NumSlices) == 0, so we*/
+   Boolean  DoSlices;           /* know to not set a frame (slice) number */
+   int      RetVal;             /* from miicv_get -- if this is MI_ERROR */
+                                /* we have a problem!!  Should NOT!!! happen */
    int      i;
 
    /*
@@ -289,29 +296,50 @@ int ReadImages (ImageInfoRec *Image,
 
 #ifdef DEBUG
    printf ("Reading %ld slices, %ld frames: %ld total images.\n",
-	   NumSlices, NumFrames, NumSlices*NumFrames);
+           NumSlices, NumFrames, NumSlices*NumFrames);
    printf ("  Any frame dimension: %s\n", DoFrames ? "YES" : "NO");
    printf ("  Any slice dimension: %s\n", DoSlices ? "YES" : "NO");
    printf ("Reading from row %ld, for %ld rows.\n", StartRow, NumRows);
 #endif
 
-   /* 
-    * Now allocate a MATLAB matrix to put the images into, and point our local
-    * VectorImages at the real part of it.
+
+
+   /*
+    * If *Mimages points to NULL, we want to allocate a new Matrix
+    * and use this.  Otherwise, we want to use the already allocated
+    * Matrix that *Mimages points to.
+    * Finally, we want the local variable VectorImages to point to
+    * the real part of the Matrix *Mimages.
+    *
     */
 
-   *Mimages = mxCreateFull(Size, NumSlices*NumFrames, REAL);
    if (*Mimages == NULL)
    {
-      sprintf (ErrMsg, "Error allocating %ld x %ld image matrix!\n", 
-	       Size, NumSlices*NumFrames);
-      return (ERR_NO_MEM);
-   }
-   VectorImages = mxGetPr (*Mimages);
+
+       /* *Mimages is NULL, so allocate an appropriate Matrix */
 
 #ifdef DEBUG
-   printf ("Successfully allocated %ld x %ld image matrix; about to read:",
-	   Size, NumSlices*NumFrames);
+       printf ("Allocating new memory for return value.\n");
+#endif
+
+       *Mimages = mxCreateFull(Size, NumSlices*NumFrames, REAL);
+       if (*Mimages == NULL)
+       {
+           sprintf (ErrMsg, "Error allocating %ld x %ld image matrix!\n", 
+                    Size, NumSlices*NumFrames);
+           return (ERR_NO_MEM);
+       }
+   }
+
+   /* *Mimages points at some memory, so we want to use the memory */
+   /* that it points at. */
+
+   VectorImages = mxGetPr (*Mimages);
+
+
+#ifdef DEBUG
+   printf ("Successfully allocated %ld x %ld image matrix; about to read:\n",
+           Size, NumSlices*NumFrames);
 #endif
 
    /*
@@ -324,24 +352,24 @@ int ReadImages (ImageInfoRec *Image,
 
       if (DoSlices)
       {
-	 Start [Image->SliceDim] = Slices [slice];
+         Start [Image->SliceDim] = Slices [slice];
       }
 
       for (frame = 0L; frame < NumFrames; frame++)
       {
-	 /* Set the frame for this one image only */
+         /* Set the frame for this one image only */
 
          if (DoFrames)
          {
             Start [Image->FrameDim] = Frames [frame];
          }
 
-	 /* Now read the image */
+         /* Now read the image */
 
 #ifdef DEBUG
-	 printf ("Start: %ld %ld %ld %ld;  Count: %ld %ld %ld %ld\n",
-		 Start [0], Start [1], Start [2], Start [3],
-		 Count [0], Count [1], Count [2], Count [3]);
+         printf ("Start: %ld %ld %ld %ld;  Count: %ld %ld %ld %ld\n",
+                 Start [0], Start [1], Start [2], Start [3],
+                 Count [0], Count [1], Count [2], Count [3]);
 #endif
          RetVal = miicv_get (Image->ICV, Start, Count, VectorImages);
          if (RetVal == MI_ERROR)
@@ -376,10 +404,19 @@ int ReadImages (ImageInfoRec *Image,
 @RETURNS    : (void)
 @DESCRIPTION: 
 @METHOD     : 
-@GLOBALS    : 
+@GLOBALS    : ErrMsg
 @CALLS      : 
 @CREATED    : 
-@MODIFIED   : 
+@MODIFIED   : 06 October, 1993 by MW: Fixed bug with the setting of the
+                 error message.  Previously, the global pointer ErrMsg
+		 was pointed at some allocated memory, and then
+		 redefined later by setting it equal to some string.
+		 Now, the string is copied into the memory allocated
+		 for ErrMsg.
+              06 October, 1993 by MW: Now catches an empty slice or
+                 frame vector.
+	      06 October, 1993 by MW: Solved some memory fragmentation
+                 problems by forcing MATLAB to reuse old memory.
 ---------------------------------------------------------------------------- */
 void mexFunction(int    nlhs,
                  Matrix *plhs[],
@@ -394,6 +431,7 @@ void mexFunction(int    nlhs,
    long         NumFrames;
    long         StartRow;
    long         NumRows;
+   double      *junk_data;
    int          Result;
 
    ncopts = 0;
@@ -406,7 +444,6 @@ void mexFunction(int    nlhs,
       sprintf (ErrMsg, "Incorrect number of arguments");
       ErrAbort (ErrMsg, TRUE, ERR_ARGS);
    }
-
 
    /*
     * Parse the filename option (N.B. we know it's there because we checked
@@ -433,84 +470,216 @@ void mexFunction(int    nlhs,
     * tried to supply a list of slices anyway, a warning is printed.
     */
 
-   if (nrhs >= SLICES_POS)
+   if ((nrhs >= SLICES_POS) && (mxGetM(SLICES)>0) && (mxGetN(SLICES)>0))
    {
-      NumSlices = ParseIntArg (SLICES, MAX_READABLE, Slice);
-      if (NumSlices < 0)
-      {
-         CloseImage (&ImInfo);
-         switch (NumSlices)
-         {
-            case mexARGS_TOO_BIG:
-               ErrMsg = "Too many slices specified";
-               break;
-            case mexARGS_INVALID:
-               ErrMsg = "Slice vector bad format: must be numeric and one-dimensional";
-               break;
-         }
-         ErrAbort (ErrMsg, TRUE, ERR_ARGS);
-      }
-      if ((ImInfo.SliceDim == -1) && (NumSlices > 0))
-      {
-         printf ("Warning: file has no z dimension, slices vector ignored");
-         NumSlices = 0;
-      }
+
+       NumSlices = ParseIntArg (SLICES, MAX_READABLE, Slice);
+       if (NumSlices < 0)
+       {
+           CloseImage (&ImInfo);
+           switch (NumSlices)
+           {
+               case mexARGS_TOO_BIG:
+                   strcpy(ErrMsg, "Too many slices specified");
+                   break;
+               case mexARGS_INVALID:
+                   strcpy(ErrMsg, "Slice vector bad format: must be numeric and one-dimensional");
+                   break;
+           } 
+           ErrAbort (ErrMsg, TRUE, ERR_ARGS);
+       }
+       if ((ImInfo.SliceDim == -1) && (NumSlices > 0))
+       {
+           printf ("Warning: file has no z dimension, slices vector ignored");
+           NumSlices = 0;
+       }
    }
    else                    /* caller did *not* specify slices vector */
    { 
-      if (ImInfo.SliceDim == -1)    /* file doesn't even have slices */
-      {                             /* so don't even try to read any */
-         NumSlices = 0;
-      }
-      else
-      {
-         Slice [0] = 0;       /* else just read slice 0 by default */
-         NumSlices = 1;
-      }
+       if (ImInfo.SliceDim == -1)    /* file doesn't even have slices */
+       {                             /* so don't even try to read any */
+           NumSlices = 0;
+       }
+       else
+       {
+	   ErrAbort("File contains slices:\nSlice information must be provided.\n", FALSE, -1);
+       }
    }
 
    /* Now do the exact same thing for frames. */
 
-   if (nrhs >= FRAMES_POS)
+   if ((nrhs >= FRAMES_POS) && (mxGetM(FRAMES)>0) && (mxGetN(FRAMES)>0))
    {
-      NumFrames = ParseIntArg (FRAMES, MAX_READABLE, Frame);
-      if (NumFrames < 0)
-      {
-         CloseImage (&ImInfo);
-         switch (NumFrames)
-         {
-            case mexARGS_TOO_BIG:
-               ErrMsg = "Too many frames specified";
-               break;
-            case mexARGS_INVALID:
-               ErrMsg = "Frame vector bad format: must be numeric and one-dimensional";
-               break;
-         }
-         ErrAbort (ErrMsg, TRUE, ERR_ARGS);
+       NumFrames = ParseIntArg (FRAMES, MAX_READABLE, Frame);
+       if (NumFrames < 0)
+       {
+           CloseImage (&ImInfo);
+           switch (NumFrames)
+           {
+               case mexARGS_TOO_BIG:
+                   strcpy(ErrMsg, "Too many frames specified");
+                   break;
+               case mexARGS_INVALID:
+                   strcpy(ErrMsg, "Frame vector bad format: must be numeric and one-dimensional");
+                   break;
+           }
+           ErrAbort (ErrMsg, TRUE, ERR_ARGS);
 
-      }
-      if ((ImInfo.FrameDim == -1) && (NumFrames > 0))
-      {
-         printf ("Warning: file has no time dimension, frames vector ignored");
-         NumFrames = 0;
-      }
+       }
+       if ((ImInfo.FrameDim == -1) && (NumFrames > 0))
+       {
+           printf ("Warning: file has no time dimension, frames vector ignored");
+           NumFrames = 0;
+       }
    }
    else
    {
-      if (ImInfo.FrameDim == -1)    /* file doesn't even have frames */
-      {                             /* so don't even try to read any */
-         NumFrames = 0;
-      }
-      else
-      {
-         Frame [0] = 0;       /* else just read frame 0 by default */
-         NumFrames = 1;
-      }
+       if (ImInfo.FrameDim == -1)    /* file doesn't even have frames */
+       {                             /* so don't even try to read any */
+           NumFrames = 0;
+       }
+       else
+       {
+	   ErrAbort("File contains frames:\nFrame information must be provided.\n", FALSE, -1);
+       }
    }
-
+   
 #ifdef DEBUG
    printf ("Will read %d slices, %d frames\n", NumSlices, NumFrames);
 #endif
+
+   /* Okay, now comes the tricky part.  In order to get around Matlab's */
+   /* screwy memory use problems, we want to re-use the memory pointed  */
+   /* at by OLD_MEMORY, if it exists.  If it's the wrong size, we want  */
+   /* to free it, and allocate new memory of the correct size.          */
+
+   if (nrhs >= OLD_MEMORY_POS)
+   {
+
+       /* First, make sure the vector is the right size */
+       
+#ifdef DEBUG
+       printf("Image size: %ld\n", ImInfo.ImageSize);
+       printf("Old memory rows: %ld\n", mxGetM(OLD_MEMORY));
+       printf("Image cols: %ld\n", (NumSlices+NumFrames-1));
+       printf("Old memory cols: %ld\n", mxGetN(OLD_MEMORY));
+#endif       
+
+       if ((mxGetM(OLD_MEMORY) != (ImInfo.ImageSize)) ||
+           (mxGetN(OLD_MEMORY) != (NumSlices+NumFrames-1)))
+       {
+
+	   /*
+	    * Make sure that we aren't dealing with an
+	    * empty Matrix.
+	    */
+
+           if ((mxGetM(OLD_MEMORY)>0) && (mxGetN(OLD_MEMORY)>0))
+           {
+
+#ifdef DEBUG
+               printf("Freeing the old memory.\n");
+#endif
+
+               /*
+		* We want to free the real part of the old memory
+		* Matrix, so that we can re-use it.  Then, we
+		* want to re-link the real part of the old memory
+		* Matrix to point at some smaller chunk of memory.
+		* This way, MATLAB still has something to free at the
+		* end of the function, and will be nice and happy.
+		*/
+
+               junk_data = (double *)malloc(sizeof(double));
+               if (junk_data == NULL)
+               {
+                   ErrAbort("Could not allocate memory!\n", FALSE, -1);
+               }                   
+               mxFree(mxGetPr(OLD_MEMORY));
+               mxSetPr(OLD_MEMORY, junk_data);
+           }
+
+	   /*
+	    * We're going to want to allocate some new memory, so set
+	    * the left hand side argument to NULL, just to be explicit.
+	    */
+           
+           VECTOR_IMAGES = NULL;
+           
+	   /*
+            * New memory will be allocated by ReadImages, so we
+            * don't need to do it here.
+	    */
+
+       }
+       else 
+       {
+           /*
+	    * At this point, we know that we have a chunk of memory
+	    * already allocated that is the same size as the chunk of
+	    * memory that we need.  So, let's use it!
+	    */
+           
+#ifdef DEBUG
+           printf("Using already allocated memory structure.\n");
+#endif
+
+	   /*
+	    * First, we create a new dummy matrix for the left hand
+	    * side argument.  We create it 1x1, but will then redefine
+	    * the size later.
+	    */
+
+           VECTOR_IMAGES = mxCreateFull(1,1,REAL);
+           if (VECTOR_IMAGES == NULL)
+           {
+               ErrAbort("Could not allocate memory!\n", FALSE, -1);
+           }
+
+	   /*
+	    * Now that we have created a left hand side argument, we
+	    * can free the memory that is used by it to store its real
+	    * part, since we won't be needing this memory.
+	    */
+
+           mxFree(mxGetPr(VECTOR_IMAGES));
+
+	   /*
+	    * Now, we redefine the size of the left hand side argument
+	    * to be the same as the memory that we already have.
+	    */
+
+           mxSetM(VECTOR_IMAGES, mxGetM(OLD_MEMORY));
+           mxSetN(VECTOR_IMAGES, mxGetN(OLD_MEMORY));
+
+	   /*
+	    * And now, we can point the real part of the Matrix at the
+	    * memory that we already have.  This is the final task
+	    * necessary for creating the left hand side argument.
+	    */
+
+           mxSetPr(VECTOR_IMAGES, mxGetPr(OLD_MEMORY));
+
+	   /*
+	    * Finally, we set the real part pointer of the old Matrix
+	    * at NULL, so that MATLAB won't free anything when we
+	    * return.
+	    */
+
+           mxSetPr(OLD_MEMORY, NULL);
+       }
+   }
+   else 
+   {
+       /*
+	* No old memory argument was passed, so we will have to
+	* allocate new memory.  Let's be explicit, and set the left
+	* hand side value to NULL.
+	*/
+
+       VECTOR_IMAGES = NULL;
+   }
+
 
    /* If starting row number supplied, fetch it; likewise for row count */
 
