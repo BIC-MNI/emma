@@ -19,10 +19,9 @@
 ---------------------------------------------------------------------------- */
 #include <stdlib.h>
 #include "minc.h"
+#include "emmageneral.h"
 #include "mincutil.h"
 #include "mierrors.h"
-
-typedef enum { false=0, true=1 } Boolean;
 
 extern   char *ErrMsg;     /* should be defined in your main program */
 
@@ -139,7 +138,6 @@ char *NCErrMsg (int NCErrCode)
 int OpenFile (char *Filename, int *CDF, int Mode)
 {
    *CDF = ncopen (Filename, Mode);
-   printf ("Immediately after ncopen, ncerr = %d\n", ncerr);
 
    if (*CDF == MI_ERROR)
    {
@@ -416,9 +414,9 @@ int OpenImage (char Filename[], ImageInfoRec *Image, int mode)
 
    Image->ICV = miicv_create ();
    (void) miicv_setint (Image->ICV, MI_ICV_TYPE, NC_DOUBLE);
-   (void) miicv_setint (Image->ICV, MI_ICV_DO_RANGE, true);
-   (void) miicv_setint (Image->ICV, MI_ICV_DO_NORM, true);
-/* (void) miicv_setint (Image->ICV, MI_ICV_USER_NORM, true);  */
+   (void) miicv_setint (Image->ICV, MI_ICV_DO_RANGE, TRUE);
+   (void) miicv_setint (Image->ICV, MI_ICV_DO_NORM, TRUE);
+/* (void) miicv_setint (Image->ICV, MI_ICV_USER_NORM, TRUE);  */
    (void) miicv_attach (Image->ICV, Image->CDF, Image->ID);
 
    return (ERR_NONE);
