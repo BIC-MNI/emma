@@ -39,13 +39,30 @@ function images = getimages (handle, slices, frames)
 %@OUTPUT     : 
 %@RETURNS    : images - matrix whose columns contain entire images
 %					layed out linearly.
-%@DESCRIPTION: 
+%@DESCRIPTION: Reads images from the MINC file associated with a MATLAB
+%					image handle.  The handle must have an associated MINC file;
+%					purely internal image sets are not yet supported.  
+%
+% 					Note that if care is not taken, this can easily take up
+%					large amounts of memory.  Each image takes up 128 k of
+%					MATLAB memory, so reading all frames for a single slice
+%					from a 21-frame dynamic study will take up 2,688 k.
+%					When various analysis routines are carried out on this
+%					data, the amount of memory allocated by MATLAB can
+%					easily triple or quadruple.  getimages attempts to combat
+%					this by assigning a "maximum" number of images for each
+%					of PET's five SGI's (as of 93/7/6: priam, duncan, lear,
+%					portia, yorick) depending on their current memory 
+%					configurations.  If the number of slices/frames specified
+%					is greater than this "maximum", getimages will print a 
+%					warning and then read the data.  
+%
 %@METHOD     : 
 %@GLOBALS    : Filename#
 %@CALLS      : check_sf to check validity of slices/frames arguments
 %					mireadimages (CMEX)
 %@CREATED    : June 1993, Greg Ward & Mark Wolforth
-%@MODIFIED   : 
+%@MODIFIED   : 6 July 1993, Greg Ward: 
 %-----------------------------------------------------------------------------
 
 
@@ -63,17 +80,41 @@ end
 
 eval(['global Filename' int2str(handle)]);
 if exist (['Filename' int2str(handle)]) ~= 1
-   error ('Image has not been opened or has been closed - use openimage.');
+   disp ('getimages: image unknown - use openimage');
 end 
 
 % and copy it to a local variable for ease of use
 
 filename = eval (['Filename' int2str(handle)]);
 
-% now make sure input arguments are valid: check_sf aborts with error 
-% message if not
+if isempty (filename)
+   disp ('getimages: no MINC file associated with image, cannot read images');
+end
 
-check_sf (handle, slices, frames);
+% now make sure input arguments are valid: check_sf returns an error message
+% if not.
+
+s = check_sf (handle, slices, frames);
+if ~isempty (s); error (s); end;
+
+% Find out the machine we're on so we can make some educated guesses
+% as to how much memory usage should elicit a warning
+
+host = getenv ('HOST');
+if (strcmp (host, 'priam'))        % 80 MB of main memory on priam
+   max_im = 80;                    % 80 images = 10 MB
+elseif (strcmp (host, 'duncan') | strcmp (host, 'lear'))
+   max_im = 40;                    % 40 images = 5 MB
+elseif (strcmp (host, 'portia') | strcmp (host, 'yorick'))
+   max_im = 12;						  % 12 images = 1.5 MB
+else
+   max_im = 30;                    % completely arbitrary for unknown machine
+end
+
+num_im = max (length (slices), length (frames))
+if num_im > max_im
+   disp (['getimages warning: reading enough images to possibly bring ' host ' to its knees']);
+end
 
 % Now read the images!  (remembering to make slices and frames zero-based for
 % mireadimages).  If frames was not supplied, then do not attempt to pass
