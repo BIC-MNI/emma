@@ -40,7 +40,6 @@ ArgvInfo ArgTable [] =
        "valid range of image data to be stored in the MINC file"},
    {"-orientation", ARGV_STRING, NULL, (char *) &gOrientation,
        "orientation of the image dimensions: transverse, coronal, or sagittal"},
-   {"-help", ARGV_HELP, NULL, NULL, NULL},
    {NULL, ARGV_END, NULL, NULL, NULL}
 };
 
