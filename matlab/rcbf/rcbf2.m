@@ -1,4 +1,4 @@
-function [K1,k2,V0] = rcbf2 (filename, slice, progress)
+function [K1,k2,V0] = rcbf2 (filename, slice, progress, correction)
 
 % RCBF2  a two-compartment (triple-weighted integral) rCBF model.
 %
@@ -32,64 +32,76 @@ function [K1,k2,V0] = rcbf2 (filename, slice, progress)
 
 % Input argument checking
 
-if (nargin == 2)
-    progress = 0;
-elseif (nargin ~= 3)
-    help rcbf2
-    error('Incorrect number of arguments.');
+if (nargin < 2)
+   help rcbf2
+   error ('Not enough input arguments');
+elseif (nargin < 3)
+   progress = 0;
+elseif (nargin < 4)
+   correction = 1;
+elseif (nargin > 4)
+   help rcbf2
+   error('Incorrect number of arguments.');
 end
 
 if (length(slice)~=1)
-    help rcbf2
-    error('<Slice> must be a scalar.');
+   help rcbf2
+   error('<Slice> must be a scalar.');
 end
 
 % Input arguments are checked, so now we can do some REAL work, ie.
 % read in all the data we need.  FrameTimes, FrameLengths, and 
-% midftimes should be self-explanatory.  Ca_even is the blood
+% MidFTimes should be self-explanatory.  Ca_even is the blood
 % activity resampled at some evenly-spaced time domain; ts_even
 % is the actual points of that domain.  Ca_mft is the blood activity
-% resampled at mid-frame times (needed for integrating).
+% integrated frame-by-frame (ie. the average of Ca over every frame).
 
 if (progress); disp ('Reading image information and generating mask'); end
 img = openimage(filename);
 FrameTimes = getimageinfo (img, 'FrameTimes');
 FrameLengths = getimageinfo (img, 'FrameLengths');
-midftimes = FrameTimes + (FrameLengths / 2);
+MidFTimes = FrameTimes + (FrameLengths / 2);
 [g_even, ts_even] = resampleblood (img, 'even');
 g_even = g_even * 1.05;                 % convert to decay / (mL_blood * sec)
 
 PET = getimages (img, slice, 1:length(FrameTimes));
 PET = PET * 37 / 1.05;                  % convert to decay / (g_tissue * sec)
 
-% Perform dispersion and delay correction.
-PET_int1 = trapz( midftimes, PET')';
-
-mask = getmask (PET_int1);
-mask = (PET_int1>(1.8*mean(PET_int1)));
-A = (mean (PET (find(mask),:)))' * 37 / 1.05;
-[Ca_even, delta] = correctblood (A, FrameTimes, FrameLengths, g_even, ts_even, progress);
-
-% Apply the cross-calibration factor.
-XCAL = 0.11;
-Ca_even = Ca_even/XCAL;
-
-% Initialise the weighting functions w3 and w2; 
-% w3=sqrt(midftimes) and w2=midftimes. 
-
-w2 = midftimes;
-w3 = sqrt (midftimes);
+% Create the weighting functions (N.B. w1 is just one, so don't bother),
+% and calculate the three weighted integrals of PET.
+w2 = MidFTimes;
+w3 = sqrt (MidFTimes);
 
 ImLen = size(PET,1);
-PET_int2 = trapz (midftimes, PET' .* (w2 * ones(1,ImLen)))';
-PET_int3 = trapz (midftimes, PET' .* (w3 * ones(1,ImLen)))';
+PET_int1 = trapz( MidFTimes, PET')';
+PET_int2 = trapz (MidFTimes, PET' .* (w2 * ones(1,ImLen)))';
+PET_int3 = trapz (MidFTimes, PET' .* (w3 * ones(1,ImLen)))';
 
-% Apply a simple mask to eliminate data outside of the brain.
+% Now use PET_int1 to create a simple mask, and mask all three PET integrals.
+% This does a good job of removing the outside-of-head data for CBF studies.
 
 mask = PET_int1 > mean(PET_int1);
 PET_int1 = PET_int1 .* mask;
 PET_int2 = PET_int2 .* mask;
 PET_int3 = PET_int3 .* mask;
+
+
+% Use getmask to interactively create a threshold mask, and then perform
+% delay/dispersion correction.
+
+if (correction)
+   mask = getmask (PET_int1);
+%  mask = (PET_int1>(1.8*mean(PET_int1)));
+   A = (mean (PET (find(mask),:)))' * 37 / 1.05;
+   [Ca_even, delta] = correctblood ...
+                       (A, FrameTimes, FrameLengths, g_even, ts_even, progress);
+else
+   Ca_even = g_even;
+end
+
+% Apply the cross-calibration factor.
+XCAL = 0.11;
+Ca_even = Ca_even/XCAL;
 
 
 % Pick values of k2 and then calculate rR for every one.  (Ie. create
@@ -103,15 +115,14 @@ PET_int3 = PET_int3 .* mask;
 if (progress); disp ('Generating k2/rR lookup table'); end
 k2_lookup = (-10:0.05:10) / 60;
 [conv_int1,conv_int2,conv_int3] = findintconvo (Ca_even,ts_even,k2_lookup,...
-      midftimes, FrameLengths, 1, w2, w3);
+      MidFTimes, FrameLengths, 1, w2, w3);
 
 
 Ca_mft = frameint (ts_even, Ca_even, FrameTimes, FrameLengths);      
-      
-      
-Ca_int1 = trapz(midftimes, Ca_mft);
-Ca_int2 = trapz(midftimes, (w2 .* Ca_mft));
-Ca_int3 = trapz(midftimes, (w3 .* Ca_mft));
+
+Ca_int1 = trapz(MidFTimes, Ca_mft);
+Ca_int2 = trapz(MidFTimes, (w2 .* Ca_mft));
+Ca_int3 = trapz(MidFTimes, (w3 .* Ca_mft));
 
 % Find the value of rL for every pixel of the slice.
 rL = ((Ca_int3 .* PET_int1) - (Ca_int1 .* PET_int3)) ./ ...
