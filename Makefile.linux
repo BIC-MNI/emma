@@ -2,7 +2,7 @@
 # Distribution version.
 
 RANLIB      = 
-MEX_EXT     = mexlx
+MEX_EXT     = mexglx
 CMEX_LIBS   = -lemma -lminc -lnetcdf -lm -lc
 XDR_LIB     = 
 CC          = cc
