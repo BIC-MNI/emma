@@ -2,6 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include "minc.h"
+#include "emmageneral.h"
 
 #define MINC_FILE      argv[1]
 #define VAR_NAME       argv[2]
@@ -9,11 +10,6 @@
 #define LENGTH_VECTOR  argv[4]
 #define TEMP_FILE      argv[5]
 #define PROGNAME       "miwritevar"
-#define TRUE           1
-#define FALSE          0
-
-
-typedef unsigned char Boolean;
 
 
 /* ----------------------------- MNI Header -----------------------------------
