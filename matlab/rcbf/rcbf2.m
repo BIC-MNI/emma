@@ -58,39 +58,34 @@ FrameLengths = getimageinfo (img, 'FrameLengths');
 midftimes = FrameTimes + (FrameLengths / 2);
 [Ca_even, ts_even] = resampleblood (img, 'even');
 
-% Notice!  We are here employing what is (I think) an incorrect
-% method of finding Ca_mft [blood activity, resampled at mid-frame
-% times], namely to resample the evenly resampled blood activity.
-% It would be better to call resampleblood (img, 'frame'), but
-% that makes things blow up.  (Singularity in rR lookup table.)
-
-%[Ca_mft] = resampleblood (img, 'frame');
-Ca_mft = lookup (ts_even, Ca_even, midftimes);
-
-% Generate a simple mask: all pixels in integrated image > average
-
 PET = getimages (img, slice, 1:length(FrameTimes));
-PETsummed = PET * FrameLengths;
-mask = PETsummed > mean(PETsummed);
 
-% Now apply the mask to the images in PET (this may be a little slow,
-% but it's better memory-wise than creating 21 copies of mask 
-% and .* with PET).
-
-for i=1:size(PET,2)
-   PET(:,i) = PET(:,i) .* mask;
-end
-
-% Find the value of rL for every pixel of the slice.
-
-if (progress); disp ('Calculating rL image'); end
-rL = findrl2 (PET, midftimes, FrameLengths, ts_even, Ca_even);
 
 % Initialise the weighting functions w3 and w2; 
 % w3=sqrt(midftimes) and w2=midftimes. 
 
 w3 = sqrt (midftimes);
 w2 = midftimes;
+
+
+% Find the value of rL for every pixel of the slice.  (NOTE: findrl2
+% should also be upgraded/replaced to do proper integration.
+
+%if (progress); disp ('Calculating rL image'); end
+%rL = findrl2 (PET, midftimes, FrameLengths, ts_even, Ca_even);
+
+PET_int1 = (PET*FrameLengths);
+PET_int2 = (PET*(w2.*FrameLengths));
+PET_int3 = (PET*(w3.*FrameLengths));
+
+
+% Apply a simple mask to eliminate data outside of the brain.
+
+mask = PET_int1 > mean(PET_int1);
+PET_int1 = PET_int1 .* mask;
+PET_int2 = PET_int2 .* mask;
+PET_int3 = PET_int3 .* mask;
+
 
 % Pick values of k2 and then calculate rR for every one.  (Ie. create
 % the lookup table).  This is done by first calculating various
@@ -101,16 +96,23 @@ w2 = midftimes;
 % simply scalars.
 
 if (progress); disp ('Generating k2/rR lookup table'); end
-k2_lookup = (-50:0.05:50) / 60;
+k2_lookup = (-10:0.05:10) / 60;
 [conv_int1,conv_int2,conv_int3] = findintconvo (Ca_even,ts_even,k2_lookup,...
-      midftimes, FrameLengths, [], w2, w3);
+      midftimes, FrameLengths, 1, w2, w3);
 
+
+Ca_mft = frameint (ts_even, Ca_even, FrameTimes, FrameLengths);      
+      
+      
 Ca_int1 = Ca_mft' * FrameLengths;
 Ca_int2 = (w2 .* Ca_mft)' * FrameLengths;
 Ca_int3 = (w3 .* Ca_mft)' * FrameLengths;
 
+rL = ((Ca_int3 .* PET_int1) - (Ca_int1 .* PET_int3)) ./ ...
+     ((Ca_int3 .* PET_int2) - (Ca_int2 .* PET_int3));
+
 rR = ((Ca_int3 * conv_int1) - (Ca_int1 * conv_int3)) ./ ...
-     ((Ca_int3 * conv_int2) - (Ca_int2 * conv_int3));
+      ((Ca_int3 * conv_int2) - (Ca_int2 * conv_int3));
 
 % Now, we must have the k2/rR lookup table in order by rR; however, 
 % we also want to keep k2_lookup in the original order.  This
@@ -135,11 +137,11 @@ k2 = lookup(rR, k2_sorted, rL);
 if (progress); disp ('Calculating K1 image'); end
 [im_size, num_im] = size(PET);
 
-% Note that PETsummed = PET integrated across frames, with weighting
+% Note that PET_int1 = PET integrated across frames, with weighting
 % function w1 = ones.  However, we haven't already calculated w3*PET
 % integrated, so we have to do it here.
 
-K1_numer = (Ca_int3*PETsummed) - (Ca_int1 * (PET*(w3.*FrameLengths)));
+K1_numer = (Ca_int3*PET_int1) - (Ca_int1 * (PET*(w3.*FrameLengths)));
 K1_denom = (Ca_int3 * lookup(k2_lookup,conv_int1,k2)) - ...
            (Ca_int1 * lookup(k2_lookup,conv_int3,k2));
 K1 = K1_numer ./ K1_denom;
@@ -156,8 +158,8 @@ if (progress); disp ('Calculating V0 image'); end
 % frames, so we need to use the resampled Ca(t) -- Ca_mft --
 % for the integral.
 
-V0 = ((PETsummed) - (K1 .* lookup(k2_lookup,conv_int1,k2))) / Ca_int1;
-% V0 = (PETsummed - int_activity) / (Ca_mft' * FrameLengths);
+V0 = ((PET_int1) - (K1 .* lookup(k2_lookup,conv_int1,k2))) / Ca_int1;
+% V0 = (PET_int1 - int_activity) / (Ca_mft' * FrameLengths);
 
 nuke = find (isnan (K1));
 K1 (nuke) = zeros (size (nuke));
