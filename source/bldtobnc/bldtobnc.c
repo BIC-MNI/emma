@@ -160,7 +160,7 @@ int GetLine (FILE *input_stream, char line[])
     character = fgetc(input_stream);
     if (character == EOF) 
     {
-	return (0);
+	return (-1);
     }
 
     while ((character != EOF) && ((char)character != '\n') &&
@@ -170,6 +170,8 @@ int GetLine (FILE *input_stream, char line[])
         character = fgetc(input_stream);
 	i++;
     }
+
+    line[i] = 0;
 
     return (i);
 }
@@ -224,7 +226,7 @@ void GetBLD (FILE *in_file, int *num_samples, blood_data *data)
 
     *num_samples = 0;
 
-    while (GetLine(in_file, buffer) != 0)
+    while (GetLine(in_file, buffer) != -1)
     {
 	
 	/*
