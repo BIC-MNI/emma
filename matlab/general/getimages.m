@@ -30,6 +30,25 @@ function images = getimages (handle, slices, frames)
 %   To read in the first 10 slices of a non-dynamic (i.e. no frames) file:
 %     first_10 = getimages (handle, 1:10);
 
+% ------------------------------ MNI Header ----------------------------------
+%@NAME       : getimages
+%@INPUT      : handle - tells which MINC file (or internal-to-MATLAB
+%					image data) to read from
+%					slices - list of slices (1-based) to read
+%					frames - list of frames (1-based) to read
+%@OUTPUT     : 
+%@RETURNS    : images - matrix whose columns contain entire images
+%					layed out linearly.
+%@DESCRIPTION: 
+%@METHOD     : 
+%@GLOBALS    : Filename#
+%@CALLS      : check_sf to check validity of slices/frames arguments
+%					mireadimages (CMEX)
+%@CREATED    : June 1993, Greg Ward & Mark Wolforth
+%@MODIFIED   : 
+%-----------------------------------------------------------------------------
+
+
 % Check for valid number of arguments
 
 if (nargin < 2) | (nargin > 3)
@@ -60,10 +79,4 @@ check_sf (handle, slices, frames);
 % mireadimages).  If frames was not supplied, then do not attempt to pass
 % it to mireadimages.
 
-% if (nargin == 3)
-%	disp (['Reading slice ' int2str(slices) ' frame ' int2str(frames) ' from ' filename]);
-	images = mireadimages (filename, slices-1, frames-1);
-%else
-%	disp (['Reading slice ' int2str(slices) ' from ' filename]);
-%	images = mireadimages (filename, slices-1);
-%end
+images = mireadimages (filename, slices-1, frames-1);
