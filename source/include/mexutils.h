@@ -1,6 +1,8 @@
 #ifndef _MEX_UTILS_H
 #define _MEX_UTILS_H
 
+#include "emmageneral.h"
+
 /* 
  * Error codes returned by functions in this library
  */
