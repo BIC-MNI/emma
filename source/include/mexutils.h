@@ -1,10 +1,6 @@
 #ifndef _MEX_UTILS_H
 #define _MEX_UTILS_H
 
-#ifndef _GPW_H
-#include "gpw.h"
-#endif
-
 /* 
  * Error codes returned by functions in this library
  */
