@@ -1,12 +1,19 @@
 % NFRAMEINT   integrate a function across a range of intervals (frames)
 %
-%   integrals = nframeint (ts, y, fstart, flengths)
+%   integrals = nframeint (ts, y, FrameStarts, FrameLengths)
 %
 % calculates the integrals of a function (represented as a set of points
 % in y, sampled at the time points in ts) across each of a set of frames
 % which are given by their start times and lengths.  The integral is then
 % normalised so that nframeint returns the average value of y (as a function
 % of ts) across each frame.
+%
+% ts and y must be vectors of the same length, as must FrameStarts and 
+% FrameLengths.  Normally, ts and y are a good deal longer than
+% FrameStarts and FrameLengths in order to get reasonably accurate 
+% results.  The returned variable, integrals, will be a vector of
+% the same length of FrameStarts and FrameLengths, containing the 
+% integral of y(ts) across each frame.
 %
 % Points of y to integrate for each frame are selected by finding all
 % points of ts that are greater than the frame start time and less than
