@@ -24,6 +24,7 @@
 #include <nan.h>
 #include <math.h>
 #include "mex.h"
+#include "emma_cmex.h"
 
 #define TRUE 1
 #define FALSE 0
@@ -67,8 +68,6 @@ void IntFrames (int Length, double *X, double *Y,
 /*
  * type declarations
  */
-
-typedef int Boolean;
 
 typedef struct blooddata 
 {
