@@ -293,7 +293,7 @@ void GetStartingSimplex(double start[], int numvars,
                         double **simplex)
 {
     Matrix *answer[1];
-    int i,j;
+    int i;
 
     if (progress)
     {
