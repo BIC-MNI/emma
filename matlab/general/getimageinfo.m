@@ -71,13 +71,14 @@ function info = getimageinfo (handle, whatinfo)
 %
 %     MidFrameTimes - time at the middle of each frame (calculated by
 %                     FrameTimes + FrameLengths/2) in seconds
-%      
-% If the requested data item is invalid or the image specified by handle
-% is not found (ie. has not been opened), then the returned data will
-% be an empty matrix.  (You can test whether this is the case with
-% the isempty() function.)
 %
-% SEE ALSO  openimage, newimage, getimages
+% You can also use miinquire to get the value of any MINC attribute,
+% such as the patient name, scanning date, etc.
+%
+% If the requested data item is invalid, or `handle' is invalid,
+% getimageinfo fails with an error message.  
+% 
+% SEE ALSO openimage, newimage, getimages, miinquire
 
 % ------------------------------ MNI Header ----------------------------------
 %@NAME       : getimageinfo
@@ -96,7 +97,11 @@ function info = getimageinfo (handle, whatinfo)
 %@MODIFIED   : 93-6-17, Greg Ward: added standard MINC dimension names,
 %              spruced up help
 %              93-7-6, Greg Ward: added this header
-%              93-8-18, Greg Ward: massive overhaul (see RCS log for details)
+%              93-8-18, Greg Ward: massive overhaul (see RCS log for
+%              details)
+%              95-7-11, Greg Ward: fixed so it doesn't blindly make
+%              `whatinfo' global, and treats standard globals like any
+%              other info item -- so they too are now case insensitive!
 %-----------------------------------------------------------------------------
 
 if nargin ~= 2
@@ -113,16 +118,12 @@ end
 
 lwhatinfo = lower (whatinfo);
 
-% Make global the three image-size variables, and also the (possibly)
-% named value.  This may be redundant, eg. if whatinfo=='FrameTimes'.  But
-% it assures that everything we could possibly need global is global
-% before calling exist or eval with it.
+% Make global the three image-size variables so we can access them easily
 
 eval(['global Filename' int2str(handle)]);
 eval(['global DimSizes' int2str(handle)]);
 eval(['global FrameTimes' int2str(handle)]);
 eval(['global FrameLengths' int2str(handle)]);
-eval(['global ' whatinfo int2str(handle)])
 
 eval(['filename = Filename' int2str(handle) ';']);
 eval(['dimsizes = DimSizes' int2str(handle) ';']);
@@ -169,15 +170,18 @@ elseif (strcmp (lwhatinfo, 'dimsizes'))
 
 elseif (strcmp (lwhatinfo, 'midframetimes'))
    info = eval(['FrameTimes' int2str(handle) ' + FrameLengths' int2str(handle) ' / 2']);
+   
+% Finally check for one of the default global variables for this volume
 
-% Finally check to see if 'whatinfo' with the handle number tacked on
-% exists as a variable.  Note that this will work because of the 
-% 'global whatinfo#' eval'd above; also, this bit is STILL case
-% sensitive because of the mixed case of the global variables created
-% by openimage or newimage.  Maybe that should be changed...?
-
-elseif (exist ([whatinfo int2str(handle)]) == 1)
-   info = eval([whatinfo int2str(handle)]);
+elseif (strcmp (lwhatinfo, 'filename'))
+   info = eval(['Filename' int2str(handle)]);
+elseif (strcmp (lwhatinfo, 'framelengths'))
+   info = eval(['FrameLengths' int2str(handle)]);
+elseif (strcmp (lwhatinfo, 'frametimes'))
+   info = eval(['FrameTimes' int2str(handle)]);
+   
+% Well, nothing else it could be ... so give up!
+   
 else
    error (['Unknown option: ' whatinfo]);
 end
