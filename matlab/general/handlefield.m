@@ -19,7 +19,7 @@ function value = handlefield(externalhandle, key, filename, ...
 % Note that key is case insensitive.
 %
 
-% $Id: handlefield.m,v 2.1 2000-04-10 16:00:52 neelin Exp $
+% $Id: handlefield.m,v 2.2 2000-04-18 15:28:22 neelin Exp $
 % $Name:  $
 
 % Constants
@@ -128,7 +128,7 @@ if (strcmp(key, 'create'))
   % If there is no free handle, add more handles
   if (isempty(handle))
     handle = length(EMMA_Filename_Index) + 1;
-    EMMA_ExternalHandles = [EMMAExternal_Handles; ...
+    EMMA_ExternalHandles = [EMMA_ExternalHandles; ...
         zeros(handles_alloc_at_once, 1)];
     EMMA_Filename_Index = [EMMA_Filename_Index; ...
         zeros(handles_alloc_at_once, num_indices)];
