@@ -34,6 +34,8 @@
 #define OPTIONS        prhs[3]
 #define VECTOR_IMAGES  plhs[0]       /* array of images: one per columns */
 
+#define MAX_READABLE   160           /* max number of slices or frames that
+                                        can be read at a time */
 
 /*
  * Global variables (with apologies).  Interesting note:  when ErrMsg is
@@ -266,7 +268,7 @@ int ReadImages (ImageInfoRec *Image,
                printf ("; user frame %d, study frame %d\n",
                        frame, Frames[frame]);
             }
-				else printf ("\n");
+            else printf ("\n");
          }
 
          RetVal = miicv_get (Image->ICV, Start, Count, VectorImages);
@@ -310,14 +312,14 @@ void mexFunction(int    nlhs,
 {
    char        *Filename;
    ImageInfoRec   ImInfo;
-   long        Slice[MAX_NC_DIMS];
-   long        Frame[MAX_NC_DIMS];
+   long        Slice[MAX_READABLE];
+   long        Frame[MAX_READABLE];
    long        NumSlices;
    long        NumFrames;
    FILE        *InFile;
    int         Result;
 
-   debug = TRUE;
+   debug = FALSE;
    ErrMsg = (char *) mxCalloc (256, sizeof (char));
 
    /* First make sure a valid number of arguments was given. */
@@ -356,7 +358,7 @@ void mexFunction(int    nlhs,
    /* Open MINC file, get info about image, and setup ICV */
 
    if (debug) printf ("Opening file\n");
-   Result = OpenImage (Filename, &ImInfo);
+   Result = OpenImage (Filename, &ImInfo, NC_NOWRITE);
    if (Result != ERR_NONE)
    {
       ErrAbort (ErrMsg, TRUE, Result);
@@ -367,66 +369,83 @@ void mexFunction(int    nlhs,
    /* 
     * If the vector of slices is given, parse it into a vector of longs.
     * If not, just read slice 0 by default.  Note that if the slice (z)
-	 * dimension does not exist, NumSlices is set to 0.  If the caller
-	 * tried to supply a list of slices anyway, a warning is printed.
+    * dimension does not exist, NumSlices is set to 0.  If the caller
+    * tried to supply a list of slices anyway, a warning is printed.
     */
 
    if (nrhs >= SLICES_POS)
    {
-      NumSlices = ParseIntArg (SLICES, MAX_NC_DIMS, Slice);
+      NumSlices = ParseIntArg (SLICES, MAX_READABLE, Slice);
       if (NumSlices < 0)
       {
          CloseImage (&ImInfo);
-         ErrAbort ("Slices must be specified in an all-integer vector",
-                   TRUE, ERR_ARGS);
+         switch (NumSlices)
+         {
+            case mexARGS_TOO_BIG:
+               ErrMsg = "Too many slices specified";
+               break;
+            case mexARGS_INVALID:
+               ErrMsg = "Slice vector bad format: must be numeric and one-dimensional";
+               break;
+         }
+         ErrAbort (ErrMsg, TRUE, ERR_ARGS);
       }
-		if ((ImInfo.SliceDim == -1) && (NumSlices > 0))
-		{
-			printf ("Warning: file has no z dimension, slices vector ignored");
-			NumSlices = 0;
-		}
+      if ((ImInfo.SliceDim == -1) && (NumSlices > 0))
+      {
+         printf ("Warning: file has no z dimension, slices vector ignored");
+         NumSlices = 0;
+      }
    }
    else                    /* caller did *not* specify slices vector */
    { 
-		if (ImInfo.SliceDim == -1)		/* file doesn't even have slices */
-		{										/* so don't even try to read any */
-			NumSlices = 0;
-		}
-		else
-		{
-			Slice [0] = 0;			/* else just read slice 0 by default */
-			NumSlices = 1;
-		}
+      if (ImInfo.SliceDim == -1)    /* file doesn't even have slices */
+      {                             /* so don't even try to read any */
+         NumSlices = 0;
+      }
+      else
+      {
+         Slice [0] = 0;       /* else just read slice 0 by default */
+         NumSlices = 1;
+      }
    }
 
    /* Now do the exact same thing for frames. */
 
    if (nrhs >= FRAMES_POS)
    {
-      NumFrames = ParseIntArg (FRAMES, MAX_NC_DIMS, Frame);
+      NumFrames = ParseIntArg (FRAMES, MAX_READABLE, Frame);
       if (NumFrames < 0)
       {
          CloseImage (&ImInfo);
-         ErrAbort ("Frames must be specified in an all-integer vector",
-                   TRUE, ERR_ARGS);
+         switch (NumFrames)
+         {
+            case mexARGS_TOO_BIG:
+               ErrMsg = "Too many frames specified";
+               break;
+            case mexARGS_INVALID:
+               ErrMsg = "Frame vector bad format: must be numeric and one-dimensional";
+               break;
+         }
+         ErrAbort (ErrMsg, TRUE, ERR_ARGS);
+
       }
-		if ((ImInfo.FrameDim == -1) && (NumFrames > 0))
-		{
-			printf ("Warning: file has no time dimension, frames vector ignored");
-			NumFrames = 0;
-		}
+      if ((ImInfo.FrameDim == -1) && (NumFrames > 0))
+      {
+         printf ("Warning: file has no time dimension, frames vector ignored");
+         NumFrames = 0;
+      }
    }
    else
    {
-		if (ImInfo.FrameDim == -1)		/* file doesn't even have frames */
-		{										/* so don't even try to read any */
-			NumFrames = 0;
-		}
-		else
-		{
-			Frame [0] = 0;			/* else just read frame 0 by default */
-			NumFrames = 1;
-		}
+      if (ImInfo.FrameDim == -1)    /* file doesn't even have frames */
+      {                             /* so don't even try to read any */
+         NumFrames = 0;
+      }
+      else
+      {
+         Frame [0] = 0;       /* else just read frame 0 by default */
+         NumFrames = 1;
+      }
    }
 
    /* Make sure the supplied slice and frame numbers are within bounds */
