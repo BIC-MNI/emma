@@ -9,7 +9,7 @@
 @CALLS      : 
 @CREATED    : June 1993, Greg Ward
 @MODIFIED   : 
-@VERSION    : $Id: miwriteimages.c,v 1.13 1997-10-20 21:18:58 greg Rel $
+@VERSION    : $Id: miwriteimages.c,v 1.14 1999-07-20 18:35:49 neelin Exp $
               $Name:  $
 ---------------------------------------------------------------------------- */
 
@@ -405,6 +405,13 @@ void PutMaxMin (ImageInfoRec *ImInfo, double *ImVals,
    int      i;
    double   Max, Min;
    long     Coord [2];          /* might use 0, 1 or 2 elements */
+   int      old_ncopts;
+   int      ret;
+   nc_type  range_type;
+   int      range_len;
+   int      update_vr;
+   double   valid_range[2];
+   double   vr_max;
 
 #ifdef DEBUG
    int      NumDims;            /* number of dimensions in imagemax/imagemin */
@@ -477,6 +484,48 @@ void PutMaxMin (ImageInfoRec *ImInfo, double *ImVals,
 
    mivarput1 (ImInfo->CDF, ImInfo->MaxID, Coord, NC_DOUBLE, MI_SIGNED, &Max);
    mivarput1 (ImInfo->CDF, ImInfo->MinID, Coord, NC_DOUBLE, MI_SIGNED, &Min);
+
+   /*
+    * Update the image valid_range attribute for floating-point volumes
+    */
+   if ((ImInfo->DataType == NC_FLOAT) || (ImInfo->DataType == NC_DOUBLE)) {
+
+      /* Get type and length of valid_range attribute */
+      old_ncopts = ncopts; ncopts = 0;
+      ret = ncattinq(ImInfo->CDF, ImInfo->ID, MIvalid_range, 
+                     &range_type, &range_len);
+      ncopts = old_ncopts;
+
+      /* If type and length are okay, then read in old value and update */
+      if ((ret != MI_ERROR) && 
+          (range_type == NC_DOUBLE) && (range_len == 2)) {
+
+         (void) ncattget(ImInfo->CDF, ImInfo->ID, MIvalid_range, valid_range);
+
+         /* Test for first write of valid range */
+         vr_max = (ImInfo->DataType == NC_DOUBLE ? 
+                   1.79769313e+308 : 3.402e+38);
+         update_vr = ((valid_range[0] < -vr_max) && (valid_range[1] > vr_max));
+
+         /* Check the range */
+         if ((Min < valid_range[0]) || update_vr)
+            valid_range[0] = Min;
+         if ((Max > valid_range[1]) || update_vr)
+            valid_range[1] = Max;
+
+         /* Check for whether float rounding is needed */
+         if (ImInfo->DataType == NC_FLOAT) {
+            valid_range[0] = (float) valid_range[0];
+            valid_range[1] = (float) valid_range[1];
+         }
+
+         /* Write it out */
+         (void) ncattput(ImInfo->CDF, ImInfo->ID, MIvalid_range, 
+                         NC_DOUBLE, 2, valid_range);
+
+      }
+
+   }     /* if DataType is floating-point */
 
 }     /* PutMaxMin */
 
