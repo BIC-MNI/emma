@@ -3,7 +3,8 @@ function [K1,k2,V0,delta] = rcbf2_slice (filename, slices, progress, ...
 
 % RCBF2 a two-compartment (triple-weighted integral) rCBF model.
 %
-%       [K1,k2,V0,delta] = rcbf2 (filename, slices)
+%       [K1,k2,V0,delta] = rcbf2 (filename, slices ...
+%                  [, progress [, correction [, batch]]] )
 % 
 % rcbf2 implements the three-weighted integral method of calculating
 % k2, K1, and V0 (in that order) for a particular slice.  This
@@ -13,12 +14,20 @@ function [K1,k2,V0,delta] = rcbf2_slice (filename, slices, progress, ...
 % sample times.  Then, a simple mask is created and used to filter out
 % roughly all points outside the head.
 % 
+% The optional arguments progress, correction, and batch control
+% whether to print periodic progress reports, perform delay/dispersion
+% correction, and automatically select the grey-matter mask used for
+% delay/dispersion correction.  These all default to 1 (true); the
+% latter two should only be set to 0 (false) in exceptional
+% circumstances (i.e. never).
+% 
 % The actual calculations follow the procedure outlined in the
-% document "RCBF Analysis Using MATLAB".  Occasionally, comments in
-% the source code or documentation for various functions involved in
-% the analysis will refer to equations in this document.  The most
-% relevant functions in this respect are rcbf2 itself, correctblood
-% and findintconvos.
+% document "RCBF Analysis Using MATLAB" (http://www.mni.mcgill/system/
+% mni/matlab/rcbf/rcbf.html) .  Occasionally, comments in the source
+% code or documentation for various functions involved in the analysis
+% will refer to equations in this document.  The most relevant
+% functions in this respect are rcbf2 itself, correctblood and
+% findintconvos.
 % 
 % The starting point of the three-weighted integration method is Eq.
 % 10 of the RCBF document.  The left hand side of this equation, rL,
@@ -180,20 +189,21 @@ for current_slice = 1:total_slices
   end
 
   mask = PET_int1 > mean(PET_int1);
-  PET_int1 = PET_int1 .* mask;
-  PET_int2 = PET_int2 .* mask;
-  PET_int3 = PET_int3 .* mask;
+  rescale (PET_int1, mask);
+  rescale (PET_int2, mask);
+  rescale (PET_int3, mask);
+
   clear mask;
   
   % Use getmask to interactively create a threshold mask, and then perform
   % delay/dispersion correction.
   
-  if (progress)
-    disp ('Performing delay correction.');
-  end
-
   if (correction)
     
+    if (progress)
+      disp ('Performing delay correction.');
+    end
+
     % Since this is intended for batch mode operation,
     % we will fix the mask with a threshold of 1.8
 
@@ -209,6 +219,10 @@ for current_slice = 1:total_slices
     [ts_even, Ca_even, delta(:,current_slice)] = correctblood ...
         (A, FrameTimes, FrameLengths, g_even, ts_even, progress);
   else
+    if (progress)
+      disp ('Skipping delay correction.');
+    end
+
     Ca_even = g_even;
   end
 
@@ -316,7 +330,8 @@ V0 (nuke) = zeros (size (nuke));
 
 rescale (K1, 100*60/1.05);    % convert from g_blood / (g_tissue * sec)
                               % to mL_blood / (100 g_tissue * min)
-  
+
+disp ('WARNING!!! rcbf2 now calculates K1 in mL_blood / (100 g_tissue * min)');
 
 % Cleanup
 
