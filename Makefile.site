@@ -1,0 +1,83 @@
+# Site-specific configuration for EMMA.  Note: this file must
+# be included by a makefile that has already defined EMMA_ROOT.
+
+#
+# Change this to reflect your machine type.  Possible machine types
+# are irix4, irix5, sun4, and develop (note that develop is not
+# meant for general usage; it's just what we use when working on
+# EMMA).
+#
+
+MACHINE     = develop
+
+
+#
+# These are directories where the build process looks for various
+# files.  MATLAB must have been installed under MATLAB_ROOT,
+# the NetCDF and MINC libraries must be in MINCLIB, and the NetCDF
+# and MINC header (.h) files must be in MINCINC.
+#
+
+MATLAB_ROOT = /usr/local/matlab
+MINCLIB     = /usr/local/lib
+MINCINC     = /usr/local/include
+
+
+#
+# Where to find the EMMA library and header files.  You shouldn't change these.
+#
+
+EMMAINC     = $(EMMA_ROOT)/include
+EMMALIB     = $(EMMA_ROOT)/lib
+
+
+#
+# You shouldn't have to change these unless you have a weird MATLAB
+# setup.  MATLABINC is where EMMA looks for mex.h, and MATLABLIB
+# is where it looks for the MEX library.
+#
+
+MATLABINC   = $(MATLAB_ROOT)/extern/include
+MATLABLIB   = $(MATLAB_ROOT)/extern/lib/$(MACHINE)
+
+#
+# These are directories where the various components of EMMA will
+# be installed.  All MATLAB files (*.m and CMEX) will be copied
+# there, so it is actually better if you have EMMA its own directory,
+# such as $(MATLAB_ROOT)/toolbox/emma.  You will then have to add
+# this directory to the default MATLAB path by putting the line
+#
+#  path(path, '/usr/local/matlab/toolbox/emma');
+#
+# in your matlabrc.m file.  (This file lives in $(MATLAB_ROOT)/toolbox/local.)
+#
+# The standalone binaries and documentation go, respectively, to
+# BIN_INSTALL_DIR and DOC_INSTALL_DIR.
+#
+
+MATLAB_INSTALL_DIR = $(MATLAB_ROOT)/toolbox/local
+BIN_INSTALL_DIR    = /usr/local/bin
+DOC_INSTALL_DIR    = /usr/local/doc
+
+#
+# Finally, these are compiler options based on the above directories.
+# These almost certainly won't need to be changed, except possibly to
+# add /usr/local/include and/or /usr/local/lib if for some reason 
+# they aren't automatically searched.  They're just here for
+# easy propagation to lower-level makefiles.
+#
+
+INCLUDES    = -I$(MATLABINC) \
+              -I$(EMMAINC) \
+              -I$(MINCINC)
+
+LIBDIRS     = -L$(MATLABLIB) \
+              -L$(EMMALIB) \
+              -L$(MINCLIB)
+
+#
+# Now include the architecture-dependent options, such as compiler,
+# compiler options, libraries, etc.
+#
+
+include $(EMMA_ROOT)/Makefile.$(MACHINE)
