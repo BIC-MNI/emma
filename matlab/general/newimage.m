@@ -114,7 +114,12 @@ end
 
 if (nargin >= 3) 
    if (~isempty (ParentFile))
-      Parent = openimage (ParentFile);
+      if (isstr (ParentFile))
+	 Parent = openimage (ParentFile);
+      else
+	 Parent = ParentFile;
+	 ParentFile = getimageinfo (Parent, 'Filename');
+      end
       ParentType = miinquire (ParentFile, 'vartype', 'image');
    else
       ParentFile = '-';           % indicates that no parent file opened
@@ -273,15 +278,21 @@ else
    ImageCount = 1;
 end
 
+% Set the flags for the new volume: read-write, not compressed
+
+Flags = [1 0];
+
 % MINC file is now created (if applicable), so we must create the
 % MATLAB variables that will be used by putimages
 
 eval(['global Filename'     int2str(ImageCount)]);
+eval(['global Flags'        int2str(ImageCount)]);
 eval(['global DimSizes'     int2str(ImageCount)]);
 eval(['global FrameTimes'   int2str(ImageCount)]);
 eval(['global FrameLengths',int2str(ImageCount)]);
 
 eval(['Filename'     int2str(ImageCount) ' = NewFile;']);
+eval(['Flags'        int2str(ImageCount) ' = Flags;']);
 eval(['DimSizes'     int2str(ImageCount) ' = DimSizes;']);
 eval(['FrameTimes'   int2str(ImageCount) ' = [];']);
 eval(['FrameLengths' int2str(ImageCount) ' = [];']);
