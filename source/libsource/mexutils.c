@@ -70,7 +70,7 @@ int ParseOptions (Matrix *OptVector, int MaxOptions, Boolean *debug)
 @GLOBALS    : (none)
 @CALLS      : standard mex functions
 @CREATED    : 93-5-31, Greg Ward
-@MODIFIED   : 03-6-8, took out debugging stuff, sanitized error handling, and
+@MODIFIED   : 93-6-8, took out debugging stuff, sanitized error handling, and
               put into mexutils.c
 @COMMENTS   : The MATLAB External Reference Guide appears to be in error 
               regarding the return value of mxGetString.  As used in this 
