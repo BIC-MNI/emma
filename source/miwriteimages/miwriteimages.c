@@ -1,3 +1,18 @@
+/* ----------------------------- MNI Header -----------------------------------
+@NAME       : miwriteimages.c (standalone)
+@INPUT      : 
+@OUTPUT     : 
+@RETURNS    : 
+@DESCRIPTION: Writes a set of images from a temporary file into a MINC file.
+@METHOD     : 
+@GLOBALS    : 
+@CALLS      : 
+@CREATED    : June 1993, Greg Ward
+@MODIFIED   : 
+@VERSION    : $Id: miwriteimages.c,v 1.13 1997-10-20 21:18:58 greg Rel $
+              $Name:  $
+---------------------------------------------------------------------------- */
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -5,8 +20,8 @@
 #include <float.h>
 #include "minc.h"
 #include "emmageneral.h"
+#include "emmaproto.h"
 #include "mincutil.h"
-#include "mexutils.h"
 #include "mierrors.h"
 
 #define NUM_ARGS       4           /* STRICT requirement!! */
