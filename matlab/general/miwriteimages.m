@@ -82,8 +82,12 @@ fclose (outfile);
 % Finally, do a shell escape to miwriteimages to write the data from the
 % temporary (raw) file to the MINC file.
 
-output = mexec ('miwriteimages', filename, slicelist, ...
-      framelist, tempfile);
+execstr = sprintf ('miwriteimages %s %s %s %s', ...
+   filename, slicelist, framelist, tempfile);
+[result, output] = unix (execstr);
+
+%output = mexec ('miwriteimages', filename, slicelist, ...
+%      framelist, tempfile);
 
 %if (result ~= 0)
 %   disp (['Command: ' execstr]);
