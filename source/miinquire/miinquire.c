@@ -12,6 +12,8 @@
 @MODIFIED   : 93-7-26 to 93-7-29, greatly expanded to allow for general 
               options, and added code for 'dimlength' option.  (GPW)
               93-9-29 to 93-9-30, added orientation and finished attvalue (GPW)
+	      94-3-10, changed if (debug) to #ifdef DEBUG everywhere
+                       removed "gpw.h" because Boolean is defined in mexutils.h
 ---------------------------------------------------------------------------- */
 
 
@@ -27,7 +29,6 @@
 #include <stdlib.h>
 #include "mex.h"
 #include "minc.h"
-#include "gpw.h"
 #include "mierrors.h"
 #include "mincutil.h"
 #include "mexutils.h"
@@ -39,7 +40,6 @@
 char *type_names[] = {
    NULL, "byte", "char", "short", "long", "float", "double"
 };
-
 
 /* General input arguments */
 
@@ -64,7 +64,6 @@ char *type_names[] = {
 
 /* Global variables */
 
-Boolean  debug;
 char    *ErrMsg;
 
 
@@ -84,6 +83,7 @@ char    *ErrMsg;
               with mireadimages, etc.
 @COMMENTS   : Copied to miinquire from mireadvar.
 ---------------------------------------------------------------------------- */
+/* ARGSUSED */
 void ErrAbort (char msg[], Boolean PrintUsage, int ExitCode)
 {
    if (PrintUsage)
@@ -258,6 +258,7 @@ int GetDimLength (int CDF, int nargin, Matrix *InArgs[], int *CurInArg,
 @CREATED    : Aug 93 - Greg Ward
 @MODIFIED   : 
 ---------------------------------------------------------------------------- */
+/* ARGSUSED */
 int GetImageSize (int CDF, int nargin, Matrix *InArgs[], int *CurInArg,
                            int nargout, Matrix *OutArgs[], int *CurOutArg)
 {
@@ -317,6 +318,7 @@ int GetImageSize (int CDF, int nargin, Matrix *InArgs[], int *CurInArg,
 @CREATED    : Aug 93, Greg Ward
 @MODIFIED   : 
 ---------------------------------------------------------------------------- */
+/* ARGSUSED */
 int GetVarType (int CDF, int nargin, Matrix *InArgs[], int *CurInArg,
                          int nargout, Matrix *OutArgs[], int *CurOutArg)
 {
@@ -393,7 +395,6 @@ int GetAttValue (int CDF, int nargin, Matrix *InArgs[], int *CurInArg,
    int      AttLen;
    Matrix  *mAttValue;                /* the value(s) of the attribute, */
                                       /* for returning to MATLAB */
-   double  *AttValue;                 /* pointer to real part of mAttValue */
    char    *AttStr;                   /* store a string attribute here */
                                       /* for converting to MATLAB format */
 
@@ -503,6 +504,7 @@ int GetAttValue (int CDF, int nargin, Matrix *InArgs[], int *CurInArg,
 @CREATED    : 93-9-29, Greg Ward
 @MODIFIED   : 
 ---------------------------------------------------------------------------- */
+/* ARGSUSED */
 int GetOrientation (int CDF, int nargin, Matrix *InArgs[], int *CurInArg,
                     int nargout, Matrix *OutArgs[], int *CurOutArg)
 {
@@ -511,11 +513,10 @@ int GetOrientation (int CDF, int nargin, Matrix *InArgs[], int *CurInArg,
    Matrix   *mOrient;                   /* cOrient converted to MATLAB form */
    int       NumDims;                   /* number of image dimensions */
    int       DimIDs [MAX_NC_DIMS];      /* dimension *id*'s for MIimage */
-   int       SliceDim;                  /* just copied from various members */
    int       HeightDim;                 /* of DimIDs - these three only */
    int       WidthDim;                  /* exist to improve code clarity! */
-   int       zdim, ydim, xdim;          /* NetCDF dimension ID's corresponding
-                                        /* to MIzspace, ... */
+   int       zdim, ydim, xdim;          /* NetCDF dimension ID's corresponding 
+                                           to MIzspace, ... */
 
    /* Find the dimension *id*'s for the image variable -- these are NOT
     * (I think) necessarily the dimension numbers, which are relative
@@ -552,10 +553,12 @@ int GetOrientation (int CDF, int nargin, Matrix *InArgs[], int *CurInArg,
     * Note that the slice
     */
 
+/*
    if (NumDims >= 3)
    {
       SliceDim = DimIDs [NumDims-3];
    }
+*/
    HeightDim = DimIDs [NumDims-2];
    WidthDim = DimIDs [NumDims-1];
 
@@ -610,35 +613,42 @@ void mexFunction (int nargout, Matrix *outargs [],      /* output args */
 
    ncopts = 0;
    ErrMsg = (char *) mxCalloc (256, sizeof(char));
-   debug = FALSE;
-   if (nargin == 0) ErrAbort ("Not enough arguments", TRUE, ERR_ARGS);
+   if (nargin == 0) ErrAbort ("Not enough arguments", true, ERR_ARGS);
 
    /* Parse filename and open MINC file */
 
    if (ParseStringArg (MINC_FILE, &Filename) == NULL)
    {
-      ErrAbort ("Filename argument must be a character string", TRUE, ERR_ARGS);
+      ErrAbort ("Filename argument must be a character string", true, ERR_ARGS);
    }
-   if (debug) printf ("Filename: %s\n", Filename);
+
+#ifdef DEBUG
+   printf ("Filename: %s\n", Filename);
+#endif
 
    OpenFile (Filename, &CDF, NC_NOWRITE);
    if (CDF == MI_ERROR)
    {
-      ErrAbort (ErrMsg, TRUE, ERR_IN_MINC );
+      ErrAbort (ErrMsg, true, ERR_IN_MINC );
    }
-   if (debug) printf ("CDF ID for file: %d\n", CDF);
+
+#ifdef DEBUG
+   printf ("CDF ID for file: %d\n", CDF);n
+#endif
 
 
    /* If only one input argument (filename) given, return general info */
 
    if (nargin == 1) 
    {
-      if (debug) printf ("Getting general info for MINC file\n");
+#ifdef DEBUG
+      printf ("Getting general info for MINC file\n");
+#endif
       Result = GeneralInfo (CDF, &NUM_DIMS, &NUM_GATTS, &NUM_VARS);
       if (Result < 0)
       {
          ncclose (CDF);
-         ErrAbort (ErrMsg, TRUE, Result);
+         ErrAbort (ErrMsg, true, Result);
       }
       return;
    }
@@ -670,23 +680,25 @@ void mexFunction (int nargout, Matrix *outargs [],      /* output args */
       if (cur_outarg >= nargout)                /* eg. if cur_outarg==0 we must have >= 1 output arg */
       {
          ncclose (CDF);
-         ErrAbort ("Not enough output arguments", TRUE, ERR_ARGS);
+         ErrAbort ("Not enough output arguments", true, ERR_ARGS);
       }
 #endif
       
       /* Currently cur_inarg points to the next option in the argument list. */
       
-      if (debug) printf ("Parsing inargs[%d]...", cur_inarg);
+#ifdef DEBUG
+      printf ("Parsing inargs[%d]...", cur_inarg); 
+#endif
       if (ParseStringArg (inargs[cur_inarg], &Option) == NULL)
       {
          ncclose (CDF);
-         ErrAbort ("Option argument must be a string", TRUE, ERR_ARGS);
+         ErrAbort ("Option argument must be a string", true, ERR_ARGS);
       }
-      if (debug) printf ("it's %s\n", Option);
-      
-
-      if (debug) printf ("Passing inargs[%d] and outargs[%d] on\n", 
+#ifdef DEBUG
+      printf ("it's %s\n", Option);
+      printf ("Passing inargs[%d] and outargs[%d] on\n", 
                          cur_inarg, cur_outarg);
+#endif
       
       /* Now take action based on value of string Option */
       
@@ -729,14 +741,14 @@ void mexFunction (int nargout, Matrix *outargs [],      /* output args */
       {
          ncclose (CDF);
          sprintf (ErrMsg, "Unknown option: %s", Option);
-         ErrAbort (ErrMsg, TRUE, ERR_ARGS);
+         ErrAbort (ErrMsg, true, ERR_ARGS);
       }
       
       /* If ANY of the option-based calls above resulted in an error, BOMB! */
       if (Result != ERR_NONE)
       {
          ncclose (CDF);
-         ErrAbort (ErrMsg, TRUE, Result);
+         ErrAbort (ErrMsg, true, Result);
       }
       
    }
