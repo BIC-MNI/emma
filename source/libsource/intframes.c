@@ -2,7 +2,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
-#include <nan.h>
+#if __sgi
+# include <ieeefp.h>            /* for isnan() prototype */
+#endif
 #include "emmageneral.h"
 
 #define MAX_X_LENGTH 1024       /* maximum number of elements of X that can */
@@ -171,11 +173,7 @@ Boolean IntOneFrame (double X[], double Y[], int XYLength, int *LowIndex,
    Lookup1 (X, Y, &(x_values[numBins-1]), &(y_values[numBins-1]), XYLength, 1);
    
    
-   /* Note: a blunt "== NaN" comparison doesn't work.  Must use the 
-    * more sophisticated macros provided in nan.h.
-    */
-   
-   if (IsNANorINF(y_values[numBins-1]))
+   if (isnan (y_values[numBins-1]))
    {
       numBins--;
 #ifdef DEBUG
@@ -187,7 +185,8 @@ Boolean IntOneFrame (double X[], double Y[], int XYLength, int *LowIndex,
       printf ("y at new upper limit of x = %lg\n", y_values[numBins-1]);
 #endif
    }
-   if (IsNANorINF(y_values[0]))
+
+   if (isnan (y_values[0]))
    {
 #ifdef DEBUG
       printf ("Found NaN at front of y's, starting integral with x=%lg\n",
@@ -196,7 +195,6 @@ Boolean IntOneFrame (double X[], double Y[], int XYLength, int *LowIndex,
 	      numBins-1, x_values[1], x_values[numBins-1],
 	      y_values[1], y_values[numBins-1]);
 #endif
-      
       
       TrapInt ((numBins-1), (x_values+1), (y_values+1), Integral);
 
