@@ -127,25 +127,9 @@ eval(['global DimSizes'     int2str(ImageCount)]);
 eval(['global FrameTimes'   int2str(ImageCount)]);
 eval(['global FrameLengths',int2str(ImageCount)]);
 
-%eval(['global NumFrames',   int2str(ImageCount)]);
-%eval(['global NumSlices',   int2str(ImageCount)]);
-%eval(['global ImageSize',   int2str(ImageCount)]);
-%eval(['global PETimages'    int2str(ImageCount)]);
-%eval(['global AvailFrames', int2str(ImageCount)]);
-%eval(['global AvailSlices', int2str(ImageCount)]);
-%eval(['global CurLine',     int2str(ImageCount)]);
-
 eval(['Filename'     int2str(ImageCount) ' = filename;']);
 eval(['FrameTimes'   int2str(ImageCount) ' = FrameTimes;']);
 eval(['FrameLengths' int2str(ImageCount) ' = FrameLengths;']);
 eval(['DimSizes'     int2str(ImageCount) ' = DimSizes;']);
-
-%eval(['NumFrames'    int2str(ImageCount) ' = NumFrames;']);
-%eval(['NumSlices'    int2str(ImageCount) ' = NumSlices;']);
-%eval(['ImageSize'    int2str(ImageCount) ' = ImageSize;']);
-%eval(['CurLine'      int2str(ImageCount) ' = 1;']);
-%eval(['AvailFrames'  int2str(ImageCount) ' = [];']);
-%eval(['AvailSlices'  int2str(ImageCount) ' = [];']);
-%eval(['PETimages'    int2str(ImageCount) ' = [];']);
 
 ImHandle = ImageCount;
