@@ -181,6 +181,8 @@ Boolean VerifyVectors (long Slices[], long Frames[],
 @CALLS      : standard library, MINC functions
 @CREATED    : 93-6-6, Greg Ward
 @MODIFIED   : 
+@COMMENTS   : currently handles the no-time-dimension case, but there is
+              parallel code for the no-z-dimension case.
 ---------------------------------------------------------------------------- */
 int ReadImages (ImageInfoRec *Image,
                 long    Slices [],
@@ -264,6 +266,7 @@ int ReadImages (ImageInfoRec *Image,
                printf ("; user frame %d, study frame %d\n",
                        frame, Frames[frame]);
             }
+				else printf ("\n");
          }
 
          RetVal = miicv_get (Image->ICV, Start, Count, VectorImages);
@@ -287,6 +290,19 @@ int ReadImages (ImageInfoRec *Image,
 
 
 
+/* ----------------------------- MNI Header -----------------------------------
+@NAME       : mexFunction
+@INPUT      : nlhs, nrhs - number of output/input arguments (from MATLAB)
+              prhs - actual input arguments 
+@OUTPUT     : plhs - actual output arguments
+@RETURNS    : (void)
+@DESCRIPTION: 
+@METHOD     : 
+@GLOBALS    : 
+@CALLS      : 
+@CREATED    : 
+@MODIFIED   : 
+---------------------------------------------------------------------------- */
 void mexFunction(int    nlhs,
                  Matrix *plhs[],
                  int    nrhs,
@@ -301,7 +317,7 @@ void mexFunction(int    nlhs,
    FILE        *InFile;
    int         Result;
 
-   debug = FALSE;
+   debug = TRUE;
    ErrMsg = (char *) mxCalloc (256, sizeof (char));
 
    /* First make sure a valid number of arguments was given. */
@@ -328,7 +344,7 @@ void mexFunction(int    nlhs,
    /*
     * Parse the filename option -- this is required by the above check
     * for number of arguments, so don't need to ensure that MINC_FILENAME
-    * actaually exists.
+    * actually exists.
     */
 
    if (debug) printf ("Parsing filename\n");
@@ -350,7 +366,9 @@ void mexFunction(int    nlhs,
 
    /* 
     * If the vector of slices is given, parse it into a vector of longs.
-    * If not, just read slice 0 by default.
+    * If not, just read slice 0 by default.  Note that if the slice (z)
+	 * dimension does not exist, NumSlices is set to 0.  If the caller
+	 * tried to supply a list of slices anyway, a warning is printed.
     */
 
    if (nrhs >= SLICES_POS)
@@ -359,14 +377,26 @@ void mexFunction(int    nlhs,
       if (NumSlices < 0)
       {
          CloseImage (&ImInfo);
-         ErrAbort ("Error: slices must be specified in an all-integer vector",
+         ErrAbort ("Slices must be specified in an all-integer vector",
                    TRUE, ERR_ARGS);
       }
+		if ((ImInfo.SliceDim == -1) && (NumSlices > 0))
+		{
+			printf ("Warning: file has no z dimension, slices vector ignored");
+			NumSlices = 0;
+		}
    }
    else                    /* caller did *not* specify slices vector */
-   {
-      Slice [0] = 0;       /* so read just slice 0 by default */
-      NumSlices = 1;
+   { 
+		if (ImInfo.SliceDim == -1)		/* file doesn't even have slices */
+		{										/* so don't even try to read any */
+			NumSlices = 0;
+		}
+		else
+		{
+			Slice [0] = 0;			/* else just read slice 0 by default */
+			NumSlices = 1;
+		}
    }
 
    /* Now do the exact same thing for frames. */
@@ -377,14 +407,26 @@ void mexFunction(int    nlhs,
       if (NumFrames < 0)
       {
          CloseImage (&ImInfo);
-         ErrAbort ("Error: frames must be specified in an all-integer vector",
+         ErrAbort ("Frames must be specified in an all-integer vector",
                    TRUE, ERR_ARGS);
       }
+		if ((ImInfo.FrameDim == -1) && (NumFrames > 0))
+		{
+			printf ("Warning: file has no time dimension, frames vector ignored");
+			NumFrames = 0;
+		}
    }
    else
    {
-      Frame [0] = 0;          /* read just frame 0 by default */
-      NumFrames = 1;
+		if (ImInfo.FrameDim == -1)		/* file doesn't even have frames */
+		{										/* so don't even try to read any */
+			NumFrames = 0;
+		}
+		else
+		{
+			Frame [0] = 0;			/* else just read frame 0 by default */
+			NumFrames = 1;
+		}
    }
 
    /* Make sure the supplied slice and frame numbers are within bounds */
