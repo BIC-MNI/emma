@@ -41,7 +41,7 @@
 #include "args.h"
 #include "dimensions.h"
 #define PROGNAME      "micreateimage"
-
+#undef DEBUG
 #define ERROR_CHECK(success) { if (!(success)) { ErrAbort (ErrMsg, FALSE, 1); }}
 
 
@@ -273,6 +273,7 @@ Boolean OpenFiles (char parent_file[], char child_file[],
       ncclose (*child_CDF);
       return (FALSE);
    }
+/*
    if (statbuf.st_size == 0)
    {
       sprintf (ErrMsg, "Error creating file %s: disk may be full\n",
@@ -281,7 +282,7 @@ Boolean OpenFiles (char parent_file[], char child_file[],
       ncclose (*child_CDF);
       return (FALSE);
    }      
-   
+*/   
 #ifdef DEBUG
    printf ("OpenFiles:\n");
    printf (" Parent file %s, CDF %d\n", parent_file, *parent_CDF);
@@ -576,15 +577,14 @@ void UpdateHistory (int ChildCDF, char *TimeStamp)
       OldHist = (char *) malloc ((size_t) (HistLen*sizeof(char) + 1));
       ncattget (ChildCDF, NC_GLOBAL, MIhistory, OldHist);
       NewHist = (char *) malloc 
-         ((size_t) (HistLen*sizeof(char) + strlen(TimeStamp) + 1));
-      strcpy (NewHist, TimeStamp);
-      strcat (NewHist, OldHist);
+         ((size_t) (HistLen*sizeof(char) + strlen(TimeStamp)*sizeof(char) + 1));
+      strcpy (NewHist, OldHist);
+      strcat (NewHist, TimeStamp);
       ncattput (ChildCDF, NC_GLOBAL, MIhistory, NC_CHAR, 
                 strlen(NewHist), NewHist);
       free (NewHist);
       free (OldHist);
    }
-
 }     /* UpdateHistory () */
 
 
@@ -601,8 +601,8 @@ Boolean CopyOthers (int ParentCDF, int ChildCDF,
 
    if (micopy_all_var_defs(ParentCDF, ChildCDF, NumExclude, Exclude) == MI_ERROR)
    {
-      sprintf (ErrMsg, "Error %d copying variable definitions: %s", 
-	       ncerr, NCErrMsg (ncerr, errno));
+      sprintf (ErrMsg, "Error copying variable definitions: %s", 
+	       NCErrMsg (ncerr, errno));
       ncclose (ChildCDF);
       return (FALSE);
    }
@@ -614,14 +614,20 @@ Boolean CopyOthers (int ParentCDF, int ChildCDF,
    UpdateHistory (ChildCDF, TimeStamp);
 
 #ifdef DEBUG
-   printf (" copying variable values...\n");
+   printf (" ncendef'ing and copying variable values...\n");
 #endif
-   ncendef (ChildCDF);
+   if (ncendef (ChildCDF) == MI_ERROR)
+   {
+      sprintf (ErrMsg, "Error updating file (ncendef): %s",
+	       NCErrMsg (ncerr, errno));
+      ncclose (ChildCDF);
+      return (FALSE);
+   }
 
    if (micopy_all_var_values(ParentCDF, ChildCDF, NumExclude, Exclude) == MI_ERROR)
    {
-      sprintf (ErrMsg, "Error %d copying variable values: %s", 
-	       ncerr, NCErrMsg (ncerr, errno));
+      sprintf (ErrMsg, "Error copying variable values: %s", 
+	       NCErrMsg (ncerr, errno));
       ncclose (ChildCDF);
       return (FALSE);
    }
