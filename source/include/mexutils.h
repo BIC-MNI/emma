@@ -5,6 +5,10 @@
 #include <emmageneral.h>
 #endif
 
+#ifndef mex_h
+#include <mex.h>
+#endif
+
 
 /* 
  * Error codes returned by functions in this library
