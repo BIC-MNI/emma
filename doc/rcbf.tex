@@ -2,13 +2,13 @@
 
 \title{rCBF Analysis Using MATLAB}
 \author{Mark Wolforth \and Greg Ward}
-
+\psdraft
 \def\code#1{{\tt #1}}
 
 \begin{document}
 
 \maketitle
-\newpage
+%\newpage
 
 \tableofcontents
 
@@ -84,7 +84,7 @@ We wish to solve equation (\ref{eq:2comp4}) for $K_{1}$, $k_{2}$, and
 $V_{0}$.  Of course, one approach would be to try to perform an
 explicit least squares curve fitting.  However, this approach would be
 quite computationally intensive since the fitting would need to be
-performed for every pixel of a 128x128 pixel image.  Fortunately,
+performed for every pixel of a $128 \times 128$ pixel image.  Fortunately,
 there is a method of solution that gives good results with reduced
 computational difficulty.
 
@@ -103,7 +103,7 @@ last frame, we get:
 
 \begin{equation}
 \int_{0}^{T} A^{*}(t) dt = K_{1} \int_{0}^{T} \frac{\int_{T_1}^{T_2}
-\left[ C_{a}(t) \otimes e^{-k_{2}t} \right] dt}{T_2 - T_1}
+\left[ C_{a}(u) \otimes e^{-k_{2}u} \right] du}{T_2 - T_1} dt
 \end{equation}
 
 We can then take this equation, and divide it by a weighted version
@@ -234,6 +234,7 @@ $k_{2}$ known, we may find $V_{0}$ by evaluating equation
 (\ref{eq:2comp4}).
 
 \subsection{Delay and Dispersion Correction}
+\label{sec:blood_correction}
 
 Since the blood samples used to estimate $C_a(t)$ are taken from the
 subject's arm, the activity data gathered from them must be corrected
@@ -254,6 +255,7 @@ generating $C_a(t)$ from:
 
 \begin{equation}
 C_a(t) = \bar{g}(t+\delta)
+\label{eq:blood_delay}
 \end{equation}
 
 The function $\bar{g}$ is the result of performing dispersion
@@ -324,16 +326,18 @@ comprising the rCBF package.  Each program is broken into functional
 sections, which are then annotated.
 
 \subsubsection{RCBF1}
+\label{sec:rcbf1_listing}
 
 \begin{enumerate}
 
 \item Check the input arguments.  If the number of arguments is
-incorrect, then print out the help information for the function,
-followed by an explanatory error message.  Additionally, we want to
-ensure that the arguments themselves make sense.  Therefore, we check
-that \code{slice} is a scalar, by checking that its largest dimension
-has a size of one (ie. it is a 1x1 matrix).  If it is not, then we
-print the help, followed by an error message explaining the problem.
+  incorrect, then print out the help information for the function,
+  followed by an explanatory error message.  Additionally, we want to
+  ensure that the arguments themselves make sense.  Therefore, we
+  check that \code{slice} is a scalar, by checking that its largest
+  dimension has a size of one (i.e. it is a $1 \times 1$ matrix).  If
+  it is not, then we print the help, followed by an error message
+  explaining the problem.
 \begin{verbatim}
 if (nargin == 2)
     progress = 0;
@@ -349,19 +353,22 @@ end
 \end{verbatim}
 
 \item Get the images and image information.  This includes all of the
-frames for the slice being analyzed, the frame start times, the frame
-lengths, the mid-frame times, and the blood data.  The frame time
-information is returned by simple enquiries with the data handle
-\code{img} returned by \code{openimage}.  The blood data is returned
-by \code{resampleblood}, which gives the blood data in an evenly
-sampled time domain (every half second).  The blood data is then
-cross-calibration corrected by multiplying by the factor \code{XCAL}.
-In order to maintain consistent units throughout the analysis, this
-data must then have its units converted from $nCi/ml_{tissue}$ to
-$counts/(g_{tissue} \cdot second)$.  The actual PET images are then
-retrieved, and the units are again converted to $counts/(g_{tissue}
-\cdot second)$.  Any negative values present in the images are set to
-zero.
+  frames for the slice being analyzed, the frame start times, the
+  frame lengths, the mid-frame times, and the blood data.  The frame
+  time information is returned by simple enquiries with the data
+  handle \code{img} returned by \code{openimage}.  The blood data is
+  returned by \code{resampleblood}, which gives the blood data in an
+  evenly sampled time domain (every half second).  The blood data is
+  then cross-calibration corrected by multiplying by the factor
+  \code{XCAL}.  The cross-calibration converts from ${\rm Bq} /
+  {\rm g_{blood}}$ to ${\rm nCi} / {\rm mL_{blood}}$, taking into
+  account the calibration between the well counter and the PET
+  scanner.  In order to maintain consistent units throughout the
+  analysis, this data must then be converted from ${\rm nCi / ml_{blood}}$
+  {\em back} to ${\rm Bq} / {\rm g_{blood}}$.  The actual PET
+  images are then retrieved, and the units are again converted to
+  ${\rm Bq} / {\rm g_{tissue}}$.  Any negative values present in
+  the images are set to zero.
 \begin{verbatim}
 img = openimage(filename);
 FrameTimes = getimageinfo (img, 'FrameTimes');
@@ -370,31 +377,37 @@ MidFTimes = FrameTimes + (FrameLengths / 2);
 
 [g_even, ts_even] = resampleblood (img, 'even');
 
-% Apply the cross-calibration factor.
+% Apply the cross-calibration factor, and convert back to Bq/g_blood 
 XCAL = 0.11;
-g_even = g_even*XCAL*37/1.05;           % units are decay / (g_tissue * sec)
+g_even = g_even*XCAL*37/1.05;
 
-Ca_even = g_even; 			% no delay/dispersion correction!!!
+Ca_even = g_even;                % no delay/dispersion correction
 
 PET = getimages (img, slice, 1:length(FrameTimes));
-PET = PET * 37 / 1.05;                  % convert to decay / (g_tissue * sec)
-PET = PET .* (PET > 0);			% set all negative values to zero
-ImLen = size (PET, 1);                  % num of rows = length of image
+PET = PET * 37 / 1.05;           % convert to decay / (g_tissue * sec)
+PET = PET .* (PET > 0);          % set all negative values to zero
+ImLen = size (PET, 1);           % num of rows = length of image
 \end{verbatim}
 
 \item Calculate some useful integrals that are used several times in
-the rest of the program.  \code{PET\_int1}, and \code{PET\_int2} are
-weighted integrals of the PET data across frames (integrated with
-respect to time).  To get clean images out of the analysis, we wish to
-set all points outside of the head to zero.  Therefore, we create a
-simple mask, and apply it to the weighted integrals.
+  the rest of the program.  \code{PET\_int1}, and \code{PET\_int2} are
+  weighted integrals of the PET data across frames (integrated with
+  respect to time).  In particular, \code{PET\_int1} is the numerator
+  of the left-hand-side of equation \ref{eq:1comp}, and
+  \code{PET\_int2} is the denominator.  To get clean images out of the
+  analysis, we wish to set all points outside of the head to zero.
+  Therefore, we create a simple mask, and apply it to the weighted
+  integrals.  Note the use of \code{rescale} to perform an
+  ``in-place'' multiplication on \code{PET\_int1}.  This has the same
+  effect as the more conventional MATLAB \verb|PET_int1 = PET_int1 .*
+  mask|, but without making a copy of \code{PET\_int1}.
 \begin{verbatim}
 PET_int1 = trapz (MidFTimes, PET')';
 PET_int2 = trapz (MidFTimes, PET' .* (MidFTimes * ones(1,ImLen)))';
 
 mask = PET_int1 > mean (PET_int1);
-PET_int1 = PET_int1 .* mask;
-PET_int2 = PET_int2 .* mask;
+rescale (PET_int1, mask);
+rescale (PET_int2, mask);
 \end{verbatim}
 
 \item Calculate the left hand side of equation (\ref{eq:1comp}).
@@ -403,7 +416,37 @@ rL = PET_int1 ./ PET_int2;
 \end{verbatim}
 
 \item Assign the $k_2$ values to be used in the lookup table, and then
-generate some useful weighted integrals.
+generate some more useful weighted integrals.  \code{findintconvo}
+computes the function
+\begin{equation}
+C_{a}(t) \otimes e^{-k_{2}t}
+\end{equation}
+at all points in the evenly-resampled time domain \code{ts\_even}.
+Then, it integrates across each individual frame (which run from $T_1$
+to $T_2$; $T_1$ and $T_2$ in the following formula are implicitly
+functions of the frame).  Then, the weighted integrals across {\em all} frames
+are computed:
+\begin{equation}
+\int_{0}^{T} \frac
+  {\int_{T_1}^{T_2} \left[ C_{a}(u) \otimes e^{-k_{2}u} \right] du}
+  {T_2 - T_1} 
+  w_i dt
+\label{eq:convint}
+\end{equation}
+Here, $w_i$ is the weighting function; for the double-weighted
+analysis it is either $1$ or $t$ as in the right hand side of equation
+(\ref{eq:1comp}).  
+
+Then, since we wish to relate $k_2$ to the values of these integrals,
+\code{findintconvo} computes equation \ref{eq:convint} at a wide range
+of values of $k_2$ (supplied by the argument \code{k2\_lookup}) for
+each weighting function $w_i$.  (For the double-weighted method, $w_1
+= 1$ and $w_2 = t$.)  Note that the supplied value of
+\code{k2\_lookup} implies an assumption that no voxel in the image
+will have a $k_2$ value outside the range $0 \ldots 3\, 
+{\rm min}^{-1}$.)  See section \ref{sec:findintconvo_listing} for
+information on the internal details of \code{findintconvo}.
+
 \begin{verbatim}
 k2_lookup = (0:0.02:3) / 60;
 [conv_int1, conv_int2] = findintconvo (Ca_even, ts_even, k2_lookup,...
@@ -415,12 +458,21 @@ k2_lookup = (0:0.02:3) / 60;
 rR = conv_int1 ./ conv_int2;
 \end{verbatim}
 
-\item Generate the $k_2$ image through table lookup.
+\item Generate the $k_2$ image through table lookup.  This is where we
+  make use of the lookup tables generated in \code{findintconvo} for
+  great time savings: \code{findintconvo} only has to compute equation
+  \ref{eq:convint} (a comparatively slow operation) a few hundred
+  times, but for that effort we get 16,384 values of $k_2$ very
+  quickly.
 \begin{verbatim}
 k2 = lookup(rR, k2_lookup, rL);
 \end{verbatim}
 
 \item Generate the $K_1$ image through table lookup and division.
+  \code{k2\_conv\_ints} contains the values of equation \ref{eq:convint}
+  at the actual values of $k_2$ for this image, rather than at the
+  artificial set \code{k2\_lookup}.  This step is where we solve the
+  numerator of equation \ref{eq:1comp} for $K_1$.
 \begin{verbatim}
 k2_conv_ints = lookup (k2_lookup, conv_int1, k2);
 K1 = PET_int1 ./ k2_conv_ints;
@@ -431,159 +483,289 @@ zero, and close the image data set.
 \begin{verbatim}
 nuke = find (isnan (K1) | isinf (K1));
 K1 (nuke) = zeros (size (nuke));
-
 closeimage (img);
 \end{verbatim}
+
+\item Finally, $K_1$ is converted from the internal units [${\rm
+    g_{blood} / g_{tissue}}$] to the standard units for rCBF
+  analysis [${\rm mL_{blood} / (100\, g_{tissue} \cdot min)}$].
+\begin{verbatim}
+rescale (K1, 100*60/1.05);
+\end{verbatim}
+
 \end{enumerate}
 
 
 \subsubsection{RCBF2}
+\label{sec:rcbf2_listing}
+
+\code{RCBF2} is essentially an extension of \code{RCBF1} with the
+addition of a third weighting function (needed to calculate $V_0$) and
+correction for the delay and dispersion of blood.  Also, RCBF2 adds
+allows the user to specify a list of slices (as a vector) rather than
+requiring a scalar \code{slice}.  This means that we add a loop
+through all desired slices, so some of the code is rearranged to avoid
+redoing the same work several times in the loop.
 
 \begin{enumerate}
-\item Check the input arguments.  We want to make sure that we have
-at least two input arguments (the filename and the slice number).
-Then, for various numbers of input arguments, we want to set options
-such as whether to display progress or perform blood delay and
-dispersion correction.  Finally, we check to ensure that the
-argument passed as slice is a scalar (has a length of one).
+\item The function declaration line.  The output arguments \code{K1},
+  \code{k2}, and \code{V0} will all be whole images---that is,
+  assuming $128 \times 128$ PET data, they will be column vectors with
+  16,384 elements.  \code{delta} will contain the blood delay term
+  $\delta$ for each specified slice.
+
+  Of the input arguments, only \code{filename} (the name of the MINC
+  volume to process) and \code{slices} (the list of slices to process)
+  are required.  The other three are boolean variables (i.e., they
+  should be scalars with a value of either 0 or 1) that default to
+  ``true'' (1).  \code{progress} controls whether RCBF2 prints
+  progress information; \code{correction} decides whether or not it
+  performs correction of the blood data for delay and dispersion; and
+  \code{batch} controls whether selection of the mask used for
+  delay/dispersion correction should be interactive or automatic (the
+  default).  The latter two should {\em not} be changed when RCBF2 is
+  being used for real data analysis, and are merely provided to speed
+  things up when debugging.
+  \begin{verbatim}
+function [K1,k2,V0,delta] = rcbf2_slice ...
+         (filename, slices, progress, correction, batch)
+  \end{verbatim}
+
+\item Check the input arguments.  We want to make sure that we have at
+  least two input arguments (the filename and the list of slices).
+  Then, we assign default values to \code{progress}, \code{correction}
+  and \code{batch} if they were not supplied by the user.
 \begin{verbatim}
 if (nargin < 2)
    help rcbf2
    error ('Not enough input arguments');
 elseif (nargin < 3)
-   progress = 0;
+   progress = 1;
    correction = 1;
+   batch = 1;   
 elseif (nargin < 4)
+   batch = 1;
    correction = 1;
-elseif (nargin > 4)
+elseif (nargin < 5)
+   batch = 1;
+elseif (nargin > 5)
    help rcbf2
    error('Incorrect number of arguments.');
 end
-
-if (length(slice)~=1)
-   help rcbf2
-   error('<Slice> must be a scalar.');
-end
 \end{verbatim}
 
-\item Get the images and image information.  This includes all of the
-frames for the slice in question, the frame start times, frame
-lengths, mid-frame times, and the blood data.  The blood data is
-returned by \code{resampleblood} in a new time domain, resampled to
-half second intervals.  In order to keep our units consistent, we
-convert the units of the PET images from $nCi/ml_{tissue}$ to $counts
-/ (g_{tissue} \cdot second)$.  The units of the blood data will be
-converted after cross-calibration correction is performed.
-\begin{verbatim}
+\item Initialize the matrices that will hold the $K_1$, $k_2$, and
+  $V_0$ images, as well as the vector to hold the value of $\delta$
+  (the blood delay from equation \ref{eq:blood_delay}) for each slice.
+  \begin{verbatim}
+total_slices = length(slices);
+K1 = zeros(16384,total_slices);
+k2 = zeros(16384,total_slices);
+V0 = zeros(16384,total_slices);
+delta = zeros(1,total_slices);
+  \end{verbatim}
+
+\item Open the volume and get some preliminary information on frame
+  times and lengths.
+  \begin{verbatim}
 img = openimage(filename);
+if (getimageinfo (img, 'time') == 0)
+   error ('Study is non-dynamic');
+end
+
 FrameTimes = getimageinfo (img, 'FrameTimes');
 FrameLengths = getimageinfo (img, 'FrameLengths');
 MidFTimes = FrameTimes + (FrameLengths / 2);
+  \end{verbatim}
+
+\item Read the blood data, perform cross-calibration, and convert
+  units.  (See explanation in section \ref{sec:rcbf1_listing}.)
+  \begin{verbatim}
 [g_even, ts_even] = resampleblood (img, 'even');
+XCAL = 0.11;
+rescale(g_even, (XCAL*37/1.05));
+  \end{verbatim}
 
+\item Create the weighting functions, $w_1$, $w_2$, and $w_3$ from
+  equations \ref{eq:fullweight1}--\ref{eq:fullweight3}.  Also here we
+  initialize the list of $k_2$ values from which the lookup table will
+  be generated.
 
-PET = getimages (img, slice, 1:length(FrameTimes));
-PET = PET * 37 / 1.05;     % convert to decay / (g_tissue * sec)
-\end{verbatim}
-
-\item Create the weighting functions, plus some integrals that are
-used several times later in the program.  \code{PET\_int1},
-\code{PET\_int2}, and \code{PET\_int3} are weighted integrals of the
-PET data across frames (integrated with respect to time).  Here we
-also create a simple mask that excludes information outside of the
-brain, and apply it to our integrals.  This will ensure that areas
-outside of the brain will be set to zero.
-\begin{verbatim}
+  \begin{verbatim}
+w1 = ones(length(MidFTimes), 1);
 w2 = MidFTimes;
 w3 = sqrt (MidFTimes);
 
-ImLen = size(PET,1);
-PET_int1 = C_trapz (MidFTimes, PET')';
-PET_int2 = C_trapz (MidFTimes, PET' .* (w2 * ones(1,ImLen)))';
-PET_int3 = C_trapz (MidFTimes, PET' .* (w3 * ones(1,ImLen)))';
-
-% Now use PET_int1 to create a simple mask, and mask all three
-% PET integrals.  This does a good job of removing the
-% outside-of-head data for CBF studies.
-
-mask = PET_int1 > mean(PET_int1);
-PET_int1 = PET_int1 .* mask;
-PET_int2 = PET_int2 .* mask;
-PET_int3 = PET_int3 .* mask;
-\end{verbatim}
-
-\item Correct the blood data for delay and dispersion, and apply the
-cross-calibration factor.  The correction will be accomplished by
-performing a curve fitting on average activity across grey matter.
-Therefore, \code{getmask} allows the user to select grey matter by
-choosing a threshold value.  The average grey matter activity is then
-passed to \code{correctblood}.  The units of the blood data are
-converted from $counts / (g_{blood} \cdot second)$ to $nCi /
-ml_{tissue}$ by multiplying by the cross-calibration factor.
-Therefore, to maintain consistent units, we convert to $counts /
-(g_{tissue} \cdot second)$.
-
-\begin{verbatim}
-XCAL = 0.11;
-g_even = g_even*XCAL*37/1.05;    % units are decay / (g_tissue * sec)
-
-if (correction)
-   mask = getmask (PET_int1);
-   A = (mean (PET (find(mask),:)))';
-   [ts_even, Ca_even, delta] = correctblood ...
-           (A, FrameTimes, FrameLengths, g_even, ts_even, progress);
-else
-   Ca_even = g_even;
-end
-\end{verbatim}
-
-\item Generate three very useful lookup tables.  These are
-$\int_{0}^{T} w (\int_{T_1}^{T_2} Ca(u) \otimes e^{-k_{2}u} du)/(T_2
-- T_1) dt$ evaluated for $w_1$, $w_2$, and $w_3$ as the weights
-($w$).  These lookup tables are used in all subsequent evaluations of
-these three weighted integrals.  The values of $k_2$ used in the
-lookup are also chosen here.
-\begin{verbatim}
 k2_lookup = (-10:0.05:10) / 60;
+  \end{verbatim}
+
+
+\item At this point, we start the processing that is specific to each
+  slice: read the PET data, perform delay/dispersion correction,
+  generate the lookup table, and solve equation \ref{eq:k1two}.  Thus,
+  we loop through all user-specified slices:
+  \begin{verbatim}
+for current_slice = 1:total_slices
+  \end{verbatim}
+
+\item Read in the PET data for the current slice, and rescale it
+  convert from ${\rm nCi/mL_{tissue}}$ to ${\rm Bq/g_{tissue}}$.
+  \begin{verbatim}
+PET = getimages (img, slices(current_slice), 1:length(FrameTimes), PET);
+rescale (PET, (37/1.05));
+  \end{verbatim}
+
+\item Compute the weighted integrals of the PET data.
+  \begin{verbatim}
+PET_int1 = ntrapz (MidFTimes, PET, w1);
+PET_int2 = ntrapz (MidFTimes, PET, w2);
+PET_int3 = ntrapz (MidFTimes, PET, w3);
+  \end{verbatim}
+
+  This uses \code{ntrapz}, the CMEX version of \code{trapz}, which has
+  the useful feature of allowing a weighting function to be supplied.
+  Thus, the first line of code above is equivalent to (but faster and
+  less memory-intensive than)
+  \begin{verbatim}
+weight = ones (16384,1) * w1';
+PETweighted = PET .* weight;
+PET_int1 = trapz (MidFTimes, PETweighted');
+  \end{verbatim}
+
+\item Generate a simple mask based on \code{PET\_int1} (which is
+  simply the PET data averaged across all frames), and mask using
+  \code{rescale}.  Also, \code{mask} is cleared for memory efficiency.
+  \begin{verbatim}
+mask = PET_int1 > mean(PET_int1);
+rescale (PET_int1, mask);
+rescale (PET_int2, mask);
+rescale (PET_int3, mask);
+clear mask;
+  \end{verbatim}
+
+  The next three steps perform delay/dispersion correction of the
+  blood data (see section \ref{sec:blood_correction}).  
+
+%  In the actual
+%  program, this code is in an \code{if (correction)} statement, making
+%  blood correction optional.  This detail has been omitted here.
+
+\item First, create a mask that is used to select gray matter only;
+  the mask is a variation on that used to mask the weighted PET
+  integrals above.  That is, simply select all voxels whose values are
+  greater than some constant times the mean of \code{PET\_int1}.  If
+  non-interactive mode is on (i.e.  \code{batch} = 1, the default
+  behaviour), then this constant is hard-coded to 1.8\footnote{This
+    constant was empirically selected because it works fairly well
+    with ${\rm H_{2}\,^{15}O}$ CBF data.}; otherwise, the function
+  \code{getmask} is run.  This allows the user to select the threshold
+  value while displaying the resulting, masked PET data.
+  \begin{verbatim}
+if (batch)
+  mask = PET_int1 > (1.8*mean(PET_int1));
+else
+  mask = getmask (PET_int1);
+end
+  \end{verbatim}
+
+\item Use the mask to get the mean of all gray-matter voxels.
+  Thus, we reduce the dynamic PET data (16,384 voxels sampled at
+  $n$ points in time) to a single time-activity curve (average of
+  gray-matter activity at $n$ points in time).
+  \begin{verbatim}
+A = (mean (PET (find(mask),:)))';
+clear mask;
+  \end{verbatim}
+
+\item The actual delay/dispersion correction is performed by
+  \code{correctblood}.  See sections \ref{sec:blood_correction}, and
+  \ref{sec:correctblood_listing} for information on (respectively) the
+  theoretical basis and the implementation of delay/dispersion
+  correction.
+  \begin{verbatim}
+[ts_even, Ca_even, delta(:,current_slice)] = correctblood ...
+    (A, FrameTimes, FrameLengths, g_even, ts_even, progress);
+  \end{verbatim}
+
+\item Generate tables of the three weighted integrals of $Ca(t)
+  \otimes e^{-k_{2}t}$.  (Actually, we generate tables of this
+  expression integrated across each individual frame, then integrated
+  across all frames; the procedure is identical to that used in RCBF1
+  except for the addition of a third weighting function and the
+  greatly expanded range of possible values for $k_2$.)
+  \begin{verbatim}
 [conv_int1,conv_int2,conv_int3] = findintconvo (Ca_even,ts_even,...
    k2_lookup, MidFTimes, FrameLengths, 1, w2, w3);
-\end{verbatim}
+  \end{verbatim}
 
 \item Generate some additional useful integrals.  These are used more
-than once in the subsequent code, and so are calculated in advance to
-try and increase the speed slightly.  \code{Ca\_mft} is the blood
-data averaged over each frame.  This is taken as the value of the
-blood data at the mid-frame time.
+  than once in the subsequent code, and so are calculated in advance
+  to speed up the computation.  \code{Ca\_mft} is the blood data
+  averaged over each frame.  This is taken as the value of the blood
+  data at the mid-frame time.  Note that we must detect when the blood
+  data does not cover all the frames that the PET data does; this is
+  made easy because \code{nframeint} does the work for us.  In
+  particular, if the start time of any frame (some element of
+  \code{FrameTimes}) is less than the start time of blood data
+  [\code{ts\_even(1)}], then \code{nframeint} returns \code{NaN}
+  (not-a-number) in the element of \code{Ca\_mft} corresponding to that
+  frame.  Similiary, if the end time of any frame (some element of
+  \code{FrameTimes+FrameLengths}) is greater than the end time of
+  blood data [\code{ts\_even(length(ts\_even))}], then \code{NaN}
+  is also returned.  The frames that fall outside of the blood data
+  are then not used in generating the weighted integrals of the blood data.
 \begin{verbatim}
 Ca_mft = nframeint (ts_even, Ca_even, FrameTimes, FrameLengths);      
+select = ~isnan(Ca_mft);
 
-Ca_int1 = C_trapz(MidFTimes, Ca_mft);
-Ca_int2 = C_trapz(MidFTimes, (w2 .* Ca_mft));
-Ca_int3 = C_trapz(MidFTimes, (w3 .* Ca_mft));
+if (sum(select) ~= length(FrameTimes))
+  disp('Warning: blood data does not span frames.');
+end
+  
+Ca_int1 = ntrapz(MidFTimes(select), Ca_mft(select), w1(select));
+Ca_int2 = ntrapz(MidFTimes(select), Ca_mft(select), w2(select));
+Ca_int3 = ntrapz(MidFTimes(select), Ca_mft(select), w3(select));
 \end{verbatim}
 
 \item Generate the lookup table relating $k_2$ to values of the right
 hand side of equation (\ref{eq:k1two}).  We also calculate the left
 hand side of equation (\ref{eq:k1two}), which will be used in the
-generation of a $k_2$ image.  Since we will be looking up values of
-$k_2$ from values of \code{rR} (the right hand side of equation
-(\ref{eq:k1two})), we sort the table on \code{rR}.
+generation of a $k_2$ image.  Here, we see the value of precomputing
+all the terms of \code{rL} and \code{rR}---not only is the code fairly
+straightforward [as long as you understand the correspondance between
+the variables \code{Ca\_int{\it i\/}}, \code{PET\_int{\it i\/}} and
+\code{conv\_int{\it i\/}}, and the terms of equation (\ref{eq:k1two})],
+but the computation of \code{rL} and \code{rR} is very fast.
+
+Note that since \code{PET\_int{\it i\/}} is an image (i.e. it contains
+a value for each voxel in the slice), and \code{Ca\_int{\it i\/}} is a
+scalar, then \code{rL} will be an image.  However, 
+\code{conv\_int{\it i\/}} is a lookup table keyed on
+\code{k2\_lookup}; that is, there it contains one value for every
+value of $k_2$ presumed possible.  Thus, \code{rR} will be also be a
+lookup table keyed on \code{k2\_lookup}.
 \begin{verbatim}
-rL = ((Ca_int3 .* PET_int1) - (Ca_int1 .* PET_int3)) ./ ...
-     ((Ca_int3 .* PET_int2) - (Ca_int2 .* PET_int3));
+rL = ((Ca_int3 * PET_int1) - (Ca_int1 * PET_int3)) ./ ...
+      ((Ca_int3 * PET_int2) - (Ca_int2 * PET_int3));
 
 rR = ((Ca_int3 * conv_int1) - (Ca_int1 * conv_int3)) ./ ...
       ((Ca_int3 * conv_int2) - (Ca_int2 * conv_int3));
+\end{verbatim}
 
-% Now, we must have the k2/rR lookup table in order by rR; however, 
-% we also want to keep k2_lookup in the original order.  This
-% is because the first lookup uses rL as a lookup into rR to
-% find k2 (which requires that rR be monotonic, ie. sorted) whereas
-% subsequent lookups all use k2 to find conv_int{1,2,3} -- which 
-% requires that k2_lookup be monotonic.  So k2_lookup will be the
-% list of k2's in order, and k2_sorted will be the same list, but 
-% in order according to the sorted rR.
-
+\item Since \code{rL} and \code{rR} are the left- and right-hand-sides
+  of equation (\ref{eq:k1two}), we can use their equality to find
+  $k_2$ for every voxel.  That is, we know \code{rL} for every voxel,
+  and we know \code{rR} for a certain set of values of $k_2$.  Thus,
+  we can use \code{rR} to interpolate values of $k_2$.  First,
+  however, we must invert the current relationship between
+  \code{k2\_lookup} and \code{rR}; that is, we must make
+  \code{k2\_lookup} a lookup table keyed on the values of \code{rR}.
+  MATLAB's \code{sort} function makes this quite easy: we can sort
+  \code{rR} and get a vector containing the ``sort order'' in one
+  step.  Since we need \code{k2\_lookup} in its original order later
+  on, we make a copy called \code{k2\_sorted} (even though it's now
+  scrambled) that is ordered according to \code{rR}.
+\begin{verbatim}
 [rR,sort_order] = sort (rR);
 k2_sorted = k2_lookup (sort_order);
 \end{verbatim}
@@ -628,6 +810,14 @@ nuke = find (isinf (V0));
 V0 (nuke) = zeros (size (nuke));
 \end{verbatim}
 
+\item Convert from the units used internally to the standard units for
+  rCBF analysis.
+  \begin{verbatim}
+rescale (K1, 100*60/1.05);
+rescale (k2, 60);
+rescale (V0, 100/1.05);
+  \end{verbatim}
+
 \item Finally, close the image file so that everything gets cleaned
 up nicely.
 \begin{verbatim}
@@ -638,6 +828,7 @@ closeimage (img);
 
 
 \subsubsection{CORRECTBLOOD}
+\label{sec:correctblood_listing}
 
 \begin{enumerate}
 
@@ -823,6 +1014,7 @@ new_ts_even(nuke) = [];
 
 
 \subsubsection{FINDINTCONVO}
+\label{sec:findintconvo_listing}
 \begin{enumerate}
 \item Check the input arguments.
 \begin{verbatim}
@@ -937,6 +1129,12 @@ integral = integral (1:length(A));
 \end{verbatim}
 \end{enumerate}
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%    TEMPORARILY END THE DOCUMENT HERE    %%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\end{document}
 
 %--------------------------------------------------------------
 \newpage
