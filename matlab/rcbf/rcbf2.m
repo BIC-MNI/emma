@@ -123,11 +123,6 @@ FrameLengths = getimageinfo (img, 'FrameLengths');
 MidFTimes = FrameTimes + (FrameLengths / 2);
 [g_even, orig_ts_even] = resampleblood (img, 'even');
 
-% QUESTION: doesn't the blood data come in Bq/g_blood?  In that case,
-% isn't the division by 1.05 WRONG here?!?!?  [on the other hand,
-% if blood data comes in Bq/mL_blood, then this is OK -- it just 
-% converts to Bq/g_blood]
-
 % The blood data is initially in units of Bq/g_blood.  The cross-
 % calibration factor, XCAL, converts this to nCi/mL_blood,
 % simultaneously taking into account the unit conversions and
