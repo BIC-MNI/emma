@@ -1,27 +1,35 @@
 function msg = check_sf (handle, slices, frames)
-
-%  CHECK_SF  for internal use only
+%  CHECK_SF  determine the validity of slice and frame lists (internal use)
 %
 %      msg = check_sf (handle, slices, frames)
 %
-%  msg = []: all is OK
-%  msg = error message if there's anything wrong
-% makes sure that the given slices and frames vectors
-% are consistent with the image specified by handle.  Checks for:
-%   * both slices and frames cannot be vectors
-%   * if image has no frames, frames vector should be empty
-%   * if frames vector is empty, image must have no frames
-%   * if image has no slices, slices vector should be empty
-%   * if slices vector is empty, image must have no slices
+%  examines the lists of slices and frames, compares them to the 
+%  properties of the MINC file specified by handle, and generates
+%  a reasonably useful error message if there's any inconsistency.
+%  check_sf is meant to be called by other EMMA functions, particularly
+%  getimages and putimages.
+%
+%  The specific conditions that cause an error message are:
+%
+%     - both slices and frames have multiple values
+%     - the file has no time dimension, but a frame list was given
+%     - the file has a time dimension, but no frame list was given
+%     - the file has no slice dimension, but a slice list was given
+%     - the file has a slice dimension, but no slice list was given
+%     - there were out-of-range frames: frame number either greater than
+%       the number of frames or less than one
+%     - there were out-of-range slices
+%
+%  If there are no problems, then the empty matrix is returned.
 
 msg = [];
 
 % First retrieve the number of frames and slices from the global workspace
 
-eval(['global NumFrames' int2str(handle)]);
-eval(['global NumSlices' int2str(handle)]);
-num_frames = eval(['NumFrames' int2str(handle)]);
-num_slices = eval(['NumSlices' int2str(handle)]);
+eval(['global DimSizes' int2str(handle)]);
+dim_sizes = eval(['DimSizes' int2str(handle)]);
+num_frames = dim_sizes(1);
+num_slices = dim_sizes(2);
 
 if (length(slices) > 1) & (length(frames) > 1)
    msg = 'Cannot specify both multiple slices and multiple frames';
@@ -48,3 +56,12 @@ end
 if (isempty (slices)) & (num_slices > 0)
    msg = 'Image has a slice dimension; you must specify slices';
 end
+
+if (find (slices > num_slices | slices <= 0))
+   msg = 'Out-of-range slice number given';
+end
+
+if (find (frames > num_frames | frames <= 0))
+   msg = 'Out-of-range frame number given';
+end
+
