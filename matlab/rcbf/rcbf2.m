@@ -56,9 +56,18 @@ img = openimage(filename);
 FrameTimes = getimageinfo (img, 'FrameTimes');
 FrameLengths = getimageinfo (img, 'FrameLengths');
 midftimes = FrameTimes + (FrameLengths / 2);
-[Ca_even, ts_even] = resampleblood (img, 'even');
+[g_even, ts_even] = resampleblood (img, 'even');
 
 PET = getimages (img, slice, 1:length(FrameTimes));
+
+% Perform dispersion and delay correction.
+PET_int1 = trapz( midftimes, PET')';
+
+mask = getmask (PET_int1);
+mask = (PET_int1>(1.8*mean(PET_int1)));
+A = (mean (PET (find(mask),:)))' * 37 / 1.05;
+[Ca_even, delta] = correctblood (A, FrameTimes, FrameLengths, g_even, ts_even, progress);
+
 
 
 % Initialise the weighting functions w3 and w2; 
@@ -67,17 +76,8 @@ PET = getimages (img, slice, 1:length(FrameTimes));
 w3 = sqrt (midftimes);
 w2 = midftimes;
 
-
-% Find the value of rL for every pixel of the slice.  (NOTE: findrl2
-% should also be upgraded/replaced to do proper integration.
-
-%if (progress); disp ('Calculating rL image'); end
-%rL = findrl2 (PET, midftimes, FrameLengths, ts_even, Ca_even);
-
-PET_int1 = (PET*FrameLengths);
-PET_int2 = (PET*(w2.*FrameLengths));
-PET_int3 = (PET*(w3.*FrameLengths));
-
+PET_int2 = trapz (midftimes, PET' .* (w2 * ones(1,length(PET))))';
+PET_int3 = trapz (midftimes, PET' .* (w3 * ones(1,length(PET))))';
 
 % Apply a simple mask to eliminate data outside of the brain.
 
@@ -108,6 +108,7 @@ Ca_int1 = Ca_mft' * FrameLengths;
 Ca_int2 = (w2 .* Ca_mft)' * FrameLengths;
 Ca_int3 = (w3 .* Ca_mft)' * FrameLengths;
 
+% Find the value of rL for every pixel of the slice.
 rL = ((Ca_int3 .* PET_int1) - (Ca_int1 .* PET_int3)) ./ ...
      ((Ca_int3 .* PET_int2) - (Ca_int2 .* PET_int3));
 
