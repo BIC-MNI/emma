@@ -93,7 +93,7 @@ function handle = newimage (NewFile, DimSizes, ParentFile, ...
 %                              image type/valid range/orientation;
 %                              a few more fixes to the argument handling code
 %              27 May 1997   - Modified to work with Matlab 5 (MW)
-%@VERSION    : $Id: newimage.m,v 2.14 1999-06-17 20:29:34 neelin Exp $
+%@VERSION    : $Id: newimage.m,v 2.15 1999-07-20 18:36:32 neelin Exp $
 %              $Name:  $
 %-----------------------------------------------------------------------------
 
@@ -186,7 +186,7 @@ end
 % will ALL be overridden if ValidRange is already set, ie. if the user
 % supplied one in the arguments to newimage.)
 
-if (isempty (ValidRange)) & (Parent ~= -1) & strcmp (ImageType, ParentType)
+if (isempty (ValidRange)) & (Parent ~= -1) & strcmp (ImageType, ParentType)...
   & ~(strcmp (ImageType, 'float') | strcmp (ImageType, 'double'))
    ValidRange = miinquire (ParentFile, 'attvalue', 'image', 'valid_range');
 end   
@@ -206,9 +206,9 @@ if (isempty (ValidRange))
       elseif (strcmp (ImageType, 'long'))
          ValidRange = [-2147483648 2147483647];
       elseif (strcmp (ImageType, 'float'))
-         ValidRange = [-3.40282347e+38 3.40282347e+38];
+         ValidRange = [-3.4028234e+38 3.4028234e+38];
       elseif (strcmp (ImageType, 'double'))
-         ValidRange = [-1.7976931348623157e+308 1.7976931348623157e+308];
+         ValidRange = [-1.79769313486231e+308 1.79769313486231e+308];
       else
          error (['Invalid image type: ' ImageType]);
       end
@@ -254,10 +254,10 @@ end
 
 
 if (Parent == -1)
-   execstr = sprintf ('micreateimage %s -size %d %d %d %d -type %s -valid_range %g %g -orientation %s', ...
+   execstr = sprintf ('micreateimage %s -size %d %d %d %d -type %s -valid_range %.20g %.20g -orientation %s', ...
 		      NewFile, DimSizes, ImageType, ValidRange, Orientation);
 else
-   execstr = sprintf ('micreateimage %s -parent %s -size %d %d %d %d -type %s -valid_range %g %g -orientation %s', ...
+   execstr = sprintf ('micreateimage %s -parent %s -size %d %d %d %d -type %s -valid_range %.20g %.20g -orientation %s', ...
 		      NewFile, ParentFile, DimSizes, ...
 		      ImageType, ValidRange, Orientation);
 end
