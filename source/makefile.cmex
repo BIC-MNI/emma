@@ -19,53 +19,36 @@
 #
 #  make -f ../makefile.cmex PROG=foo
 #
-# by Greg Ward 94/3/10
+# by Greg Ward 1994/03/10
 #
-# ------------------------------------------------------------------
+# $Id: makefile.cmex,v 1.2 1997-10-17 20:26:44 greg Exp $
 #
-# Changed this so that it uses the MATLAB cmex script to perform
-# the building of cmex targets.  This makes EMMA more portable.
-# You must set the appropriate options in the .mexrc.sh file.
-# Please read the installation instructions, and examine the
-# example file provided.
-#
-# Mark Wolforth Thu May 26 1994
-#
-# ------------------------------------------------------------------
 
-# Currently this can be used to generate the following EMMA programs:
+# Currently this can be used to generate the following EMMA CMEX programs:
 #
-# lookup
-# nframeint
-# ntrapz
-# nfmins
-# delaycorrect
-# miinquire
-# mexec
-# mireadimages
-# mireadvar
-# rescale
+#    lookup
+#    nframeint
+#    ntrapz
+#    nfmins
+#    delaycorrect
+#    miinquire
+#    mexec
+#    mireadimages
+#    mireadvar
+#    rescale
 
 # This makefile gets included from one directory lower, so we must
 # take this into account in the root path.
 
-EMMA_ROOT = ../..
-
-EMMA_MEX  = $(EMMA_ROOT)/matlab/general
-
-#EMMAINC  = $(EMMA_ROOT)/include
-#EMMALIB  = $(EMMA_ROOT)/lib
-#INCLUDES = -I/usr/local/include \
-#           -I/usr/local/matlab/extern/include \
-#           -I$(EMMAINC)
-
+EMMA_ROOT = ../../
+EMMA_MEX  = $(EMMA_ROOT)matlab/general
 
 #
 # Include the site- and architecture-specific definitions.  ("Architecture"
 # also includes the development options in Makefile.develop.)
 #
 
-include $(EMMA_ROOT)/Makefile.site
+include $(EMMA_ROOT)Makefile.site
 
 
 PROG_MEX = $(PROG).$(MEX_EXT)
@@ -78,21 +61,17 @@ LINT     = lint
 LDFLAGS  = $(LIBDIRS) \
            $(CMEX_LIBS)
 
-#OPT       = -O2
-CFLAGS    = $(CMEX_OPT)
 LINTFLAGS = $(LINTOPTS) $(INCLUDES)
 
-# default case: generate <something>.mexsg from <something>.c, and 
-# copy it to the matlab directory
-$(EMMA_MEX)/$(PROG_MEX): $(PROG_SRC) $(EMMA_ROOT)/source/makefile.cmex \
-                         Makefile $(EMMALIB)/libemma.a
+# default case: generate foo.$(MEX_EXT) from foo.c, and 
+# move it to the matlab directory
+$(EMMA_MEX)/$(PROG_MEX): $(PROG_SRC) $(EMMALIB)/libemma.a
 	rm -f $@
-	cmex CFLAGS="$(CFLAGS)" $(INCLUDES) $(LDFLAGS) $(PROG_SRC)
+	$(CMEX) CFLAGS="$(CFLAGS_MEX)" $(DEFINES) $(INCLUDES) $(LDFLAGS) $(PROG_SRC)
 	mv $(PROG_MEX) $(EMMA_MEX)/$(PROG_MEX)
 
 lint:
 	$(LINT) $(LINTFLAGS) $(PROG_SRC)
-
 
 clean:
 	rm -f *.o $(EMMA_MEX)/$(PROG_MEX)
