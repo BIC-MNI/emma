@@ -1,12 +1,11 @@
 function demo(slice_number, frame_number)
-% DEMO
-%       Demontrate the PAMI blood analysis package.
-%       Hard-coded to use the arnaud_20547 data
-%       file, but allows input of a slice and
-%       frame to display.
+% DEMO  Demontrate the PAMI blood analysis package.
 %
-%    Usage: demo(slice_number, frame_number)
+%     demo(slice_number, frame_number)
 %
+% Hard-coded to use the arnaud_20547 data
+% file, but allows input of a slice and
+% frame to display.
 
 
 if (nargin ~= 2)
