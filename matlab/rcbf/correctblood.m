@@ -1,9 +1,9 @@
-function [Ca_even, delta] = correctblood (A, FrameTimes, FrameLengths, g_even, ts_even, options)
+function [new_ts_even, Ca_even, delta] = correctblood (A, FrameTimes, FrameLengths, g_even, ts_even, options)
 
 % CORRECTBLOOD  perform delay and dispersion corrections on blood curve
 %
-%  [Ca_even, delta] = correctblood (A, FrameTimes, FrameLengths, ...
-%                                   g_even, ts_even, progress)
+%  [new_ts_even, Ca_even, delta] = correctblood (A, FrameTimes, ...
+%                                  FrameLengths, g_even, ts_even, progress)
 %
 %  The required input parameters are: 
 %      A - brain activity, averaged over all gray matter in a slice.  This
@@ -17,6 +17,8 @@ function [Ca_even, delta] = correctblood (A, FrameTimes, FrameLengths, g_even, t
 %      ts_even - the time domain at which g_even is resampled
 %
 %  The returned variables are:
+%      new_ts_even - generally the same as the old time scale,
+%                    with some points missing from the end.
 %      Ca_even - g_even with dispersion and delay hopefully corrected,
 %                in units of decay / (mL-blood * sec).  
 %      delay - the delay time (ie. shift) in seconds
@@ -105,6 +107,10 @@ end
 
 [smooth_g_even, deriv_g] = ...
      deriv (3, length(ts_even), g_even, (ts_even(2)-ts_even(1)));
+smooth_g_even(length(smooth_g_even)) = [];
+deriv_g(length(deriv_g)) = [];
+ts_even(length(smooth_g_even)) = [];
+ 
 g_even = smooth_g_even + tau*deriv_g;
 
 if (progress >= 2)
@@ -204,5 +210,13 @@ end      % if do_delay
 Ca_even = lookup ((ts_even-delta), g_even, ts_even);
 
 nuke = find(isnan(Ca_even));
-Ca_even(nuke) = zeros(size(nuke));
+Ca_even(nuke) = [];
+
+% Let's assume that the NaN's occur at the beginning or end of the data
+% (not in the middle), and that we can therefore modify ts_even without
+% screwing up the even time spacing.
+
+new_ts_even = ts_even;
+new_ts_even(nuke) = [];
+
 
