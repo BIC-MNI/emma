@@ -1,4 +1,4 @@
-function ImHandle = openimage (filename)
+function ImHandle = openimage (filename, mode)
 % OPENIMAGE   setup appropriate variables in MATLAB for reading a MINC file
 %
 %  handle = openimage (filename)
@@ -8,6 +8,13 @@ function ImHandle = openimage (filename)
 %  as getimages and putimages.  It also reads in various data about
 %  the size and number of images on the file, all of which can be
 %  queried via getimageinfo.
+%  
+%  If the file in question is compressed (i.e., it ends with `.z',
+%  `.gz', or `.Z', then openimage will transparently uncompress it to a
+%  uniquely named temporary directory.  The filename returned by
+%  getimageinfo (handle, 'filename') in this case will be the name of
+%  the temporary, uncompressed file.  When the file is closed with
+%  closeimage, this temporary file will be deleted.
 %
 %  The value returned by openimage is a handle to be passed to getimages,
 %  putimages, getimageinfo, etc.
@@ -68,10 +75,57 @@ function ImHandle = openimage (filename)
 global ImageCount                % this does NOT create the variable if it
                                  % doesn't exist yet!
 
-if (nargin ~= 1)
-   error ('Incorrect number of arguments');
+error (nargchk (1, 2, nargin));
+
+% disp (['Looking for ' filename]);
+if exist (filename) ~= 2
+   error ([filename ': file not found']);
 end
 
+Flags = [0 0];
+
+if (nargin > 1)
+   if (~isstr (mode) | length(mode) ~= 1)
+      error ('mode must be a string of length 1');
+   end
+   if (mode == 'w')
+      Flags(1) = 1;
+   elseif (mode == 'r')
+      Flags(1) = 0;
+   else
+      error (['Illegal mode: ' mode]);
+   end
+end
+      
+
+% Check to see if it's a compressed file, and if so uncompress
+% (and give it a new filename)
+
+len = length (filename);
+if (strcmp (filename(len-2:len), '.gz') | ...
+    strcmp (filename(len-1:len), '.z') | ...
+    strcmp (filename(len-1:len), '.Z'))
+
+   Flags(2) = 1;
+   if (Flags(1))
+      error (['Cannot open compressed files for writing']);
+   end
+   dots = find (filename == '.');
+   lastdot = dots (length (dots));
+
+   newname = [tempdir filename(1:lastdot-1)];
+   if (exist (newname) == 2)
+      error (['Uncompressed version of ' filename ' already exists in ' newname]);
+   end
+   disp (['gunzip -c ' filename ' > ' newname]);
+   status = unix (['gunzip -c ' filename ' > ' newname]);
+   if (status ~= 0)
+      error (['Error trying to uncompress file ' filename]);
+   end
+   filename = newname;
+end
+   
+   
 % Get the current directory if filename only has a relative path, tack
 % it onto filename, and make sure filename exists.
 
@@ -82,11 +136,7 @@ if (filename (1) ~= '/')
    filename = [curdir '/' filename];
 end
 
-% disp (['Looking for ' filename]);
-if exist (filename) ~= 2
-   error ([filename ': file not found']);
-end
-
+   
 % The file exists, so we will be opening it... so figure out the handle.
 
 if exist ('ImageCount') == 1
@@ -126,10 +176,12 @@ eval(['global Filename'     int2str(ImageCount)]);
 eval(['global DimSizes'     int2str(ImageCount)]);
 eval(['global FrameTimes'   int2str(ImageCount)]);
 eval(['global FrameLengths',int2str(ImageCount)]);
+eval(['global Flags',       int2str(ImageCount)]);
 
 eval(['Filename'     int2str(ImageCount) ' = filename;']);
 eval(['FrameTimes'   int2str(ImageCount) ' = FrameTimes;']);
 eval(['FrameLengths' int2str(ImageCount) ' = FrameLengths;']);
 eval(['DimSizes'     int2str(ImageCount) ' = DimSizes;']);
+eval(['Flags'        int2str(ImageCount) ' = Flags;']);
 
 ImHandle = ImageCount;
