@@ -14,7 +14,7 @@
 %  For the case of 128 x 128 images, the images are returned as the
 %  the columns of a 16384-row matrix, with the highest image dimension
 %  varying the fastest.  For example, with transverse images, the x
-%  dimension is the image 'width' dimension, and varies fastest in the
+%  dimension is the image "width" dimension, and varies fastest in the
 %  MINC file.  Thus, the fastest varying dimension in the MATLAB
 %  column vector that represents the image will be x (width), so each
 %  contiguous block of 128 elements will represent a single row of the
