@@ -25,6 +25,7 @@ char *NCErrMsg (int NCErrCode)
 {
 	switch (NCErrCode)
 	{
+		case NC_SYSERR       : return ("System error (possible file or directory not found");
 		case NC_NOERR        : return ("No Error");
 		case NC_EBADID       : return ("Not a netcdf id");
 		case NC_ENFILE       : return ("Too many netcdfs open");
@@ -77,7 +78,8 @@ int OpenFile (char *Filename, int *CDF, int Mode)
 
    if (*CDF == MI_ERROR)
    {
-      sprintf (ErrMsg, "Error opening file %s: %s", Filename, NCErrMsg(ncerr));
+      sprintf (ErrMsg, "Error opening file %s: %s", 
+					Filename, NCErrMsg(ncerr));
       return (ERR_IN_MINC);
    }  
    return (ERR_NONE);
