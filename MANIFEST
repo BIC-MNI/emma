@@ -152,8 +152,7 @@ doc/rcbf.dvi
 doc/rcbf.ps
 doc/emma.tex
 doc/simul.dvi
-doc/flow.cfig
-doc/flow.eps
+doc/flow.ps
 doc/flow.xfig
 doc/emma.ps
 doc/leastsq.ps
@@ -163,5 +162,5 @@ doc/leastsq.tex
 doc/rcbf.tex
 doc/rcbf-help.tex
 doc/simul.tex
-doc/structure.eps
+doc/structure.ps
 doc/structure.xfig
