@@ -32,7 +32,7 @@
 
 
 #define PROGNAME "lookup"
- #define DEBUG
+/* #define DEBUG */
 
 #define OLDX    prhs[0]
 #define OLDY    prhs[1]
