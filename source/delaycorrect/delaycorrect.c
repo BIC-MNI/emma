@@ -413,7 +413,7 @@ void GetStartingSimplex(double start[], int numvars, BloodData *data,
                         double **simplex)
 {
     Matrix *answer[1];
-    int i,j;
+    int i;
 
     if (progress)
     {
@@ -739,10 +739,7 @@ void mexFunction(int    nlhs,
                  Matrix *prhs[])
 {
     int numvars;
-    int numargs;
     int maxiter;
-    int i;
-    char *funfcn;
     double tol;
     double tol2;
     double *start;
