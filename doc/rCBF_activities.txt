@@ -96,17 +96,53 @@ The steps for finding the delay constant delta are:
 
    COMPLETED ON:
 
-   STATUS: July 7, 1993: Created getmask.m.  This function handles the second
+   STATUS: July 9, 1993: Wrote a Matlab script that implements the above
+                         three steps and uses getmask.m.
+           July 7, 1993: Created getmask.m.  This function handles the second
                          part of the above by displaying the image, and
                          allowing the user to interactively adjust the scale
                          factor.  getmask returns the resulting mask as
                          0's and 1's.
 
-2) Use the A(t) to do a least squares fit to the blood delay and dispersion
+2) Use A(t) to do a least squares fit to the blood delay and dispersion
    equation.
 
    COMPLETED ON: 
 
-   STATUS: July 7, 1993: Took a first pass look at least squares fitting
+   STATUS: July 9, 1993: Performed the least squares fit without taking
+                         dispersion into account.  The fit along the rising
+                         slope was very good, but at the top of the slope
+                         the fit function exploded.  We do have some ideas
+                         for solving this problem, however.
+           July 7, 1993: Took a first pass look at least squares fitting
                          in general, and the matlab functions that support
                          it in particular.
+
+
+In order to complete two-compartment rCBF analysis, we must:
+
+1) Calculate the delay and dispersion constants, and apply these as
+   corrections to the blood data used in our analysis.  Please see the
+   previous section for details on this step.
+
+2) Perform a full two-compartment analysis that returns K1, k2, and V0
+   using the triple-weighted integration method.
+
+   COMPLETED ON: 
+
+   STATUS:
+
+3) Validate our method and implementation by submitting known data to
+   Matlab analysis, and performing the same calculations by hand.
+
+   COMPLETED ON: 
+
+   STATUS: 
+
+4) Complete documentation of the rCBF analysis package.
+
+   COMPLETED ON: 
+
+   STATUS: 
+
+
