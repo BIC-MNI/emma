@@ -1,49 +1,81 @@
-function [out] = voxeltoworld (volume, in, option)
+function [out] = voxeltoworld (volume, in, options)
 % VOXELTOWORLD  convert points from world to voxel coordinates
 %
-%   w_points = voxeltoworld (volume, v_points [, 'external'])
+%     w_points = voxeltoworld (volume, v_points [, options])
 % or
-%   wtov_xfm = voxeltoworld (volume)
+%     vw_xfm = voxeltoworld (volume)
 % 
 % If the first form is used, then v_points must be a matrix with N
-% columns (for N points) and either 3 or 4 rows.  (If four rows are
-% supplied, then the fourth should be all ones; if only three rows are
-% supplied, a fourth row of all ones will be added.)  Normally,
-% voxeltoworld assumes that the the input voxel coordinates originate
-% from slice/pixel numbers within EMMA, i.e. that the coordinates are
-% 1-based.  In this case, the coordinates must be made zero-based by
-% subtracting one before applying the voxel-to-world transform.
-% However, if the points have an origin outside of the EMMA
-% environment, they are most likely zero-based.  Adding the 'external'
-% flag will cause the subtraction of one to be suppressed.
-%  
-% If the second form is used then just the voxel-to-world transform (a
-% 4x4 matrix) is returned.  This is simply the matrix returned by
-% getvoxeltoworld.  Note that to apply this transform to voxel
-% coordinates, they must already be zero-based, so you will have to
-% subtract one yourself.  (See the help for getvoxeltoworld for more
-% information.)
+% columns (for N points) and three rows (for the three spatial
+% dimensions).  (Alternately, a four-row form is acceptable: three rows
+% for the three spatial dimensions, plus a row of all ones.)
 % 
-% The volume parameter can be either an image handle or a filename.
+% If the second form is used, then just the voxel-to-world transform
+% (a 4x4 matrix) is returned.  This is just the transform returned by
+% getvoxeltoworld, modified to adjust voxel coordinates from EMMA
+% style to some external form, possibly modified by the options
+% parameter.
+% 
+% Normally, voxeltoworld assumes that the the input voxel coordinates
+% originate from slice/pixel numbers within EMMA.  (Such coordinates are
+% 1-based, in the order (slice,row,column), and possibly "inverted" for
+% dimensions with negative step sizes.  See "help getvoxeltoworld" for
+% the whole story.)  In this case, part of the voxel-to-world conversion
+% involves adjusting the coordinates to a more standard form.  However,
+% you can suppress any of these adjustments using the options
+% argument.  This argument is just a list of space-separated keywords,
+% of which four are possible:
+% 
+%    xyzorder    assume input voxel coordinates are in (x,y,z) order,
+%                i.e. do not permute them from (slice,row,col) order
+%    noflip      assume input voxel coordinates refer to unflipped
+%                dimensions (any dimensions with negative step sizes
+%                will be flipped when read in by EMMA to ensure
+%                anatomical consistency)
+%    zerobase    assume input voxel coordinates are zero-based
+%                (coordinates for use within MATLAB are one-based, and
+%                thus must be shifted down before converting to world
+%                coordinates
+%    external    combines 'noflip' and 'zerobase'
+% 
+% The `external' option should be used when converting voxel
+% coordinates in the standard MINC style used by mincreshape,
+% mincextract, etc.  When using voxel coordinates from Display or
+% Register (which always use (x,y,z) order), use 'external xyzorder'.
+%
+% The volume parameter must be an image volume handle as returned by
+% openimage or newimage.
 %
 % EXAMPLES
+% 
+% To convert an EMMA (slice, row, column)-style coordinate to world
+% coordinates (where h is the handle for an open image volume): 
+% 
+%    w = voxeltoworld (h, [s, r, c]');
+%    
+% The same, but where [s, r, c] comes from (for example) a C program,
+% and are therefore zero-based, non-dimension-flipped coordinates:
+% 
+%    w = voxeltoworld (h, [s, r, c]', 'external');
+% 
+% Convert a point (vx,vy,vz) -- voxel coordinates, but in world order --
+% to world coordinates (assuming vx,vy,vz are zero-based):
+%
+%    w = voxeltoworld (h, [vx,vy,vz]', xyzorder external');
 %
 % SEE ALSO
-%   getvoxeltoworld, worldtovoxel
+%   worldtovoxel, getvoxeltoworld
 
 % by Greg Ward 95/3/12
 
-
-% @COPYRIGHT  :
-%             Copyright 1994 Mark Wolforth and Greg Ward, McConnell
-%             Brain Imaging Centre, Montreal Neurological Institute,
-%             McGill University.  Permission to use, copy, modify, and
-%             distribute this software and its documentation for any
-%             purpose and without fee is hereby granted, provided that
-%             the above copyright notice appear in all copies.  The
-%             authors and McGill University make no representations about
-%             the suitability of this software for any purpose.  It is
-%             provided "as is" without express or implied warranty.
+% Copyright 1995 Greg Ward, McConnell Brain Imaging Centre,
+% Montreal Neurological Institute, McGill University.  Permission to
+% use, copy, modify, and distribute this software and its
+% documentation for any purpose and without fee is hereby granted,
+% provided that the above copyright notice appear in all copies.  The
+% authors and McGill University make no representations about the
+% suitability of this software for any purpose.  It is provided "as
+% is" without express or implied warranty.
 
 
 %
@@ -55,22 +87,119 @@ if (nargin < 1 | nargin > 3)
   error ('Incorrect number of arguments');
 end
 
-offset = 1;                  % default value if option ~= 'external' 
+
+% Default options
+
+reorder = 1;					  % use voxel order
+flip = 1;					  % do flip dimensions
+onebase = 1;					  % do shift array base
+
 if (nargin == 3)
-   if (~isstr (option))
-      error ('If given, option argument must be a string');
+   if (~isstr (options))
+      error ('options argument must be a string');
    end
-   offset = ~strcmp (option, 'external');
+   
+   % Parse the options string as a list of space-separated words.
+   % 'xyzorder' means don't reorder to (slice,row,col); 'noflip' means
+   % don't take (x = length(x) - x - 1) for dimensions with step<0;
+   % 'zerobase' means don't add one to coordinates for MATLAB-style
+   % array indexing.  'external' is the combination of 'noflip' and
+   % 'zerobase'.  'external' should be used for voxel coordinates in the
+   % style of mincextract, mincreshape, etc.  'external xyzorder'
+   % should be used for voxel coordinates displayed by Display and
+   % Register (Dave likes xyz order).
+   
+   delim = find (options == ' ');
+   num_options = length (delim) + 1;
+   delim = [0 delim length(options)+1];
+   for i = 1:num_options
+      opt = options((delim(i)+1):(delim(i+1)-1));
+      if (strcmp (opt, 'xyzorder'))
+	 reorder = 0;
+      elseif (strcmp (opt, 'noflip'))
+	 flip = 0;
+      elseif (strcmp (opt, 'zerobase'))
+	 onebase = 0;
+      elseif (strcmp (opt, 'external'))
+	 flip = 0;
+	 onebase = 0;
+      elseif (length (opt) > 0)
+	 error (['unknown option: ' opt]);
+      end
+   end
+   
    nargin = 2;
 end
 
-v2w = getvoxeltoworld (volume);
+if (size(volume) ~= [1,1])
+   error ('volume parameter must be an image handle');
+end
+
+% Get the raw voxel-to-world transform.  This one assumes it's
+% converting voxel coordinates that are zero-based, unflipped, and
+% in x,y,z order.
+
+vw = getvoxeltoworld (volume);
+
+% Get the matrix that reorders points from voxel to world order.
+
+perm = getimageinfo (volume, 'permutation');
+   
+% Construct a matrix that converts from one-based to zero-based by
+% subtracting one from each coordinate.
+
+if (~onebase)
+   shift = eye (4);
+else
+   shift = [1  0  0 -1 ; 
+            0  1  0 -1 ; 
+	    0  0  1 -1 ; 
+	    0  0  0  1];
+end
+
+% Construct a matrix to compensate for the dimension conversion
+% (flipping) done by mireadimages.  Note: this matrix assumes it
+% operates on voxel-ordered points, hence the reordering of `steps'
+% (which are output by getimageinfo in x,y,z order).
+
+if (~flip)
+   flip = eye (4);
+else
+   steps = getimageinfo (volume, 'steps');
+   steps = inv(perm) * [steps; 1];
+   lengths = getimageinfo (volume, 'dimsizes');
+   lengths = lengths(2:4);			  % strip off frame count
+   flip = diag (sign (steps));
+   firstvoxel = (lengths-1) .* (steps(1:3) < 0);
+   flip(1:3,4) = firstvoxel;
+end
+
+% Possibly override the permuation matrix found earlier (we don't
+% do this up above because we might need `perm' to build `flip').
+
+if (~reorder)
+   perm = eye (4);
+end
+
+% Now put them all together to build the real voxel-to-world transform
+
+vw = vw * perm * flip * shift;
+
+% If an empty set of points was supplied, pretend that none were
+% supplied (so the user can supply options when they wish to fetch just
+% the transform)
+
+if (nargin == 2)
+   if (size (in) == [0 0])
+      nargin = 1;
+   end
+end
 
 
 % If only one argument was supplied, just return the transform
 
 if (nargin == 1)
-   out = v2w;
+   out = vw;
 
 % If exactly two arguments were supplied, the second is a matrix
 % of points.  First check to see if caller supplied a three-row
@@ -86,8 +215,8 @@ elseif (nargin == 2)
       error ('If a matrix of points is supplied, it must have either three or four rows');
    end
 
-   points(1:3,:) = points(1:3,:) - offset;
-   points = v2w * points;     % perform the transformation
+   points = vw * points;      % perform the transformation (may include
+                              % reordering, shifting, and flipping)
    
    if (m == 3)                % if caller only supplied 3 rows, lose the 4th
       points = points (1:3,:);
