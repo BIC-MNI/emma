@@ -510,7 +510,18 @@ int WriteImages (FILE *TempFile,
 }     /* WriteImages */
 
 
-
+/* ----------------------------- MNI Header -----------------------------------
+@NAME       : 
+@INPUT      : 
+@OUTPUT     : 
+@RETURNS    : 
+@DESCRIPTION: 
+@METHOD     : 
+@GLOBAL     : 
+@CALLS      : 
+@CREATED    : 
+@MODIFIED   : 
+---------------------------------------------------------------------------- */
 int main (int argc, char *argv [])
 {
    ImageInfoRec   ImInfo;
@@ -595,6 +606,8 @@ int main (int argc, char *argv [])
    {
       ErrAbort (ErrMsg, TRUE, Result);
    }
+
+   fclose (InFile);
 
    miicv_free (ImInfo.ICV);
    ncclose (ImInfo.CDF);
