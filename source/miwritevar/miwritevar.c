@@ -73,22 +73,18 @@ void OpenVariable (char *minc_file, int *file_CDF, char *var_name, int *varid)
 
 /* ----------------------------- MNI Header -----------------------------------
 @NAME       : GetVector
-@INPUT      : vector_string -> A character string containing vector elements
-                               separated by commas (eg. 1,2,3)
-              max_elements  -> The maximum number of vector elements.
-@OUTPUT     : vector        -> An array of longs containing the vector
-                               elements
-@RETURNS    : A Boolean flag that indicates success or failure.
-@DESCRIPTION: Takes a string containing a vector, and produces a one
-              dimensional array of longs containing the vector elements.
-@METHOD     : none
-@GLOBALS    : none
-@CALLS      : none
-@CREATED    : June 1, 1993 by MW
+@INPUT      : 
+@OUTPUT     : 
+@RETURNS    :
+@DESCRIPTION: 
+@METHOD     :
+@GLOBALS    : 
+@CALLS      : 
+@CREATED    : 
 @MODIFIED   :
 ---------------------------------------------------------------------------- */
 
-Boolean GetVector (char vector_string[], long vector[], int max_elements)
+Boolean GetVector (char vector_string[], long vector[])
 {
     int member;
     char *token;
@@ -100,18 +96,7 @@ Boolean GetVector (char vector_string[], long vector[], int max_elements)
     {
 	while (token != NULL)
 	{
-	    if (isdigit(token[0]))
-	    {
-		vector[member++] = atoi (token);
-	    }
-	    else
-	    {
-		return (FALSE);
-	    }
-	    if (member == max_elements)
-	    {
-		return(FALSE);
-	    }
+	    vector[member++] = atoi (token);
 	    token = strtok (NULL, ",");
 	}
     }
