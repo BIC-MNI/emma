@@ -1,20 +1,17 @@
 # -------------------------------------------------------------------------
 # Makefile for the file(s) in the emma/source/libsource directory. 
-
-EMMA_ROOT = ../..
-
-include $(EMMA_ROOT)/Makefile.site
-
-OPT       = $(STD_OPT) -c
-
 #
-# Change the following depending on what operating system you have
-#
+# $Id: Makefile,v 1.3 1997-10-17 20:22:11 greg Exp $
+
+EMMA_ROOT = ../../
+
+include $(EMMA_ROOT)Makefile.site
+
 
 # --------------------------------------------------------------------
+# Definitions: directories, compiler flags, files, etc.
 
-CFLAGS    = $(OPT) $(INCLUDES)
-D_CFLAGS  = $(OPT) $(INCLUDES) -debug 
+CFLAGS    = $(CFLAGS_STD) $(DEFINES) $(INCLUDES)
 LINTFLAGS = $(LINTOPT) $(INCLUDES)
 HEADERS   = $(EMMAINC)/ParseArgv.h \
             $(EMMAINC)/emmageneral.h \
@@ -23,47 +20,35 @@ HEADERS   = $(EMMAINC)/ParseArgv.h \
             $(EMMAINC)/mincutil.h \
             $(EMMAINC)/time_stamp.h
 
+LIB = $(EMMALIB)/libemma.a
+
+LIBSRC = mincutil.c \
+         createnan.c \
+         mexutils.c \
+         intframes.c \
+         lookup12.c \
+         monotonic.c \
+         trapint.c \
+         ParseArgv.c \
+         time_stamp.c
+LIBOBJ = $(LIBSRC:.c=.o)
+
 # --------------------------------------------------------------------
+# Targets
 
+all: $(LIB)
 
+$(LIB): $(LIBOBJ)
+	ar ur $@ $?
+	@if test -n "$(RANLIB)" ; then echo "$(RANLIB) $@" ; $(RANLIB) $@ ; fi
 
-all: Makefile $(HEADERS) mexutils.o mincutil.o ParseArgv.o intframes.o lookup12.o time_stamp.o monotonic.o trapint.o $(EMMALIB)/libemma.a
+dep: .depend
+	@echo "header dependencies up to date."
 
-$(EMMALIB)/libemma.a: mincutil.o ParseArgv.o time_stamp.o createnan.o \
-                      mexutils.o intframes.o lookup12.o monotonic.o trapint.o \
-                      Makefile
-	ar ur $@ mincutil.o ParseArgv.o time_stamp.o createnan.o \
-                 mexutils.o intframes.o lookup12.o monotonic.o trapint.o
-	$(RANLIB) $@
-
-mexutils.o: mexutils.c $(EMMAINC)/mexutils.h
-#	$(CC) $(CFLAGS) $< 
-
-mincutil.o: mincutil.c $(EMMAINC)/mincutil.h $(EMMAINC)/mierrors.h
-#	$(CC) $(CFLAGS) $< 
-
-ParseArgv.o: ParseArgv.c $(EMMAINC)/ParseArgv.h
-#	$(CC) $(CFLAGS) $< 
-
-intframes.o: intframes.c
-#	$(CC) $(CFLAGS) $<
-
-lookup12.o: lookup12.c
-#	$(CC) $(CFLAGS) $<
-
-time_stamp.o: time_stamp.c $(EMMAINC)/time_stamp.h
-#	$(CC) $(CFLAGS) $<
-
-monotonic.o: monotonic.c
-#	$(CC) $(CFLAGS) $<
-
-trapint.o: trapint.c
-#	$(CC) $(CFLAGS) $<
-
-
-#$(EMMALIB)/libmexemma.a:
-#	ar ur $@ mexutils.o intframes.o lookup12.o monotonic.o trapint.o
-#	$(RANLIB) $@
+.depend: $(LIBSRC)
+	$(CC) -M $(INCLUDES) $(LIBSRC) > .depend
 
 clean:
 	rm -f *.o $(EMMALIB)/libemma.a
+
+include .depend
