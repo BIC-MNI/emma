@@ -41,9 +41,7 @@ typedef struct BLOOD_DATA
 void usage (void)
 {
     printf ("\nUsage:\n");
-    printf ("%s <infile> <outfile>\n\n", PROGNAME);
-    printf ("The .BLD file being processed must have had the\n");
-    printf ("calibration factors stripped from the top of the file.\n");
+    printf ("%s <infile.bld> <outfile.bnc>\n\n", PROGNAME);
 }
 
 
