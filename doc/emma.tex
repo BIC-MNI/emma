@@ -1,199 +1,501 @@
-\documentstyle[12pt,fullpage]{article}
+\documentstyle[11pt,fullpage]{article}
 
-\title{PAMI -- User Manual}
-\author{Mark Wolforth, Greg Ward}
-\date{Tuesday July 6, 1993}  
+\title{EMMA: Extensible MATLAB Medical Analysis}
+% \subtitle{User Manual}
+\author{Mark Wolforth \and Greg Ward}
 
 \def\code#1{{\tt #1}}
 
 \begin{document} 
 
 \maketitle
-\newpage
+% \newpage
 
 \tableofcontents
 
 %--------------------------------------------------------------
-\newpage
+% \newpage
 \section{Introduction}
 
-This document is the user manual for PAMI (Package for the Analysis of
-Medical Images) developed at the Montreal Neurological Institute.
-This package consists of a set of Matlab .m files and programs written
-in C, designed to ease the analysis of PET data.  The entire package
-runs under Matlab.
+This document is the user manual for EMMA (Extensible MATLAB Medical
+Analysis) developed at the Montreal Neurological Institute.  This
+package consists of a set of MATLAB .m files and programs written in
+C, designed to ease the analysis of PET data.  The entire package runs
+under MATLAB.
 
 This document presumes that the reader is familiar with manipulation
 of PET images, and simply wishes to know how image manipulation is
-possible using PAMI and Matlab.
+possible using EMMA and MATLAB.
 
 
 %--------------------------------------------------------------
 \newpage
 \section{Basic Concepts}
+\label{basic_concepts}
 
-To a programmer, the interface to PAMI should be very familiar.
+To a programmer, the interface to EMMA should be very familiar.
 Simply open a data set contained in a MINC file by calling openimage.
-This returns a handle which is used in all subsequent calls to PAMI
+This returns a handle which is used in all subsequent calls to EMMA
 functions.  The user does not need to worry about the underlying
 mechanisms.  For example, to open an image file, read in the the first
 frame of the second slice, and then close the image file, you could
 type:
-
-
+%
 \begin{verbatim}
-data_handle = openimage ('arnaud_20547.mnc');
-image = getimages (data_handle, 2, 1);
-closeimage (data_handle);
+     data_handle = openimage ('arnaud_20547.mnc');
+     image = getimages (data_handle, 2, 1); 
+     closeimage (data_handle);
 \end{verbatim}
+%
+In this example, \verb+data_handle+ is a handle to the data contained
+in the MINC file \verb+arnaud_20547.mnc+.  After the data has been
+opened with openimage, the name of the MINC file is not needed by the
+user of EMMA; only the handle for the data is used.  Therefore,
+\verb+getimages+ is passed the handle for the data, as well as the
+slice number and frame number.  Once you have finished working with
+the image, always remember to call \verb+closeimage+.  This cleans up
+the MATLAB workspace and destroys the handle.
 
+Because EMMA uses handles, the user never needs to worry about the
+interface between MATLAB and the MINC file.  You simply call EMMA
+functions with the handle, and the underlying structure takes care of
+the details.
 
-In this example, \verb+data_handle+ is a handle to the data contained in the
-MINC file \verb+arnaud_20547.mnc+.  After the data has been opened with
-openimage, the name of the MINC file is never used again.  Only the handle for
-the data is used.  Therefore, \verb+getnextline+ is passed the handle for the
-data, as well as the slice number and frame number.  Once you have finished
-working with the image, always remember to call \verb+closeimage+.  This
-cleans up the Matlab memory space and destroys the handle.
+However, the user {\em does} need to have some familiarity with
+MATLAB, and a good understanding of how EMMA functions deal with
+images.  In particular, the inherent two-dimensionality of MATLAB
+means that a full four-dimensional MINC file is ``flattened'' in some
+way when read into MATLAB.
 
-Because PAMI uses handles, the user never needs to worry about how the image
-data is stored within Matlab.  You simply call PAMI functions with the handle,
-and the underlying structure takes care of the nitty-gritty details.
+\label{explain_images}
+Generally, EMMA functions deal with images transformed from their
+natural two-dimensional form (well-suited to a matrix representation)
+to a one-dimensional vector form.  Thus, a single 128 $\times$ 128
+image will become a vector of length 16384.  A further caveat is that
+EMMA always deals with images as {\em column} vectors, so that our
+vector will actually be a 16384 $\times$ 1 matrix.  We can thus put
+many such vectors together and, for example form a 16384 $\times$ 15
+matrix from 15 slices.  Thus, in an ``image matrix''---which is really
+a two-dimensional MATLAB matrix representing three-dimensional image
+data---the individual columns correspond to whole images.  MATLAB
+functions that use EMMA to perform analysis should always expect image
+data in this format, as shown in Section \ref{simple_example} and the
+document ``rCBF Analysis Using MATLAB.''
 
+Also, keep in mind that EMMA makes it deliberately difficult to deal
+simultaneously with the full four dimensions allowed in a MINC image
+variable.  The reasoning for this is two-fold: first, collapsing three
+dimensions into two via the ``image matrix'' concept is fairly
+convenient and easy to work with; however, attempting to similarly
+collapse four dimensions would add another layer of complications,
+making both the implementation and use of EMMA functions more
+difficult.  Second is the question of memory usage: MATLAB is capable
+of using up enormous amounts of memory if care is not taken, and
+restricting the user of EMMA to three image dimensions at a time means
+that it is somewhat more difficult to blindly read in massive amounts
+of image data with a single MATLAB command.
 
 %--------------------------------------------------------------
 \newpage
-\section{PAMI Matlab Functions}
+\section{EMMA MATLAB Functions}
 
-The Matlab interface to PAMI is performed through the following
-Matlab scripts and functions (.m files).
+The MATLAB interface to EMMA is performed through the following MATLAB
+functions (.m files).  This section is only meant to provide a brief
+introduction to the most important functions.  See section
+\ref{emma_reference} for full help on every EMMA function.
 
+\begin{description}
 
-\begin{itemize}
-
-\item \code{openimage} : Prepares a MINC file for reading.  Returns a handle to the data.
+\item \code{openimage} - Prepares a MINC file for reading.
+\code{openimage} determines the image size, reads in the frame start
+times and lengths if applicable, and returns a handle which can be
+used to access the MINC file with \code{getimages},
+\code{getimageinfo}, \code{getblooddata}, etc.
 \begin{verbatim}
-IMhandle = openimage (filename)
+     handle = openimage (filename)
 \end{verbatim}
 
-\item \code{getnextline} : Gets the next line from a data set.  Will get the next line from a
-    group of images.
+\item \code{getimages} - Gets images from a MINC file.  If the
+file has no frame dimension, the parameter \verb|frames| should be
+empty or not provided.  The \verb|slices| parameter is similiarly
+handled, although files with no slice dimension are less commonly
+encountered.  Also, \code{getimages} can read several frames from a
+single slice or several slices from a single frame---but it can not
+read multiple slices and multiple frames simultaneously.  (This
+restriction is also imposed for writing images, mainly to avoid
+complications and reduce the software's ability to easily read in far
+more data than can be handled by MATLAB.)
 \begin{verbatim}
-line = getnextline (IMhandle, slices, frames)
+     Images = getimages (handle [, slices [, frames]])
 \end{verbatim}
 
-\item \code{getimage} : Gets an entire image from a data set.
+\item \code{newimage} - Creates a MINC file for a new set of images.
+Returns a handle to the newly created data set that is used in calls
+to other functions (such as \code{putimages} and \code{closeimage}).
+\code{newimage} has a number of optional parameters, the most
+important of which is the ``parent file.''  If this is supplied,
+\code{newimage} will copy a number of important attributes (such as
+the patient, study, and acquisition data) from the parent to the new
+file, as well as using the parent file to provide the default image
+size and type.
 \begin{verbatim}
-im = getimage (IMhandle, slice, frame)
+     handle = newimage (filename, dim_sizes [, parent_file [, image_type ...
+                        [, valid_range [, orientation]]]]);
 \end{verbatim}
 
-\item \code{newimage} : Creates a MINC file for a new image.  Returns a handle
-    to the newly created data set that is used in calls to other functions
-    (such as \code{putnextline} and \code{closeimage}).  Requires a parent
-    MINC file from which to copy the history attribute, and root variable.
+\item \code{putimages} - Writes entire images to a file created with
+\code{newimage}.  ({\bf Warning:} there are currently no provisions
+made to deny the user from writing to a MINC file opened with
+\code{openimage}.)  The syntax is similar to \code{getimages}, except
+that the image data is of course an input argument to \code{putimages}
+rather than an output argument.
 \begin{verbatim}
-IMhandle = newimage (filename, parent_file, numslices, numframes)
+     putimages (handle, images [, slices [, frames]])
 \end{verbatim}
 
-\item \code{putnextline} :
-
-\item \code{putimage} :
-
-\item \code{getimageinfo} : Gets information about an open image.  Will return
-    one of:
-    \begin{itemize}
-    \item \code{Filename}  : The name of the MINC file.
-    \item \code{NumFrames} : Number of frames in the study. 0 if non-dynamic study.
-    \item \code{NumSlices} : Number of slices in the study.
-    \item \code{ImageSize} : Size of a single image (eg. 128, 256)
-    \item \code{FrameLengths} : Vector with NumFrames elements containing the duration
-          of each frame in the study, expressed in seconds.
-    \item \code{FrameTimes} : Vector with NumFrames elements containing the start
-          time of each frame, relative to the start of the study, expressed
-          in seconds.
-    \end{itemize}
+\item \code{getimageinfo} - Gets information about an open image.
+Currently, \code{getimageinfo} will return the filename, number of
+frames or slices, image height or width, frame start times, lengths,
+and mid-frame times.  The desired information is specified as a
+character string, eg. 'NumFrames', 'ImageHeight', etc.
 \begin{verbatim}
-info = getimageinfo (IMhandle, info_descriptor)
+     info = getimageinfo (handle, info_descriptor)
 \end{verbatim}
 
-\item \code{viewimage} : Displays an image on the workstation screen.  If the
-    workstation is monochrome, the image will be converted to a grayscale and
-    displayed using xv.  Otherwise, the image is displayed in colour using
-    Matlab directly.
+\item \code{viewimage} - Displays an image on the workstation screen.
+On a monochrome display, the \code{gray} colourmap will be used;
+otherwise, the \code{spectral} will be used.  The image will be scaled
+such that the highest point in the image is always the last colour in
+the colourmap, and the lowest image point will be the first element of
+the colourmap.  Also, a colourbar relating colours in the image to the
+values will be displayed, unless the optional \code{colourbar\_flag}
+argument is set to zero.
+
 \begin{verbatim}
-viewimage (im)
+     viewimage (image [, colourbar_flag])
 \end{verbatim}
 
-\item \code{closeimage} : Destroys the appropriate variables in the workspace.
+\item \code{closeimage} - Destroys the appropriate variables in the workspace.
 \begin{verbatim}
-closeimage (IMhandle)
+     closeimage (IMhandle)
 \end{verbatim}
 
-\end{itemize}
+\end{description}
 
+\section{Some Basic Examples: Masking and Summing}
+\label{simple_example}
+
+As an example of the EMMA functions presented thus far, we will
+explore sample code for both masking and summing/integrating images
+from a dynamic study.  The MINC file used in this example will be one
+of the H$_2$$^{15}$O CBF studies from 
+\verb|/local/matlab/toolbox/local/examples|.  To make accessing these files easier, you may want to create a symbolic link in the current directory using the command
+\begin{verbatim}
+     ln -s /local/matlab/toolbox/local/examples examples
+\end{verbatim}
+That way, the file
+\verb|/local/matlab/toolbox/local/examples/yates_19445.mnc| can be
+accessed as simply \verb|examples/yates_19445.mnc|.  In the remainder
+of this section, it will be assumed that the symbolic link
+\verb|examples| exists in the current directory.
+
+\subsection{Reading the Data}
+
+First, let us open the MINC file:
+\begin{verbatim}
+     handle = openimage ('examples/yates_19445.mnc');
+\end{verbatim}
+Now, we may wish to find out some basic data about the MINC file.  Try
+the following (note that we will need \verb|nf|, the number of frames,
+below):
+\begin{verbatim}
+     ns = getimageinfo (handle, 'NumSlices')
+     nf = getimageinfo (handle, 'NumFrames')
+     getimageinfo (handle, 'ImageSize')
+\end{verbatim}
+Note that for the study \verb|yates_19445|, \verb|nf| will be 21.
+However, it is a good idea to always use \verb|getimageinfo| to find
+the number of frames rather than assuming that it will always stay the
+same for particular type of study.
+
+Now, let us read in the frame lengths and mid-frame times:
+\begin{verbatim}
+     FrameLengths = getimageinfo (handle, 'FrameLengths');
+     MidFTimes = getimageinfo (handle, 'MidFrameTimes');
+\end{verbatim}
+Note that FrameLengths and MidFTimes are both column vectors.  This
+will be important when performing matrix arithmetic with them.
+
+Now, we read in all frames for one slice---slice 8 in this case,
+although you can work with whatever slice you like:
+\begin{verbatim}
+     slice = 8;
+     PET = getimages (handle, slice, 1:nf);
+\end{verbatim}
+Note that {\em this} is the step where MATLAB uses up large amounts of
+memory.  If you execute \verb|whos| now, you will see that MATLAB's
+variables alone are taking up nearly 3 megabytes of memory.  However,
+the entire MATLAB workspace generally takes up considerably more
+memory than is reported by \verb|whos|, because of MATLAB's
+overhead and inefficient memory management scheme.
+
+\subsection{Integrating Images}
+
+Now, we can view the matrix \verb|PET| as a collection of 21 PET
+images for the same brain slice but progressing in time, or as a
+collection of 16,384 time-activity curves (TAC)---one for every pixel
+in the 128 $\times$ 128 image created by the PET scanner.  (Of course,
+only about $\frac{1}{3}$ of the image data is actually data from
+inside the head.  This matter will be addressed when we consider image
+masking below.)
+
+For purposes of integrating images, we will consider \verb|PET| as a
+collection of TACs.  Thus, we are simply performing 16384 numerical
+integrations.  This may seem a daunting task, but MATLAB's vectorized
+approach to mathematics makes it surprisingly easy.  In fact, let us calculate a rectangular integration using the formula
+\begin{equation}
+\int_{t_{1}}^{t_{n}} f(t) dt \approx \sum_{i=1}^{n} f(t_{i}) (\Delta t)_{i},
+\label{eq:rect_int}
+\end{equation}
+where $f(t)$ is one time-activity curve and the $\Delta t$'s are the frame
+lengths.  Since we have $f(t)$ stored as a row vector---remember,
+each column of \verb|PET| is the entire image for one frame, so each
+row of \verb|PET| corresponds to a single pixel across time---and
+$\Delta t$ stored as a column vector, the multiply/sum operation of
+Eq. \ref{eq:rect_int} is simply a dot product.  And since a matrix
+multiplication is nothing more than a sequence of dot products, all
+16,384 TACs can be quite easily integrated with a single MATLAB
+command:
+\begin{verbatim}
+     PETsummed1 = PET * FrameLengths;
+\end{verbatim}
+
+However, rectangular integration is a very crude approach to numerical
+integration.  Trapezoidal integration provides a slightly more refined
+method, and is almost as easy to implement.  Furthermore, it is
+provided by the MATLAB function \verb|trapz|---which, if you care to
+examine it (try \verb|type trapz| in MATLAB), is essentially a
+one-line operation as well.  (Incidentally, one of the functions
+provided by EMMA is \verb|ntrapz|.  \verb|ntrapz| currently has
+exactly the same restrictions and capabilities as \verb|trapz|, but is
+considerably faster due to being written in C using MATLAB's C
+interface.  Furthermore, \verb|ntrapz| may in future have options such
+as weighted integration added.  For the purposes of this discussion,
+however, the two functions are equivalent.)
+
+\verb|trapz| takes two arguments: a vector of $x$-points, and a vector
+or matrix of $y$ points corresponding to each $x$-point.  If the $y$'s
+are given as a matrix, then each {\em row} corresponds to one $x$
+point.  Note that this is different from the EMMA standard, where each
+{\em column} of \verb|PET| corresponds to one time point.  Thus, we
+will have to transpose \verb|PET| using the MATLAB \verb|'| operator
+before passing it to trapz.  Also, \verb|trapz| will return the 16,384
+integrals as a row vector, so we must transpose the results to get
+them back into the form we expect.  Finally, \verb|trapz| expects
+points on the $x$-axis rather than widths of intervals.  Thus, we will
+pass \verb|MidFTimes| to it, and not \verb|FrameLengths|.  The full
+integration is performed by the single statement
+\begin{verbatim}
+     PETsummed2 = trapz (MidFTimes, PET')';
+\end{verbatim}
+
+\subsection{Viewing and Comparing the Integrated Images}
+
+Now, we wish to view the integrated images.  If you are using a colour
+SGI console or an X terminal, enter the following to create a MATLAB
+figure window and display the image obtained by rectangular
+integration:
+\begin{verbatim}
+     figure;
+     viewimage (PETsummed1);
+\end{verbatim}
+(Note that explicitly creating the window via the \verb|figure|
+command is not really necessary.  However, if you had already had a
+figure window with a plot or image that you did not want to lose,
+MATLAB would have overwritten the existing figure when you called
+\verb|viewimage|.  It is generally good practice to call \verb|figure|
+before creating new plots or images, unless you are sure you wish to
+obliterate whatever was previously in the current figure window.)
+
+You may want to title this window:
+\begin{verbatim}
+     title ('yates_19445, slice 8, rectangular integration');
+\end{verbatim}
+
+Now do the same thing for \verb|PETsummed2|.  You will probably want
+to move one or both figure windows so that you can see both images
+simultaneously.  Clearly, the two images are similar---but if we want
+a more objective comparison, we can calculate the ratio of the two
+images on a pixel-by-pixel basis and view this:
+\begin{verbatim}
+     ratio = PETsummed1 ./ PETsummed2;
+     viewimage (ratio);
+\end{verbatim}
+Note the use of the \verb|./| operator to specify an
+element-by-element operation on two matrices.  The resulting image
+shows that most of the pixels in the \verb|PETsummed1| and
+\verb|PETsummed2| appear fairly close.  However, because some pixels have
+such large values compared to 1, any small variations around 1 are
+swamped.  One way to deal with this is simply to clip the image at
+certain points: for example, set all points below -10 to -10, and all
+points above 10 to 10 to values.  This is accomplished as follows:
+\begin{verbatim}
+     clipneg = find (ratio < -10);
+     ratio (clipneg) = ones (size (clipneg)) * (-10);
+     clippos = find (ratio > 10);
+     ratio (clippos) = ones (size (clippos)) * (10);
+\end{verbatim}
+If you wish to know how many points were clipped at either end,
+type \verb|size (clipneg)| or \verb|size (clippos)|.
+
+If you now \verb|viewimage (ratio)|, it should be clear that the
+overall ratio between the two integrated images is close to 1, at
+least inside the head.
+
+\subsection{Saving the Integrated Image}
+
+After performing some analysis, it is often desirable to write the
+results to a new MINC file.  Currently, we only have a single image to
+write, so we will create a MINC file with 1 slice and no frames
+(because of the integration across frames, time is no longer a
+variable).  We use EMMA function \verb|newimage| as follows:
+\begin{verbatim}
+     new_handle = newimage ('yates_summed.mnc', [0 1], ...
+                            'examples/yates_19445.mnc');
+\end{verbatim}
+To write our single image to slice 1 of the new MINC file, we enter:
+\begin{verbatim}
+     putimages (new_handle, PETsummed2, 1);
+\end{verbatim}
+
+Alternately, we could create a MINC file with a full 15 slices, and
+loop through the entire original study to sum every slice.  MATLAB
+will allow us to enter a \verb|for| loop interactively, so enter the
+following (note that the \verb|newimage| call will overwrite
+\verb|yates_summed.mnc|; you may want to use a different name or copy
+the one-slice version):
+\begin{verbatim}
+     closeimage (new_handle);
+     new_handle = newimage ('yates_summed.mnc', [0 ns], ...
+                            'examples/yates_19445.mnc');
+     for slice = 1:ns
+        PET = getimages (handle, slice, 1:nf);
+        PETsummed = trapz (MidFTimes, PET')';
+        putimages (new_handle, PETsummed, slice);
+     end
+     closeimage (new_handle);
+\end{verbatim}
+
+\subsection{Using an Integrated Image for Image Masking}
+
+First, let us clear some of the unneeded variables from the workspace:
+\begin{verbatim}
+     clear PETsummed1 clip ratio
+\end{verbatim}
+Now, we will use \verb|PETsummed2| for a very simple form of image
+masking: namely, use only pixels whose values in the integrated image
+are greater than the mean of the integrated images.  It turns out that
+for CBF studies, this works quite well.  This is done by calculating
+the mean of the integrated image, and creating another image
+consisting entirely of 1's and 0's (a ``boolean'' or ``binary''
+image), where a 1 indicates that the pixel is inside the head, and a
+zero indicates outside:
+\begin{verbatim}
+     avg = mean (PETsummed2);
+     mask = PETsummed2 > avg;
+\end{verbatim}
+We can view the mask as an image itself to see a silhouette of the
+brain at this slice:
+\begin{verbatim}
+     viewimage (mask);
+\end{verbatim}
+Or, we can apply the mask to the summed image and view it.  To apply
+the mask to an image, simply perform an element-by-element multiply 
+using the
+\verb|.*| operator on the mask and the image; since \verb|mask|
+consists entirely of ones and zeros, every point in the image will
+either be set to zero or unchanged.  Thus,
+\begin{verbatim}
+     PETsummed2 = PETsummed2 .* mask;
+     figure;
+     viewimage (PETsummed2);
+\end{verbatim}
+will display the trapezoidally integrated image with out-of-head data
+set to zero.
+
+Finally, to see just how many pixels are ``on'' in the mask, you can type
+\begin{verbatim}
+     size (find (mask))
+\end{verbatim}
+The fact that only a fraction of the entire image consist of image
+data means that masking can be used to great advantage when performing
+analysis that is required computations for every pixel.  (Generally,
+this should be avoided if it is all possible to take advantage of
+MATLAB's vectorized structure.)
 
 %--------------------------------------------------------------
 \newpage
 \section{Underlying Structure}
 
-PAMI has a set of underlying functions written in C that provide the interface
-to MINC files.  A PAMI user will not ordinarily require use of these functions
-since every interaction with MINC files should be possible using the Matlab
-scripts and functions provided (.m files).  However, for the sake of
-completeness, these functions are documented in this section.
+EMMA has a set of underlying functions written in C that provide the
+interface to MINC files.  An EMMA user will not ordinarily require use
+of these functions since every interaction with MINC files should be
+possible using the MATLAB scripts and functions provided (.m files).
+However, for the sake of completeness, these functions are documented
+in this section.
 
-Matlab provides an interface to external C programs that allows dynamic linking
-at runtime.  This interface, called CMEX, is detailed in the Matlab
-{\em External Interface Guide}.  Please consult this guide for further details.
-Unfortunately, due to problems with the CMEX interface, it was not possible to
-create any CMEX programs that wrote to MINC files.  Therefore, all of the
-MINC creation and writing functions are written as stand-alone C programs, and
-all of the MINC reading functions are written as CMEX programs.
+MATLAB provides an interface to external C programs that allows
+dynamic linking at runtime.  This interface, called CMEX, is detailed
+in the MATLAB {\em External Interface Guide}.  Please consult this
+guide for further details.  Unfortunately, due to problems with the
+CMEX interface, it was not possible to create any CMEX programs that
+wrote to MINC files.  Therefore, all of the MINC creation and writing
+functions are written as stand-alone C programs, and all of the MINC
+reading functions are written as CMEX programs.
 
 
 \subsection {Stand-alone C Programs}
 
 \begin {itemize}
 
-\item \code{miwriteimages} : Writes images to a MINC file.  The images are taken from
-    the specified temporary file, whose data is expected to
-    be stored as doubles.  MINC file must exist, and contain
-    an image structure (create with micreate and then
-    micreateimage).
+\item \code{miwriteimages} - Writes images to a MINC file.  The images
+are taken from the specified temporary file, whose data is expected to
+be stored as doubles.  MINC file must exist, and contain an image
+structure (create with micreate and then micreateimage).
 \begin{verbatim}
-int miwriteimages <MINC file> <slices> <frames> <temp file>
+     int miwriteimages <MINC file> <slices> <frames> <temp file>
 \end{verbatim}
 
-\item \code{micreateimage} : Create the MIimage variable in an existing MINC file.
+\item \code{micreateimage} - Create the MIimage variable in an existing MINC file.
     Also updates the file hierarchy (MIimage is a child of MIrootvariable).
 \begin{verbatim}
-int micreateimage <MINC file> <size> <number of slices> <number of frames>
+     int micreateimage <MINC file> <size> <number of slices> <number of frames>
 \end{verbatim}
 
-\item \code{miwritevar} : Writes values to a variable in a MINC file.  Values are
+\item \code{miwritevar} - Writes values to a variable in a MINC file.  Values are
     taken from the specified temporary file, whose data is
     expected to be stored as doubles.
 \begin{verbatim}
-int miwritevar <MINC file> <var name> <start vector> <length vector> <temp file>
+     int miwritevar <MINC file> <var name> <start vector> <length vector> <temp file>
 \end{verbatim}
 
-\item \code{micreatevar} : Create a variable in a MINC file.
+\item \code{micreatevar} - Create a variable in a MINC file.
 \begin{verbatim}
-int micreatevar <MINC file> <var name> <data type> <num dims> <dim names>
+     int micreatevar <MINC file> <var name> <data type> <num dims> <dim names>
 \end{verbatim}
 
-\item \code{micreatedim} : Create a dimension in a MINC file.
+\item \code{micreatedim} - Create a dimension in a MINC file.
 \begin{verbatim}
-int micreatedim <MINC file> <dim name> <length>
+     int micreatedim <MINC file> <dim name> <length>
 \end{verbatim}
 
 
-\item \code{micreate} : Create a new MINC file by copying the global attributes
+\item \code{micreate} - Create a new MINC file by copying the global attributes
     and root variable from another MINC file.  Will also copy 
     the specified variables, and update the file hierarchy.  Adds 
     a time stamp to the "history" global variable.
 \begin{verbatim}
-micreate <parent file> <new file> [<variable list>]
+     micreate <parent file> <new file> [<variable list>]
 \end{verbatim}
 
 \end{itemize}
@@ -202,24 +504,32 @@ micreate <parent file> <new file> [<variable list>]
 \subsection{CMEX Programs}
 
 In addition to stand-alone C programs, the underlying structure also includes
-several CMEX programs which are dynamically linked by Matlab.  Please see the
-Matlab {\em External Interface Guide} for an explanation of CMEX files.
+several CMEX programs which are dynamically linked by MATLAB.  Please see the
+MATLAB {\em External Interface Guide} for an explanation of CMEX files.
 
 \begin{itemize}
 
-\item \code{mireadvar} : Read a hyperslab from a MINC (or any NetCDF) file into a MATLAB
+\item \code{mireadvar} - Read a hyperslab from a MINC (or any NetCDF) file into a MATLAB
     vector, using NetCDF-style start and count vectors.  (Zero-based!!!)  
 \begin{verbatim}
-mireadvar ('minc_file', 'var_name', start_vector, count_vector)
+     mireadvar ('minc_file', 'var_name', start_vector, count_vector)
 \end{verbatim}
 
-\item \code{mireadimages} : Read images from a MINC file.
+\item \code{mireadimages} - Read images from a MINC file.
 \begin{verbatim}
-mireadimages ('minc_file'[, slices[, frames[, options]]]) 
+     mireadimages ('minc_file'[, slices[, frames[, options]]]) 
 \end{verbatim}
 
 \end{itemize}
 
+%--------------------------------------
+
+\subsection{MATLAB files}
+\label{emma_reference}
+%--------------------------------------
+
+
+% \input{emma-help}
 
 
 \end{document}
