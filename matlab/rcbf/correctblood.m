@@ -76,25 +76,20 @@ if (progress)
    drawnow
 end
 
-% First let's do the dispersion correction: differentiate g (t) by
-% smoothing it and taking differences, and add tau * dg/dt to g.
+% First let's do the dispersion correction: differentiate and smooth
+% g(t) by using the method of Sayers described in "Inferring
+% Significance from Biological Signals."
 
-%deriv = conv (g_even, 11:-1:-11);
-%deriv = deriv (12:length(deriv)-11) / 1012;
-%g_even = g_even + tau * deriv;
-%z = find (g_even < 0);                       % nuke negatives from g_even
-%g_even (z) = zeros (size (z));
-                                             % match g_even
+[smooth_g_even, deriv_g] = deriv (21, length(ts_even), g_even, (ts_even(2)-ts_even(1)));
+g_even = smooth_g_even + tau*deriv_g;
+
 if (progress)
    plot (ts_even, g_even, 'r');
    drawnow
    figure;
 end
 
-% Now g_even is shortened by one element, but has been corrected for
-% dispersion (assuming dispersion time constant tau = 4 sec).
-
-A = A (first60); 			% chop off stuff frames after
+A = A (first60); 			% chop off stuff after 60 seconds
 midftimes = midftimes (first60);	% first minute again
 
 if (progress)
@@ -109,7 +104,7 @@ end
 
 % Here are the initial values of alpha, beta, and gamma, in units of:
 %  alpha = (mL blood) / ((g tissue) * sec)
-%   beta = 1/sec
+%  beta = 1/sec
 %  gamma = (mL blood) / (g tissue)
 % Note that these differ numerically from Hiroto's suggested initial
 % values of [0.6, alpha/0.8, 0.03] only because of the different
@@ -136,28 +131,38 @@ for i = 1:length(deltas)
    
    shifted_g_even = lookup ((ts_even-delta), g_even, ts_even);
    g_select = find (~isnan (shifted_g_even));
+
+% Be really careful with the fitting.  If the algorithm you choose makes
+% args(2) a negative value, there will be infinities in the result
+% of b_curve, which will cause the entire thing to bomb.
+
+%   options(5) = 1;
 %   [final,options,f] = leastsq ('fit_b_curve', init, options, [], ...
-%	 shifted_g_even, ts_even, A, midftimes);
+%                       shifted_g_even(g_select), ts_even(g_select), A, startftimes, flengths);
    final = fmins ('fit_b_curve', init, options, [], ...
-	 shifted_g_even (g_select), ts_even (g_select), A, midftimes);
+                   shifted_g_even (g_select), ts_even (g_select), A, startftimes, flengths);
 
    params (i,:) = final;
 %   rss (i) = sum (f .^ 2) ;            % if using leastsq
-   rss(i) = fit_b_curve (final, shifted_g_even(g_select), ts_even(g_select), A, midftimes);
+   rss(i) = fit_b_curve (final, shifted_g_even(g_select), ts_even(g_select), ...
+                         A, startftimes, flengths);
+
+   init = final;
    if (progress)
       fprintf ('; final = [%g %g %g]; error = %g\n', ...
 	    final, rss (i));
       plot (midftimes, ...
-            b_curve(final, shifted_g_even(g_select), ts_even(g_select), A, midftimes));
+            b_curve(final, shifted_g_even(g_select), ts_even(g_select), ...
+		A, startftimes, flengths));
       drawnow
-
    end
-            
 end
+
 
 [err, where] = min (rss);		% find smallest residual
 delta = deltas (where);			% delta for best fit
 Ca_even = lookup ((ts_even-delta), g_even, ts_even);
-%fit_params = params (where,:);		% alpha, beta, gamma for best fit
-%rss = err;				% return just the minimum residual
+
+nuke = find(isnan(Ca_even));
+Ca_even(nuke) = zeros(size(nuke));
 
