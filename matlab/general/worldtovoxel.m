@@ -30,8 +30,8 @@ function out = worldtovoxel (volume, in, option)
 % To use the points in a tag file with EMMA:
 %
 %    h = openimage ('foo.mnc');
-%    w_tags = loadtagfile ('foo.tag');   % get tags in world coordinates
-%    v_tags = worldtovoxel (h, w_tags');  % CHECK: is this right??!!
+%    w_tags = loadtagfile ('foo.tag');     % get tags in world coordinates
+%    v_tags = worldtovoxel (h, w_tags');   % transform to voxel coordinates
 %
 % Note that this does NOT give the same v_tags as:
 % 
