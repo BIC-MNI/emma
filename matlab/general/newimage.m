@@ -176,11 +176,16 @@ end
 % will ALL be overridden if ValidRange is already set, ie. if the user
 % supplied one in the arguments to newimage.)
 
-if (isempty (ValidRange))
-   if (Parent ~= -1) & (strcmp (ImageType, ParentType))
-      ValidRange = miinquire (ParentFile, 'attvalue', 'image', 'valid_range');
-   else
+if (isempty (ValidRange)) & (Parent ~= -1) & (strcmp (ImageType, ParentType))
+   ValidRange = miinquire (ParentFile, 'attvalue', 'image', 'valid_range');
+end   
 
+% Test for empty ValidRange *twice*, because the miinquire above (if
+% it was even called) may well return an empty ValidRange (ie. if the
+% image in the parent file doesn't have the valid_range attribute).
+
+if (isempty (ValidRange))
+   
    % The default valid ranges here are taken from /usr/include/limits.h
 
       if (strcmp (ImageType, 'byte'))
@@ -251,7 +256,9 @@ end
 
 [result,output] = unix (execstr);
 if (result ~= 0)
-   error (['Error running ' execstr ' to create file ' NewFile]);
+   disp (['Command: ' execstr]);
+   disp ([' Output: ' output]);
+   error (['Error running micreateimage to create file ' NewFile]);
 end
 
 closeimage (Parent);
