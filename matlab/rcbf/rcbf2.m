@@ -209,7 +209,7 @@ for current_slice = 1:total_slices
   if (correction)
     
     if (progress)
-      disp ('Performing delay correction.');
+      disp ('Performing delay/dispersion correction.');
     end
 
     % Since this is intended for batch mode operation,
