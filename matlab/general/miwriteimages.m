@@ -47,7 +47,7 @@ end
 % Now do the exact same thing for frames.
 
 if (nargin < 4)
-   framelist = '-'
+   framelist = '-';
 else
    if (~isempty(frames))
       framelist = '';
@@ -68,7 +68,7 @@ tempfile = tempfilename;
 
 execstr = sprintf ('miwriteimages %s %s %s %s', ...
    filename, slicelist, framelist, tempfile);
-disp (execstr);
+% disp (execstr);
 
 outfile = fopen (tempfile, 'w');
 if (outfile == -1)
