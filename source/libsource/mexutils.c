@@ -1,7 +1,7 @@
 #include <stdlib.h>  
-#include "gpw.h"
 #include "mex.h"
 #include "mexutils.h"
+
 
 
 /* ----------------------------- MNI Header -----------------------------------
