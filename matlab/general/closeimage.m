@@ -15,12 +15,11 @@ for handle = handles
    eval(['Flags = Flags' int2str(handle) ';']);
    eval(['Filename = Filename' int2str(handle) ';']);
    
-   if (size(Flags) == [1 2])		% make sure it was actually an open
-      if (Flags(2))			% compressed file?
-	 delete (Filename);
+   if (size(Flags) == [1 2])		% was it actually a compressed file?
+      if (Flags(2))                     % then nuke the temp directory
 	 slashes = find (Filename == '/');
 	 lastslash = slashes (length (slashes));
-	 unix (['\rm -rf ' Filename(1:(lastslash-1))]);
+	 unix (['/bin/rm -rf ' Filename(1:(lastslash-1))]);
       end
    else
       fprintf (2, 'closeimage: warning: invalid image handle (%d)\n', handle);
