@@ -70,7 +70,7 @@ typedef struct
 } ImageInfoRec;
 
 
-char *NCErrMsg (int);
+char *NCErrMsg (int NCErrCode, int SysErrCode);
 int OpenFile (char *Filename, int *CDF, int Mode);
 int GetVarInfo (int CDF, char vName[], VarInfoRec *vInfo);
 int GetImageInfo (int CDF, ImageInfoRec *Image);
