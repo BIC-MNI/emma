@@ -19,7 +19,7 @@ function value = handlefield(externalhandle, key, filename, ...
 % Note that key is case insensitive.
 %
 
-% $Id: handlefield.m,v 2.2 2000-04-18 15:28:22 neelin Exp $
+% $Id: handlefield.m,v 2.3 2000-04-18 20:06:15 neelin Exp $
 % $Name:  $
 
 % Constants
@@ -117,6 +117,18 @@ if (strcmp(key, 'create'))
   end
   if (~isempty(handle))
     error('The specified handle is not empty');
+  end
+  
+  % Allow for an empty time or length - mark this by putting NaN
+  % in the first element
+  nframetimes = prod(size(frametimes));
+  nframelengths = prod(size(framelengths));
+  if ((nframetimes > 0) & (nframelengths == 0))
+    framelengths = zeros(size(frametimes));
+    framelengths(1,1)= nan;
+  elseif ((nframetimes == 0) & (nframelengths > 0))
+    frametimes = zeros(size(framelengths));
+    frametimes(1,1)= nan;
   end
   if (length(frametimes) ~= length(framelengths))
     error('Should have matching numbers of frame times and lengths');
@@ -280,10 +292,16 @@ else
   elseif (strcmp(key, 'frametimes'))
     value = EMMA_FrameTimes(EMMA_Frame_Index(handle, 1) : ...
                             EMMA_Frame_Index(handle, 2));
+    if (isnan(value(1,1)))
+      value = [];
+    end
     value = value(:);
   elseif (strcmp(key, 'framelengths'))
     value = EMMA_FrameLengths(EMMA_Frame_Index(handle, 1) : ...
                               EMMA_Frame_Index(handle, 2));
+    if (isnan(value(1,1)))
+      value = [];
+    end
     value = value(:);
   else
     error(['Unrecognized key ' key]);
