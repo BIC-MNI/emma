@@ -115,9 +115,10 @@ elseif (nargin > 6)
 end
 
 total_slices = length(slices);
-K1 = zeros(16384,total_slices);
-k2 = zeros(16384,total_slices);
-V0 = zeros(16384,total_slices);
+num_pixels = prod (getimageinfo (pet, 'imagesize'));
+K1 = zeros (num_pixels, total_slices);
+k2 = zeros (num_pixels, total_slices);
+V0 = zeros (num_pixels, total_slices);
 delta = zeros(1,total_slices);
 
 img = openimage(filename);
@@ -239,7 +240,7 @@ for current_slice = 1:total_slices
   
   if (progress); disp ('Generating k2/rR lookup table'); end
   [conv_int1,conv_int2,conv_int3] = findintconvo (Ca_even,ts_even,k2_lookup,...
-      MidFTimes, FrameLengths, w1, w2, w3);
+      MidFTimes, FrameLengths, w1, w2, w3, progress);
 
   Ca_mft = nframeint (ts_even, Ca_even, FrameTimes, FrameLengths);      
 
@@ -334,7 +335,7 @@ rescale (K1, 100*60/1.05);    % convert from g_blood / (g_tissue * sec)
 rescale (k2, 60);             % from 1/sec to 1/min
 rescale (V0, 100/1.05);       % from g_blood/g_tissue to mL_b / (100 g_t)
 
-disp('WARNING!!! rcbf2 now calculates K1 in mL_blood / (100 g_tissue * min),');
+disp('notice: rcbf2 calculates K1 in mL_blood / (100 g_tissue * min),');
 disp('k2 in 1/min, and V0 in mL_blood / (100 g_tissue)');
 
 % Cleanup
