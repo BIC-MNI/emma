@@ -196,8 +196,8 @@ int CreateBloodCDF (char name[], header *cnt_header)
     miattputstr (file_CDF, counts_id, "units", "counts");
     miattputstr (file_CDF, empty_weight_id, "units", "grams");
     miattputstr (file_CDF, full_weight_id, "units", "grams");
-    miattputstr (file_CDF, corrected_activity_id, "units", "Bq/second");
-    miattputstr (file_CDF, activity_id, "units", "Bq/second");
+    miattputstr (file_CDF, corrected_activity_id, "units", "Bq/gram");
+    miattputstr (file_CDF, activity_id, "units", "Bq/gram");
 
     /* Make a root for the blood analysis info */
 
