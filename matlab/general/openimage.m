@@ -87,8 +87,19 @@ function ImHandle = openimage (filename, mode)
 %-----------------------------------------------------------------------------
 
 
-global ImageCount                % Creates an empty matrix if variable does
-				 % not exist yet!
+% Note that the effects of 'global' on a brand-new variable are subtly
+% different between MATLAB 4 and 5.  In both cases, 'global foo' makes
+% 'foo' spring into existence as an empty (0x0) matrix.  However, in
+% MATLAB 4, exist ('foo') would still return false; in retrospect, this
+% doesn't make a lot of sense, and it was a mistake to rely on this
+% behaviour (as openimage used to do).  MATLAB 5 is more sensible: after
+% 'foo' is sprung into existence by 'global foo', exist ('foo') is true.
+% In both versions, isempty (foo) is true, as expected -- when a
+% variable is created by 'globale', it is indeed an empty matrix.
+
+global ImageCount
+
+
 
 error (nargchk (1, 2, nargin));
 
@@ -149,15 +160,17 @@ if (strcmp (filename(len-2:len), '.gz') | ...
    % Note that checking the directory with fopen might not be
    % portable!  Works on IRIX and SunOS, at least.
    
-   now = clock;
-   timestring = sprintf ('%d%d%d%d%d%s', now(1:5),int2str(now(6)));
+   timestring = sprintf ('%02d', fix (clock));
    tdir = [tempdir 'emma' timestring];
    id = fopen (tdir, 'r');		% try to open the temp dir
    if (id ~= -1)			% if it succeeded, that's bad! means
       fclose (id);			% the dir already exists
       error (['Temporary directory ' tdir ' already exists']);
    end
-   unix (['mkdir ' tdir]);
+   status = unix (['mkdir ' tdir]);
+   if (status ~= 0)                     % mkdir failed
+      error (['Unable to create temporary directory ' tdir]);
+   end
    
    % Now generate the name of the temporary file, and uncompress to it.
    % If the file already exists, that's an internal error -- we
