@@ -1,15 +1,19 @@
-# Options for SGI (IRIX).  The -D__STDC__ in {CMEX,STD}_OPT is only needed
-# under IRIX 4; under IRIX 5.x, it is redundant.  Development version -
-# not to be included in EMMA distributions.
+# 
+# Options for SGI (IRIX 5).
+# 
+# Development version - not to be included in EMMA distributions.
+#
+# $Id: Makefile.develop,v 1.3 2000-03-30 19:33:23 greg Exp $
+#
 
-RANLIB      = true
+RANLIB      = 
 MEX_EXT     = mexsg
-CMEX_LIBS   = -lemma -lminc -lnetcdf -lm -lmalloc
-XDR_LIB     = -lsun
+CMEX_LIBS   = -lemma -lminc -lnetcdf -lm
+XDR_LIB     = 
 CC          = cc
 
 # Options for the MIPS C compiler.  CMEX_OPT is for CMEX programs,
 # STD_OPT is for standalone programs.
 
-CMEX_OPT    = -g -prototypes -fullwarn
-STD_OPT     = -g -prototypes -fullwarn
+CFLAGS_MEX  = -g -prototypes -fullwarn
+CFLAGS_STD  = -g -prototypes -fullwarn
