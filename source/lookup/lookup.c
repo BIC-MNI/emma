@@ -18,7 +18,7 @@
 @METHOD     : 
 @GLOBALS    : 
 @CALLS      : 
-@CREATED    : 93-6-27, Mark Wolfroth & Greg Ward
+@CREATED    : 93-6-27, Mark Wolforth & Greg Ward
 @MODIFIED   : 93-6-28/29, Greg Ward: broke mexFunction() up, added 
                           monotonicity checking, and Lookup2 for 
                           decreasing oldx.
