@@ -1,4 +1,4 @@
-function images = getimages (handle, slices, frames)
+function images = getimages (handle, slices, frames, old_matrix)
 %GETIMAGES  Retrieve whole images from an open MINC file.
 %
 %  images = getimages (handle, slices[, frames])
@@ -71,7 +71,7 @@ function images = getimages (handle, slices, frames)
 
 % Check for valid number of arguments
 
-if (nargin < 1) | (nargin > 3)
+if (nargin < 1) | (nargin > 4)
    error ('Incorrect number of arguments.');
 end
 
@@ -82,6 +82,7 @@ end
 if (nargin < 3)         % no frames vector given, so make it empty
    frames = [];
 end
+
 
 % Make the handle's filename global, and check that it exists
 
@@ -124,7 +125,10 @@ if num_im > max_im
 end
 
 % Now read the images!  (remembering to make slices and frames zero-based for
-% mireadimages).  If frames was not supplied, then do not attempt to pass
-% it to mireadimages.
+% mireadimages).
 
-images = mireadimages (filename, slices-1, frames-1);
+if (nargin < 4)
+    images = mireadimages (filename, slices-1, frames-1);
+else
+    images = mireadimages (filename, slices-1, frames-1, old_matrix);
+end
