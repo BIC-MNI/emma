@@ -1,53 +1,63 @@
-function out = worldtovoxel (volume, in, option)
+function out = worldtovoxel (volume, in, options)
 % WORLDTOVOXEL  convert points from world to voxel coordinates
 %
-%   v_points = worldtovoxel (volume, w_points [, 'external'])
+%     v_points = worldtovoxel (volume, w_points [, options])
 % or
-%   wv_xfm = worldtovoxel (volume)
+%     wv_xfm = worldtovoxel (volume)
 % 
 % If the first form is used, then w_points must be a matrix with N
-% columns (for N points) and either 3 or 4 rows.  (If four rows are
-% supplied, then the fourth should be all ones; if only three rows are
-% supplied, a fourth row of all ones will be added.)  Normally,
-% worldtovoxel assumes that the the voxel coordinates are to be used as
-% slice/pixel numbers within EMMA, i.e. that the coordinates should be
-% 1-based.  However, if the points are to be used externally (eg.,
-% written to a tag file), then they should be zero-based.  Adding the
-% 'external' flag will cause this to be done.
-%  
-% If the second form is used then the just the world-to-voxel
-% transform (a 4x4 matrix) is returned.  This is simply the inverse of
-% the matrix returned by getvoxeltoworld.  Note that that applying
-% this transform to points in world coordinates will give zero-based
-% voxel coordinates; you must take care of adding 1 yourself if you
-% need to use the voxel coordinates within MATLAB.  (See the help
-% for getvoxeltoworld for more information.)
-% 
-% The volume parameter can be either an image handle or a filename.
+% columns (for N points) and three rows (for the three spatial
+% dimensions).  (Alternately, a four-row form is acceptable: three rows
+% for the three spatial dimensions, plus a row of all ones.)
 %
+% Normally, worldtovoxel assumes that the the voxel coordinates are to
+% be used as slice/pixel numbers within EMMA, i.e. that the coordinates
+% should be one-based and in the order (slice, row, col).  However, if
+% the points are to be used externally (eg., with a C program such as
+% mincextract), then they should be zero-based.  Using the 'external'
+% option will cause this to be done.  Also, some applications may expect
+% voxel coordinates in (x,y,z) order; use the 'world' option when this
+% is needed.
+% 
+% If the second form is used then the just the world-to-voxel transform
+% (a 4x4 matrix) is returned.  This is simply the inverse of the matrix
+% returned by getvoxeltoworld, modified to convert zero-based to
+% one-based and to reorder world-order to voxel-order (unless overridden
+% by the 'external' or 'world' options).
+% 
+% Options are specified as single words, all in the same string.
+% Currently the only options are 'world' and 'external'.
+% 
+% The volume argument must be an image handle as returned by openimage
+% or newimage.
+% 
 % EXAMPLES
 % 
 % To use the points in a tag file with EMMA:
 %
 %    h = openimage ('foo.mnc');
-%    w_tags = loadtagfile ('foo.tag');     % get tags in world coordinates
-%    v_tags = worldtovoxel (h, w_tags');   % transform to voxel coordinates
+%    tags = loadtagfile ('foo.tag');       % get tags in world coordinates
+%    vtags = worldtovoxel (h, tags');      % transform to voxel coordinates
 %
-% Note that this does NOT give the same v_tags as:
+% vtags will be a matrix with one column per point; the first three rows
+% will be slice, row, and column numbers for use with EMMA.  (Slice numbers
+% for getimages/putimages, row and column numbers for pixelindex.)
+%
+% Note that this does NOT give the same vtags as:
 % 
-%    w2v = inv (getworldtovoxel ('foo.mnc'));
-%    w_tags = loadtagfile ('foo.tag');
-%    [num_points,n] = size (w_tags);
-%    v_tags = w2v * [w_tags' ; ones(1,num_points)];
-%
-% because in the first case, the coordinates in v_tags will be
-% one-based, and in the second case, they will be zero-based.  In
-% almost all cases it is preferable to use worldtovoxel and voxeltoworld.
+%    wv = inv (getworldtovoxel (h));
+%    vtags = wv * tags;
+% 
+% because in this case, none of the conversions from "external"-style voxel
+% coordinates to EMMA-style voxel coordinates are done.  It is almost
+% always preferable to use worldtovoxel for this type of conversion, as it
+% takes care of all the gory details for you.
 %
 % SEE ALSO
-%   getvoxeltoworld, voxeltoworld
+%   getvoxeltoworld, voxeltoworld, gettaggedregion
 
-% by Mark Wolforth; rewritten 95/3/10-12 by Greg Ward
+% by Mark Wolforth; rewritten 95/3/10-12 by Greg Ward, and then
+% again 95/11/3-9 by GW (sigh)
 
 
 % @COPYRIGHT  :
@@ -71,23 +81,32 @@ if (nargin < 1 | nargin > 3)
   error ('Incorrect number of arguments');
 end
 
-offset = 1;                  % default value if option ~= 'external' 
 if (nargin == 3)
-   if (~isstr (option))
-      error ('If given, option argument must be a string');
-   end
-   offset = ~strcmp (option, 'external');
    nargin = 2;
+else
+   options = '';
 end
 
-wv_xfm = getvoxeltoworld (volume);
-wv_xfm = inv (wv_xfm);
+if (size(volume) ~= [1,1])
+   error ('volume parameter must be an image handle');
+end
 
+wv = inv (voxeltoworld (volume, [], options));
+
+% If an empty set of points was supplied, pretend that none were
+% supplied (so the user can supply options when they wish to fetch just
+% the transform)
+
+if (nargin == 2)
+   if (size (in) == [0 0])
+      nargin = 1;
+   end
+end
 
 % If only one argument was supplied, just return the transform
 
 if (nargin == 1)
-   out = wv_xfm;
+   out = wv;
 
 % If exactly two arguments were supplied, the second is a matrix
 % of points.  First check to see if caller supplied a three-row
@@ -103,46 +122,10 @@ elseif (nargin == 2)
       error ('If a matrix of points is supplied, it must have either three or four rows');
    end
 
-   points = wv_xfm * points;    % perform the transformation
-   points(1:3,:) = points(1:3,:) + offset;
+   points = wv * points;      % perform the transformation
    
    if (m == 3)                % if caller only supplied 3 rows, lose the 4th
       points = points (1:3,:);
    end
    out = points;
-
-% Otherwise, separate vectors were supplied, so apply the matrix to them
-% (This is a pain-in-the-neck special case necessitated by the way
-% Mark originally wrote the function.  I'd love to get rid of it...)
-
-%elseif (nargin == 4)
-%   [mx,nx] = size (w_x); [my,ny] = size (w_y); [mz,nz] = size (w_z);
-%   if (mx ~= my | mx ~= mz | nx ~= ny | nx ~= nz)
-%      error ('w_x, w_y, and w_z must be the same size');
-%   end
-%
-%   if (mx ~= 1 & my ~= 1)
-%      error ('w_x, w_y, and w_z must be vectors');
-%   end
-%
-%   if (nx == 1)           % if they passed vectors as columns
-%      w_x = w_x';         % then transpose them to rows
-%      w_y = w_y'; 
-%      w_z = w_z';
-%      num_points = my;
-%   else
-%      num_points = nx;
-%   end
-%
-%   temp = [w_x; w_y; w_z; ones(1,num_points)];
-%   temp = wv_xfm * temp;
-%   v_x = temp(1,:);
-%   v_y = temp(2,:);
-%   v_z = temp(3,:);
-%
-%   if (nx == 1)
-%      v_x = v_x';         % then transpose them to columns
-%      v_y = v_y'; 
-%      v_z = v_z'; 
-%   end
 end
