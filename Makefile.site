@@ -3,10 +3,10 @@
 # included by a makefile that has already defined EMMA_ROOT, which must
 # either be empty or a directory with a trailing slash.
 #
-# $Id: Makefile.site,v 1.4 1997-10-17 20:15:19 greg Exp $
+# $Id: Makefile.site,v 1.5 1997-10-20 21:07:15 greg Rel $
 #
 
-SHELL       = /bin/sh			# Bourne shell or equivalent
+SHELL       = /bin/sh
 
 #
 # Change this to reflect your machine type.  Possible machine types
@@ -17,24 +17,31 @@ SHELL       = /bin/sh			# Bourne shell or equivalent
 
 MACHINE     = develop
 
-#
-# Put here any macro definitions you need to compile stuff.  If you're
-# running MATLAB 5, you need -DV4_COMPAT to build EMMA's CMEX
-# programs (which is why it's defined by default).
+# 
+# If you need to define any preprocessor tokens, go ahead and do it here.
 #
 
-DEFINES = -DV4_COMPAT
+DEFINES     =
 
 # 
 # MATLAB stuff: the root directory of the MATLAB installation, as well
 # as various things found under it (headers for building MEX programs
-# and the cmex script).  You may have to change MATLAB_ROOT, but you
-# probably shouldn't touch the others.
+# and the cmex script).
+# 
+# MEX is the script used to compile CMEX programs.  The default,
+# bin/cmex under the MATLAB root directory, is for MATLAB 4.  For MATLAB
+# 5, you'll have to use the commented-out version (the script is called
+# 'mex', and the -V4 flag is required to compile EMMA's CMEX code).
 #
 
 MATLAB_ROOT = /usr/local/matlab
 MATLABINC   = $(MATLAB_ROOT)/extern/include
-CMEX        = $(MATLAB_ROOT)/bin/cmex
+# for MATLAB 4:
+MEX         = $(MATLAB_ROOT)/bin/cmex
+MEX_FLAGS   = 
+# for MATLAB 5:
+# MEX         = $(MATLAB_ROOT)/bin/mex
+# MEX_FLAGS   = -V4
 
 
 # 
@@ -52,7 +59,7 @@ MINCINC     = -I/usr/local/include
 # Where to find the EMMA library and header files.  You shouldn't change these.
 #
 
-EMMAINC     = $(EMMA_ROOT)include
+EMMAINC     = $(EMMA_ROOT)source/include
 EMMALIB     = $(EMMA_ROOT)lib
 
 
@@ -85,8 +92,7 @@ DOC_INSTALL_DIR    = /usr/local/doc
 #
 
 INCLUDES = -I$(EMMAINC) \
-             $(MINCINC) \
-           -I$(MATLABINC)
+             $(MINCINC)
 
 LIBDIRS  = -L$(EMMALIB) \
              $(MINCLIB)
