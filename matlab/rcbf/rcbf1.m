@@ -2,19 +2,30 @@ function [K1,k2] = rcbf1 (filename, slice, progress)
 % RCBF1 a one-compartment (double-weighted integral) rCBF model.
 %
 %        [K1,k2] = rcbf1 (filename, slice)
-%
-% A one-compartment rCBF model (without V0 or blood delay and 
-% dispersion) implemented as a MATLAB function.  The
-% compartmental equation is solved by integrating it across
-% the entire study, and then weighting this integral with two
-% different weights.  When these two integrals are divided by
-% each other, K1 is eliminated, leaving only k2.  A lookup
-% table is calculated, relating values of k2 to values of the
-% integral.  From this, k2 and be calculated.  From k2, K1 is
-% easily found by substitution into the original compartmental
-% equation.  See the document "rCBF Analysis Using Matlab" for
-% further details of both the compartmental equations
-% themselves, and the method of solution.
+% 
+% A one-compartment rCBF model (without V0 or blood delay and
+% dispersion) implemented as a MATLAB function.  The compartmental
+% equation is solved by integrating it across the entire study, and
+% then weighting this integral with two different weights.  When these
+% two integrals are divided by each other, K1 is eliminated, leaving
+% only k2.  A lookup table is calculated, relating values of k2 to
+% values of the integral.  From this, k2 can be calculated.  From k2,
+% K1 is easily found by substitution into the original compartmental
+% equation.  See the document "rCBF Analysis Using Matlab"
+% (http://www.mni.mcgill/system/mni/matlab/rcbf/rcbf.html) for further
+% details of both the compartmental equations themselves, and the
+% method of solution.
+% 
+% Note: it is assumed that input PET data is in units of nCi/mL_tissue
+% (= 37 Bq/mL_tissue = 37 Bq / 1.05 g_tissue).  This is converted to
+% Bq/g_tissue for all internal calculations.  Blood data is input in
+% Bq/g_blood; this is calibrated to the PET scanner (using the
+% cross-calibration factor) and converted back to Bq/g_blood.  Thus,
+% K1 is calculated internally as g_blood / (g_tissue * sec).  The
+% final step of the rCBF analysis is to convert this to the more
+% standard mL_blood / (100 g_tissue * min).  k2 is left in CGS units
+% (1/sec).
+
 
 % ----------------------------- MNI Header -----------------------------------
 % @NAME       : rcbf1
@@ -66,9 +77,14 @@ FrameLengths = getimageinfo (img, 'FrameLengths');
 MidFTimes = FrameTimes + (FrameLengths / 2);
 
 [g_even, ts_even] = resampleblood (img, 'even');
-% Apply the cross-calibration factor.
+
+% Apply the cross-calibration factor to convert from Bq/g_blood to 
+% nCi/mL_blood (taking into account the calibration from the well
+% counter to the PET scanner).  Then convert right back to Bq/g_blood
+% (but now calibrated with the scanner).
+
 XCAL = 0.11;
-g_even = g_even*XCAL*37/1.05;           % units are decay / (g_tissue * sec)
+g_even = g_even*XCAL*37/1.05;           % units are decay / (g_blood * sec)
 
 Ca_even = g_even; 			% no delay/dispersion correction!!!
 
@@ -110,9 +126,9 @@ K1 = PET_int1 ./ k2_conv_ints;
 nuke = find (isnan (K1) | isinf (K1));
 K1 (nuke) = zeros (size (nuke));
 
+rescale (K1, 100*60/1.05);    % convert from g_blood / (g_tissue * sec)
+                              % to mL_blood / (100 g_tissue * min)
+
 % Cleanup
 
 closeimage (img);
-
-
-
