@@ -6,7 +6,7 @@
               I have access to, though (IRIX 5.3, Linux/i86 2.0, SunOS 4.1).
 @CREATED    : Feb 1995, Greg Ward
 @MODIFIED   : 
-@VERSION    : $Id: createnan.c,v 1.3 1997-10-20 21:16:09 greg Rel $
+@VERSION    : $Id: createnan.c,v 1.4 1997-12-08 18:17:07 greg Exp $
               $Name:  $
 ---------------------------------------------------------------------------- */
 
@@ -15,6 +15,7 @@
 #endif
 
 #include <math.h>
+#include <stdio.h>
 #include <assert.h>
 #include "emmaproto.h"
 
