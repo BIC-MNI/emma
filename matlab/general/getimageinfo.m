@@ -11,8 +11,9 @@ function info = getimageinfo (handle, what)
 % non-MINC-standard strings, and the values returned by getimageinfo
 % when they are passed, are:
 %
-%      Filename       the name of the MINC file (if applicable) as
-%                     as supplied to openimage or newimage
+%      Filename       the name of the MINC file (if applicable)
+%                     as supplied to openimage or newimage; will be
+%							 empty if data set has no associated MINC file.
 %      NumFrames      number of frames in the study, 0 if non-dynamic
 %                     study (equivalent to 'time')
 %      NumSlices      number of slices in the study (equivalent to 'zspace')
@@ -23,11 +24,28 @@ function info = getimageinfo (handle, what)
 %      FrameTimes     vector with NumFrames elements - start time of each 
 %                     frame, relative to start of study, in seconds
 %      
-% If the requested data item is invalid, info will be empty.
+% If the requested data item is invalid or the image specified by handle
+% is not found (ie. has not been opened), then info will be empty.
 
-% Created: 93-6-17, Greg Ward
-% Modified: 93-6-25, Greg Ward: added the standard MINC dimension names,
-% and spruced up the help.
+% ------------------------------ MNI Header ----------------------------------
+%@NAME       : getimageinfo
+%@INPUT      : handle - handle to an opened MATLAB image set
+%					what - character string describing what info is to be returned
+%						for currently supported values, type "help getimageinfo"
+%						in MATLAB
+%@OUTPUT     : 
+%@RETURNS    : info - the appropriate image data, either from within
+%					MATLAB or read from the associated MINC file
+%@DESCRIPTION: Read and return various data about an image set.
+%@METHOD     : 
+%@GLOBALS    : Filename#, NumFrames#, NumSlices#, ImageSize#, FrameLengths#
+%					FrameTimes#
+%@CALLS      : mireadvar (CMEX)
+%@CREATED    : 93-6-17, Greg Ward
+%@MODIFIED   : 93-6-17, Greg Ward: added standard MINC dimension names,
+%					spruced up help
+%					93-7-6, Greg Ward: added this header
+%-----------------------------------------------------------------------------
 
 if nargin ~= 2
    error ('Incorrect number of arguments');
@@ -63,10 +81,9 @@ if exist ([what int2str(handle)]) ~= 1
 	elseif (strcmp (what, 'xspace') | strcmp (what, 'yspace'))
 		info = eval (['ImageSize' int2str(handle)]);
 	else
-		disp (['Variable/dimension not found: ' what int2str(handle)]);
+		disp (['getimageinfo: data item not found: ' what int2str(handle)]);
 		info = [];
 	end
-
 else
    info = eval([what int2str(handle)]);
 end
