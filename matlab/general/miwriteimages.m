@@ -75,7 +75,11 @@ if (outfile == -1)
    error (['Could not open temporary file ' tempfile ' for writing!']);
 end
 
+[m,n] = size (images);
 count = fwrite (outfile, images, 'double');
+if (count ~= m*n)
+   error (['Error writing to file ' tempfile ' (probable disk full)']);
+end
 
 fclose (outfile);
 
