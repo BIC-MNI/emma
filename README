@@ -1,29 +1,29 @@
                     ------------------------------
                               EMMA 0.9.4
 
-                           14 October, 1997
+                           20 October, 1997
                     ------------------------------
 
 
 Welcome to EMMA!
 ================
 
-EMMA is a MATLAB package developed at the McConnell Brain Imaging
-Centre (BIC) of the Montreal Neurological Institute, created to allow
-MATLAB programmers to develop medical image analysis applications
-quickly and interactively.  Previously this development was done on a
-VAX in FORTRAN.  In spite of the inherent loss of speed due to using
-an interpreted language, the reduced time and complexity of
-development offer a significant advantage.  (In fact, MATLAB code
-written to carefully take advantage of MATLAB's vectorized nature can
-compete with code written in compiled languages.  Of course, it
-doesn't hurt that today's Unix workstations are a heck of a lot faster
-than yesterday's VAXes.)
+EMMA is a MATLAB package developed at the McConnell Brain Imaging Centre
+(BIC) of the Montreal Neurological Institute, created to allow MATLAB
+programmers to develop medical image analysis applications quickly and
+interactively.  Previously this development was done at the BIC with
+FORTRAN on a VAX.  In spite of the inherent loss of speed due to using
+an interpreted language, the reduced time and complexity of development
+offer a significant advantage.  (In fact, MATLAB code written to
+carefully take advantage of MATLAB's vectorized nature can compete with
+code written in compiled languages.  Of course, it doesn't hurt that
+today's Unix workstations are a heck of a lot faster than yesterday's
+VAXen.)
 
 Release 0.9.4 is mostly a bug-fix release; see the CHANGES file for
-details.  Several of those bugs only revealed themselves when we
-tested EMMA under MATLAB 5, though, so this release has the
-distinction of running under both MATLAB 4 and 5.
+details.  Several of those bugs only revealed themselves when we tested
+EMMA under MATLAB 5, though, so this release has the distinction of
+being the first to compile and run under both MATLAB 4 and 5.
 
 The acronym EMMA stands for whatever you want it to stand for.
 Current favourites include:
@@ -46,8 +46,8 @@ EMMA consists of:
      2) CMEX programs.  These are dynamically loaded by MATLAB when
         they are called, and must be compiled.  You will need the cmex
 	script supplied with MATLAB, as well as the MINC and NetCDF
-	libraries.  You should have obtained these along with EMMA;
-	if not, they are available by anonymous ftp from 
+	libraries.  You should have obtained these libraries along with
+	EMMA; if not, they are available by anonymous ftp from
 	ftp.bic.mni.mcgill.ca, in /pub/minc.
      3) Stand-alone C programs.  These require both the MINC and
         netCDF libraries.
@@ -61,15 +61,26 @@ Building
 
 To build EMMA (after unpacking the archive):
 
-     1) Edit the top level Makefile to reflect the directory where
-	EMMA was unpacked.  (This is NOT necessarily the directory
-	to which EMMA will be installed.)
-     2) Edit Makefile.site for various site-dependent parameters.
+     1) Edit Makefile.site for various site-dependent parameters.
 	These include the architecture type, the directories where
 	MATLAB, MINC, and NetCDF are installed, and the directories
 	to which EMMA will be installed.  Be sure to read the comments	
 	in Makefile.site carefully.
-     3) Type "make"
+     2) Take a look in the Makefile for your architecture (one of
+        Makefile.irix4, Makefile.irix5, Makefile.sun4, and
+        Makefile.linux), and ensure that the compiler and compiler flags
+        are reasonable.  (The C compiler used must be ANSI compliant,
+        hence the default for SunOS is 'gcc'.  You might prefer to use
+        'acc' if you have it.)
+     3) Type "make".
+
+If your architecture is not supported by EMMA, don't despair -- all you
+have to do is create a Makefile fragment named after your architecture,
+using one of the existing machine-specific Makefiles as a model.  If you
+have to do create a new machine-specific Makefile fragment, please let
+us know -- we want EMMA to be readily usable on as many Unix-like
+platforms as possible, and including your new Makefile in future EMMA
+distributions will help.
 
 
 Installation
@@ -77,9 +88,10 @@ Installation
 
      1) Type "make install".  (Note that you must have already edited
 	Makefile.site to set the destination directories.)  All MATLAB
-	files (.m and CMEX) will be copied to a specified directory,
-	and the standalone binaries will be copied to a different
-	directory.
+	files (.m and CMEX) will be copied to a specified directory
+	(MATLAB_INSTALL_DIR), the standalone binaries will be copied to
+	a different directory (BIN_INSTALL_DIR), and the documentation
+	(in PostScript form) to a third directory (DOC_INSTALL_DIR).
 
 Assuming that MATLAB is installed under /usr/local/matlab (this can be
 changed in Makefile.site), then EMMA will by default be installed to
@@ -161,6 +173,7 @@ The authors of EMMA are:
     Sloan-Ketering Cancer Center, who was the first to suffer the
     installation process, and gave many important pointers to where we
     had gone wrong.
+
 
 Copyright Notice and Disclaimer
 -------------------------------
