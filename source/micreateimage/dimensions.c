@@ -146,7 +146,7 @@ Boolean CreateDims (int CDF,
    
 #ifdef DEBUG
    printf ("CreateDims: \n");
-   printf (" Child DF ID = %d, Orientation = %s\n", CDF, Orientation);
+   printf (" Child CDF ID = %d, Orientation = %s\n", CDF, Orientation);
    printf (" Frames %ld, slices %ld, height %ld, width %ld\n",
            Frames, Slices, Height, Width);
    printf (" Will create %d dimensions\n\n", *NumDims);
