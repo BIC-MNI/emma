@@ -1,5 +1,5 @@
 function images = getimages (handle, slices, frames, old_matrix, start_row, num_rows)
-%GETIMAGES  Retrieve whole images from an open MINC file.
+%GETIMAGES  Retrieve whole or partial images from an open MINC file.
 %
 %  images = getimages (handle [, slices [, frames [, old_matrix ...
 %                      [, start_row [, num_rows]]]]])
@@ -51,6 +51,14 @@ function images = getimages (handle, slices, frames, old_matrix, start_row, num_
 %     first_10 = getimages (handle, 1, 1:10);
 %   To read in the first 10 slices of a non-dynamic (i.e. no frames) file:
 %     first_10 = getimages (handle, 1:10);
+%   
+%  Note that there is currently no way to write partial images -- this 
+%  feature is provided in the hopes of cutting down memory usage due
+%  to intermediate calculations; you should pre-allocate a matrix large
+%  enough to hold your final results, and place them there as blocks of 
+%  rows from the input MINC file are processed.  Then, when all rows
+%  have been processed, a whole output image can be written to the
+%  output file.
 
 % ------------------------------ MNI Header ----------------------------------
 %@NAME       : getimages
