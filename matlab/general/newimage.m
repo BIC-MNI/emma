@@ -116,6 +116,7 @@ if (nargin >= 3)
    if (~isempty (ParentFile))
       if (isstr (ParentFile))
 	 Parent = openimage (ParentFile);
+	 ParentFile = getimageinfo (Parent, 'Filename'); % in case compressed
 	 CloseParent = 1;
       else
 	 Parent = ParentFile;
