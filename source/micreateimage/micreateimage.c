@@ -24,7 +24,7 @@
               various functions in args.c and dimensions.c
 @CREATED    : September - November 1993, Greg Ward.
 @MODIFIED   : 
-@VERSION    : $Id: micreateimage.c,v 1.19 2004-03-11 15:42:43 bert Exp $
+@VERSION    : $Id: micreateimage.c,v 1.20 2004-09-21 18:40:33 bert Exp $
               $Name:  $
 ---------------------------------------------------------------------------- */
 #include <sys/types.h>
@@ -712,7 +712,7 @@ Boolean CopyOthers (int ParentCDF, int ChildCDF,
 ---------------------------------------------------------------------------- */
 Boolean FillImage (int CDF, int NumDim, int DimIDs[], double Value)
 {
-   int   i, j;
+   int   i;
    long  start[MAX_NC_DIMS], count[MAX_NC_DIMS];
    int   image_elt = 1;		/* # elements in MIimage variable */
    int   maxmin_elt = 1;	/* # elements in MIimage{max,min} vars */

@@ -9,7 +9,7 @@
 @CALLS      : TrapInt(), Lookup1()
 @CREATED    : Sep 1993, Greg Ward
 @MODIFIED   : see RCS log
-@VERSION    : $Id: intframes.c,v 1.8 1997-10-21 15:32:32 greg Rel $
+@VERSION    : $Id: intframes.c,v 1.9 2004-09-21 18:40:33 bert Exp $
               $Name:  $
 ---------------------------------------------------------------------------- */
 
@@ -99,8 +99,6 @@ Boolean IntOneFrame (double X[], double Y[], int XYLength, int *LowIndex,
    double     y_values[MAX_X_LENGTH];
    int        numBins;             /* actual number of elements of x_values */
                                    /* and y_values used for integration     */
-   char       Msg [256];
-
 
 #ifdef DEBUG
    printf ("Current frame: start %g, stop %g\n",

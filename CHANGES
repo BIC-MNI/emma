@@ -1,3 +1,10 @@
+Release 0.9.6
+-------------
+ * Added Makefile.macosx
+ * Modified bldtobnc.c, delaycorrect.c, intframes.c, micreateimage.c, 
+   mireadimages.c, and nframeint.c to support the updated Matlab
+   interface.
+
  * Modified Makefile.linux to force chars to be unsigned in compilation.
    Handles assumptions in micreateimage (and possibly elsewhere).
 

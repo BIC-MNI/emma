@@ -16,7 +16,7 @@
               make no representations about the suitability of this
               software for any purpose.  It is provided "as is" without
               express or implied warranty.
-@VERSION    : $Id: delaycorrect.c,v 1.8 2004-03-11 15:42:43 bert Exp $
+@VERSION    : $Id: delaycorrect.c,v 1.9 2004-09-21 18:40:33 bert Exp $
               $Name:  $
 ---------------------------------------------------------------------------- */
 
@@ -416,15 +416,7 @@ void PrintSimplex (double **simplex, int numvars)
 void GetStartingSimplex(double start[], int numvars, BloodData *data,
                         double **simplex)
 {
-    mxArray *answer[1];
     int i;
-
-    if (progress)
-    {
-        printf ("Creating a matrix for the function return.\n");
-    }
-    
-    answer[0] = mxCreateDoubleMatrix(1,1,mxREAL);
 
     if (progress)
     {
@@ -549,7 +541,6 @@ void MinimizeSimplex (double **simplex, BloodData *data, int numvars,
                       int maxiter, double tol, double tol2,
                       double minimum[], double *finalvalue)
 {
-    mxArray *answer[1];
     char how[256];
     int i,j;
     int count;
@@ -567,8 +558,6 @@ void MinimizeSimplex (double **simplex, BloodData *data, int numvars,
     double *vc;
     double fc;
     
-
-    answer[0] = mxCreateDoubleMatrix(1,1,mxREAL);
     temp_vector = (double *) mxCalloc (numvars, sizeof (double));
     vbar = (double *) mxCalloc (numvars, sizeof (double));
     vr = (double *) mxCalloc (numvars, sizeof (double));

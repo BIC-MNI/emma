@@ -5,7 +5,7 @@
 @GLOBALS    : 
 @CREATED    : Aug 1994, Mark Wolforth
 @MODIFIED   : 
-@VERSION    : $Id: bldtobnc.c,v 1.4 1997-10-21 15:56:32 greg Rel $
+@VERSION    : $Id: bldtobnc.c,v 1.5 2004-09-21 18:40:33 bert Exp $
               $Name:  $
 ---------------------------------------------------------------------------- */
 
@@ -228,8 +228,6 @@ int TokenizeLine (char line[], char *tokens[])
 ---------------------------------------------------------------------------- */
 void GetBLD (FILE *in_file, int *num_samples, blood_data *data)
 {
-    int counter;
-    int total_tokens;
     char buffer[255];
     char *tokens[80];    
 
