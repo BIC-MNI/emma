@@ -28,7 +28,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include "gpw.h"
+#include "emmageneral.h"
 #include "mex.h"
 
 /* 
