@@ -427,6 +427,27 @@ K1 = K1_numer ./ K1_denom;
 V0 = (PET_int1 - (K1 .* lookup(k2_lookup,conv_int1,k2))) / Ca_int1;
 \end{verbatim}
 
+\item Clean up the images by removing NaN's and infinities (setting
+them to zero).
+
+\begin{verbatim}
+nuke = find (isnan (K1));
+K1 (nuke) = zeros (size (nuke));
+nuke = find (isinf (K1));
+K1 (nuke) = zeros (size (nuke));
+
+nuke = find (isnan (V0));
+V0 (nuke) = zeros (size (nuke));
+nuke = find (isinf (V0));
+V0 (nuke) = zeros (size (nuke));
+\end{verbatim}
+
+\item Finally, close the image file so that everything gets cleaned
+up nicely.
+\begin{verbatim}
+closeimage (img);
+\end{verbatim}
+
 \end{enumerate}
 
 
