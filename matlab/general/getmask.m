@@ -38,9 +38,7 @@ pos = get (iah, 'Position');
 pos (2) = pos(2) + 1.09*pos (4);	% assuming normalised units
 pos (4) = .05;
 
-% Couldn't get this to display in the right place, and so commented the
-% sucker out.  I'll figure it out one day, but not today.....
-% tobj = text('units', 'normal', 'position', [1.05 1.12], 'string', num2str(threshold));
+tobj = text('units', 'normal', 'position', [1.05 1.12], 'string', num2str(threshold));
 
 slider_cmd = ['global slider mu tobj temp img threshold;'...
               'threshold = get (slider, ''value'');'...
