@@ -24,14 +24,7 @@
 #include <nan.h>
 #include <math.h>
 #include "mex.h"
-#include "emma_cmex.h"
-
-#define TRUE 1
-#define FALSE 0
-
-#define min(A, B) ((A) < (B) ? (A) : (B))
-#define max(A, B) ((A) > (B) ? (A) : (B))
-#define abs(A)    ((A) < 0 ? (A*(-1)) : (A))
+#include "emmageneral.h"
 
 
 #define PROGNAME "delaycorrect"
@@ -250,6 +243,12 @@ double BloodCurve (double x[], BloodData *data)
      *  beta (k2) = x[1]
      * gamma (V0) = x[2]
      */
+
+    if (x[2] < 0)
+    {
+	x[2] = 0;
+    }
+
     
     Ntemp1 = (double *) mxCalloc (data->numsamples, sizeof(double));
     Ntemp2 = (double *) mxCalloc (data->numsamples, sizeof(double));
