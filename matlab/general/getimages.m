@@ -68,8 +68,12 @@ function images = getimages (handle, slices, frames)
 
 % Check for valid number of arguments
 
-if (nargin < 2) | (nargin > 3)
+if (nargin < 1) | (nargin > 3)
    error ('Incorrect number of arguments.');
+end
+
+if (nargin < 2)
+   slices = [];         % no slices vector given, so make it empty
 end
 
 if (nargin < 3)         % no frames vector given, so make it empty
