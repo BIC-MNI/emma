@@ -17,10 +17,6 @@
 @MODIFIED   : 25 August, 1993, GPW: removed global extern variable debug,
                  and changed all debugging info to #ifdef DEBUG
 ---------------------------------------------------------------------------- */
-
-
-
-
 #include <stdlib.h>
 #include "minc.h"
 #include "mincutil.h"
@@ -28,53 +24,100 @@
 
 typedef enum { false=0, true=1 } Boolean;
 
-
 extern   char *ErrMsg;     /* should be defined in your main program */
+
+char *nc_sys_err_msg = "File or directory not found";
+
+char *nc_err_msg_list [] = 
+{
+   "No Error",					/* error code 0 */
+   "Not a netcdf id",
+   "Too many netcdfs open",
+   "netcdf file exists && NC_NOCLOBBER",
+   "Invalid Argument",
+   "Write to read only",
+   "Operation not allowed in data mode",
+   "Operation not allowed in define mode",
+   "Coordinates out of Domain",
+   "MAX_NC_DIMS exceeded",
+   "String match to name in use",
+   "Attribute not found",
+   "MAX_NC_ATTRS exceeded",
+   "Not a netcdf data type",
+   "Invalid dimension id",
+   "NC_UNLIMITED in the wrong index",
+   "MAX_NC_VARS exceeded",
+   "Variable not found",
+   "Action prohibited on NC_GLOBAL varid",
+   "Not a netcdf file",
+   "In Fortran, string too short",
+   "MAX_NC_NAME exceeded",
+   "NC_UNLIMITED size already in use"		/* error code 22 */
+};
+
+char *minc_err_msg_list [] = 
+{
+   "Non-numeric type",				/* error code 1331 */
+   "Non-character type",
+   "Non-scalar attribute",
+   "Bad operation for MI_varaccess",
+   "Attribute is not a pointer",
+   "Not a standard variable",
+   "Bad dimension width suffix",
+   "Out of icv slots",
+   "Illegal icv identifier",
+   "Unknown icv property",
+   "Tried to modify attached icv",
+   "Too few dimensions to be an image",
+   "Tried to access an unattached icv",
+   "Dimensions differ in size",
+   "Invalid icv coordinates",
+   "Too many dimensions for a dim var",
+   "Variables do not match for copy",
+   "Imagemax/min variables vary over image dimensions",
+   "Not able to uncompress file"		/* error code 1349 */
+};
+   
 
 
 /* ----------------------------- MNI Header -----------------------------------
 @NAME       : NCErrMsg
-@INPUT      : NCErrCode - a NetCDF error code as defined in netcdf.h
+@INPUT      : NCErrCode - a NetCDF error code as defined in netcdf.h, or
+                 MINC error code as defined in minc.h
 @OUTPUT     : (none)
-@RETURNS    : string containing text corresponding to that error code
+@RETURNS    : pointer to string containing text explaining the error
+              NULL if the error code itself is invalid
 @DESCRIPTION: 
 @METHOD     : 
 @GLOBALS    : 
 @CALLS      : 
 @CREATED    : 93-6-30, Greg Ward
-@MODIFIED   : 
+@MODIFIED   : 94-2-17, GW: added the *_err_msg_list arrays above, and 
+              eliminated the previous method of one-big-switch in here
+@COMMENTS   : The nc_err_msg_list and minc_err_msg_list arrays above, 
+              as well as the code here, are rather inflexibly defined with
+	      NetCDF 2.3.2 and MINC 1.0; if by chance the error messages
+	      change (or more are added) in future versions, this will
+	      have to be changed!
 ---------------------------------------------------------------------------- */
 char *NCErrMsg (int NCErrCode)
 {
-   switch (NCErrCode)
+   if (NCErrCode == -1) 
    {
-      case NC_SYSERR       : return ("File or directory not found");
-      case NC_NOERR        : return ("No Error");
-      case NC_EBADID       : return ("Not a netcdf id");
-      case NC_ENFILE       : return ("Too many netcdfs open");
-      case NC_EEXIST       : return ("netcdf file exists && NC_NOCLOBBER");
-      case NC_EINVAL       : return ("Invalid Argument");
-      case NC_EPERM        : return ("Write to read only");
-      case NC_ENOTINDEFINE : return ("Operation not allowed in data mode");
-      case NC_EINDEFINE    : return ("Operation not allowed in define mode");
-      case NC_EINVALCOORDS : return ("Coordinates out of Domain");
-      case NC_EMAXDIMS     : return ("MAX_NC_DIMS exceeded");
-      case NC_ENAMEINUSE   : return ("String match to name in use");
-      case NC_ENOTATT      : return ("Attribute not found");
-      case NC_EMAXATTS     : return ("MAX_NC_ATTRS exceeded");
-      case NC_EBADTYPE     : return ("Not a netcdf data type");
-      case NC_EBADDIM      : return ("Invalid dimension id");
-      case NC_EUNLIMPOS    : return ("NC_UNLIMITED in the wrong index");
-      case NC_EMAXVARS     : return ("MAX_NC_VARS exceeded");
-      case NC_ENOTVAR      : return ("Variable not found");
-      case NC_EGLOBAL      : return ("Action prohibited on NC_GLOBAL varid");
-      case NC_ENOTNC       : return ("Not a netcdf file");
-      case NC_ESTS         : return ("In Fortran, string too short");
-      case NC_EMAXNAME     : return ("MAX_NC_NAME exceeded");
-      case NC_EUNLIMIT     : return ("NC_UNLIMITED size already in use");
-      default              : return ("UNKNOWN NetCDF Error Code!!!");
+      return (nc_sys_err_msg);
    }
+   else if ((NCErrCode >= NC_NOERR) && (NCErrCode <= NC_EUNLIMIT))
+   {
+      return (nc_err_msg_list [NCErrCode]);
+   }
+   else if ((NCErrCode >= MI_ERR_NONNUMERIC) && (NCErrCode <= MI_ERR_UNCOMPRESS))
+   {
+      return (minc_err_msg_list [NCErrCode - MI_ERR_NONNUMERIC]);
+   }
+   else return (NULL);
+
 }
+
 
 /* ----------------------------- MNI Header -----------------------------------
 @NAME       : OpenFile
@@ -91,10 +134,12 @@ char *NCErrMsg (int NCErrCode)
 @CREATED    : 93-5-31, adapted from code in micopyvardefs.c, Greg Ward
 @MODIFIED   : 93-6-4, modified debug/error handling and added Mode parameter
             : 93-6-30, changed error message
+
 ---------------------------------------------------------------------------- */
 int OpenFile (char *Filename, int *CDF, int Mode)
 {
    *CDF = ncopen (Filename, Mode);
+   printf ("Immediately after ncopen, ncerr = %d\n", ncerr);
 
    if (*CDF == MI_ERROR)
    {
@@ -353,6 +398,9 @@ int OpenImage (char Filename[], ImageInfoRec *Image, int mode)
    int   CDF;
    int   Result;        /* of various function calls */
 
+#ifdef DEBUG
+   printf ("(now in OpenImage, calling OpenFile)\n");
+#endif
    Result = OpenFile (Filename, &CDF, mode);
    if (Result != ERR_NONE)
    {
