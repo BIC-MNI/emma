@@ -82,9 +82,9 @@ w2 = MidFTimes;
 w3 = sqrt (MidFTimes);
 
 ImLen = size(PET,1);
-PET_int1 = C_trapz (MidFTimes, PET')';
-PET_int2 = C_trapz (MidFTimes, PET' .* (w2 * ones(1,ImLen)))';
-PET_int3 = C_trapz (MidFTimes, PET' .* (w3 * ones(1,ImLen)))';
+PET_int1 = ntrapz (MidFTimes, PET')';
+PET_int2 = ntrapz (MidFTimes, PET' .* (w2 * ones(1,ImLen)))';
+PET_int3 = ntrapz (MidFTimes, PET' .* (w3 * ones(1,ImLen)))';
 
 % Now use PET_int1 to create a simple mask, and mask all three PET integrals.
 % This does a good job of removing the outside-of-head data for CBF studies.
@@ -128,9 +128,9 @@ k2_lookup = (-10:0.05:10) / 60;
 
 Ca_mft = nframeint (ts_even, Ca_even, FrameTimes, FrameLengths);      
 
-Ca_int1 = C_trapz(MidFTimes, Ca_mft);
-Ca_int2 = C_trapz(MidFTimes, (w2 .* Ca_mft));
-Ca_int3 = C_trapz(MidFTimes, (w3 .* Ca_mft));
+Ca_int1 = ntrapz(MidFTimes, Ca_mft);
+Ca_int2 = ntrapz(MidFTimes, (w2 .* Ca_mft));
+Ca_int3 = ntrapz(MidFTimes, (w3 .* Ca_mft));
 
 % Find the value of rL for every pixel of the slice.
 rL = ((Ca_int3 .* PET_int1) - (Ca_int1 .* PET_int3)) ./ ...

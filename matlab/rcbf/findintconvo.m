@@ -76,19 +76,19 @@ for i = 1:TableSize
    % w1 given?
 
    if (nargin >= 6)
-      int1 (i) = C_trapz(midftimes, (w1 .* integrand));
+      int1 (i) = ntrapz(midftimes, (w1 .* integrand));
    end
    
    % w2 given?
 
    if (nargin >= 7)
-      int2 (i) = C_trapz(midftimes, (w2 .* integrand));
+      int2 (i) = ntrapz(midftimes, (w2 .* integrand));
    end
 
    % w3 given?
    
    if (nargin == 8)
-       int3 (i) = C_trapz(midftimes, (w3 .* integrand));
+       int3 (i) = ntrapz(midftimes, (w3 .* integrand));
    end
 end
 
