@@ -1,0 +1,15 @@
+#
+# Makefile macros needed to put together an EMMA distribution.
+#
+# $Id: Makefile.version,v 1.1 1997-10-09 21:13:47 greg Exp $
+#
+
+# version number, release directory, and release archive file
+VERSION = 0.9.4
+RELEASE = emma-$(VERSION)
+ARCHIVE = $(RELEASE).tar.gz
+
+# RCS stuff -- don't forget to change VERSION_SYM with VERSION!
+VERSION_SYM = 0_9_4
+RCSNAME = emma_v$(VERSION_SYM)
+STATE = Rel
