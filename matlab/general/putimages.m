@@ -60,6 +60,15 @@ eval(['filename = Filename' int2str(handle) ';']);
 eval(['avail_slices = AvailSlices' int2str(handle) ';']);
 eval(['avail_frames = AvailFrames' int2str(handle) ';']);
 
+
+if ~isempty (filename)			% write images to MINC file if there is one
+	miwriteimages (filename, images, slices, frames);
+end
+
+return
+
+
+
 % Now deposit the data in memory.  The two clauses of this if/else are
 % identical, save that "slice" and "frame" are interchanged.  The
 % first case is for when there are multiple (or one) slices and a
@@ -72,7 +81,7 @@ eval(['avail_frames = AvailFrames' int2str(handle) ';']);
 
 if (length(slices) > length(frames))
 	if ~isempty (frames) & (frames ~= avail_frames)
-		error (['Frame ' int2str(frames) ' not available in memory.]);
+		error(['Frame ' int2str(frames) ' not available in memory.']);
 	end
 
 	for i = 1:length(slices)
@@ -87,7 +96,7 @@ if (length(slices) > length(frames))
 else			 % we were given multiple frames and a single slice, so do the
 				 % same thing with slices and frames interchanged
 	if ~isempty (slices) & (slices ~= avail_slices)
-		error (['Slice ' int2str(slices) ' not available in memory.]);
+		error (['Slice ' int2str(slices) ' not available in memory.']);
 	end
 
 	for i = 1:length(frames)
@@ -102,8 +111,5 @@ else			 % we were given multiple frames and a single slice, so do the
 end
 
 
-%if ~isempty (filename)			% write images to MINC file if there is one
-%	miwriteimages (filename, images, slices, frames);
-%end
 
 
