@@ -2,8 +2,9 @@
 #include <string.h>
 #include <stdlib.h>
 #include <float.h>
+#include "gpw.h"
 #include "minc.h"
-#include "myminc.h"
+#include "mincutil.h"
 #include "mierrors.h"
 
 #define NUM_ARGS       4           /* STRICT requirement!! */
@@ -13,9 +14,6 @@
 #define FRAME_VECTOR   argv[3]
 #define TEMP_FILE      argv[4]
 #define PROGNAME       "miwriteimages"
-#define TRUE           1
-#define FALSE          0
-
 
 
 /*
@@ -122,200 +120,6 @@ int GetVector (char vector_string[], long vector[], int max_elements)
    return (member);
 }     /* GetVector */
 
-
-
-/* ----------------------------- MNI Header -----------------------------------
-@NAME       : OpenFile
-@INPUT      : Filename - name of the NetCDF/MINC file to open
-@OUTPUT     : *CDF - handle of the opened file
-@RETURNS    : TRUE if file opened successfully, FALSE otherwise
-@DESCRIPTION: Opens a NetCDF/MINC file using ncopen.
-@METHOD     : 
-@GLOBALS    : debug, ErrMsg
-@CALLS      : standard NetCDF, mex functions.
-@CREATED    : 93-5-31, adapted from code in micopyvardefs.c, Greg Ward
-@MODIFIED   : N.B. this is just a copy of the same function from
-              mireadvar... need to work on that modularity thing, eh?
----------------------------------------------------------------------------- */
-Boolean OpenFile (char *Filename, int *CDF)
-{
-   char   MsgBuffer [256];
-
-   ncopts = 0;         /* don't abort or print messages */
-
-   if (debug)
-   {
-      (void) printf ("Opening %s for reading\n", Filename);
-   }
-
-   *CDF = ncopen (Filename, NC_WRITE);
-
-   if (*CDF == MI_ERROR)
-   {
-      (void) sprintf (ErrMsg, "Error opening output (MINC) file %s", Filename);
-      return (FALSE);
-   }  
-   return (TRUE);
-}     /* OpenFile */
-
-
-/* ----------------------------- MNI Header -----------------------------------
-@NAME       : GetImageInfo
-@INPUT      : CDF - handle for a NetCDF file
-              vName - string containing the name of the variable in question
-@OUTPUT     : *vInfo - a struct which contains the CDF and variable id's,
-                number of dimensions and attributes, and an array of 
-                DimInfoRec's which tells everything about the various
-                dimensions associated with the variable.         
-@RETURNS    : TRUE if successful
-              FALSE if one of the required variables (MIimage, MIimagemax,
-                MIimagemin) was not found
-@DESCRIPTION: Gets gobs of information about a MINC image variable.  See
-                ImageInfoRec in myminc.h for details.
-@METHOD     : 
-@GLOBALS    : debug, ErrMsg
-@CALLS      : standard MINC, NetCDF, library functions
-@CREATED    : 93-6-3, Greg Ward
-@MODIFIED   : Based on GetVarInfo from mireadvar.c, and on Gabe Leger's
-              open_minc_file (from mincread.c)
----------------------------------------------------------------------------- */
-Boolean GetImageInfo (int CDF, ImageInfoRec *Image)
-{
-   int      DimIDs [MAX_NC_DIMS];
-   int      dim;
-   char     CurDimName [MAX_NC_NAME];
-   long     CurDimSize;    /* temp storage -- copied into one of
-                              Frames, Slices, Width, or Height */
-
-   Image->CDF = CDF;
-   Image->ID = ncvarid (CDF, MIimage);
-   Image->MaxID = ncvarid (CDF, MIimagemax);
-   Image->MinID = ncvarid (CDF, MIimagemin);
-
-   /* 
-    * Abort if there was an error finding any of the variables
-    */
-       
-   if ((Image->ID == MI_ERROR) || 
-       (Image->MaxID == MI_ERROR) ||
-       (Image->MinID == MI_ERROR))
-   {
-      (void) sprintf (ErrMsg,
-             "Error in MINC file: could not find all required variables");
-      return (FALSE);
-   }     /* if ID == MI_ERROR */
-
-   /*
-    * Get most of the info about the variable (with dimension ID's
-    * going to a temporary local array; relevant dimension data will
-    * be copied to the struct momentarily!)
-    */
-
-   ncvarinq (CDF, Image->ID, NULL, &Image->DataType, 
-             &Image->NumDims, DimIDs, &Image->NumAtts);
-
-   if (debug)
-   {
-      (void) printf ("Image variable has %d dimensions, %d attributes\n",
-                     Image->NumDims, Image->NumAtts);
-   }
-
-   /*
-    * Now loop through all the dimensions, getting info about them
-    * and determining from that FrameDim, Frames, SliceDim, Slices, etc.
-    */
-
-   Image->FrameDim = Image->SliceDim = Image->HeightDim = Image->WidthDim = -1;
-   Image->Frames = Image->Slices = Image->Height = Image->Width = 0;
-
-   for (dim = 0; dim < Image->NumDims; dim++)
-   {
-      ncdiminq (CDF, DimIDs [dim], CurDimName, &CurDimSize);
-
-      /* 
-       * Assign the {..}Dim members of Image based entirely on the name
-       * of the dimension.  Thus, the dimensions *could* be in any order
-       * you like, this just takes it as it is.
-       */
-
-      if (strcmp (MItime, CurDimName) == 0)     /* time dimension = frames */
-      {
-         Image->FrameDim = dim;
-         Image->Frames = CurDimSize;
-      }
-      else if (strcmp (MIzspace, CurDimName) == 0) /* z dimension = slices */
-      {
-         Image->SliceDim = dim;
-         Image->Slices = CurDimSize;
-      }
-      else if (strcmp (MIyspace, CurDimName) == 0) /* y dimension = height */
-      {
-         Image->HeightDim = dim;
-         Image->Height = CurDimSize;
-      }
-      else if (strcmp (MIxspace, CurDimName) == 0) /* x dimension = width */
-      {
-         Image->WidthDim = dim;
-         Image->Width = CurDimSize;
-      }
-
-      if (debug)
-      {
-         printf ("  Dim %d: %s, size %d\n", dim, CurDimName, CurDimSize);
-      }
-   }     /* for dim */  
-  
-   Image->ImageSize = Image->Width * Image->Height;
-
-   if (debug)
-   {
-      printf ("Image var has %d frames, %d slices; each image is %d x %d\n",
-              Image->Frames, Image->Slices, Image->Height, Image->Width);
-   }
-   return (TRUE);
-
-}     /* GetImageInfo */
-
-
-
-
-/* ----------------------------- MNI Header -----------------------------------
-@NAME       : OpenImage
-@INPUT      : Filename - name of the MINC file to open
-@OUTPUT     : *Image - struct containing lots of relevant data about the
-              MIimage variable and associated dimensions/variables
-@RETURNS    : TRUE if all went well
-              FALSE if error opening MINC file
-              FALSE if error reading dimensions/variables
-@DESCRIPTION: Open a MINC file and read relevant data about the image variable.
-@METHOD     : 
-@GLOBALS    : debug, ErrMsg
-@CALLS      : OpenFile, GetImageInfo, miicv{...} functions
-@CREATED    : 93-6-3, Greg Ward
-@MODIFIED   : 
----------------------------------------------------------------------------- */
-Boolean OpenImage (char Filename[], ImageInfoRec *Image)
-{
-   int   CDF;
-
-   if (!OpenFile (Filename, &CDF)) 
-   {
-      return (FALSE);
-   }
-
-   if (!GetImageInfo (CDF, Image))
-   {
-      return (FALSE);
-   }
-
-   Image->ICV = miicv_create ();
-   (void) miicv_setint (Image->ICV, MI_ICV_TYPE, NC_DOUBLE);
-   (void) miicv_setint (Image->ICV, MI_ICV_DO_NORM, TRUE);
-   (void) miicv_setint (Image->ICV, MI_ICV_USER_NORM, TRUE);
-   (void) miicv_attach (Image->ICV, Image->CDF, Image->ID);
-
-   return (TRUE);
-}     /* OpenImage */
 
 
 /* ----------------------------- MNI Header -----------------------------------
@@ -696,9 +500,10 @@ int main (int argc, char *argv [])
       }
    }
 
-   if (!OpenImage (MINC_FILE, &ImInfo))
+	Result = OpenImage (MINC_FILE, &ImInfo, NC_WRITE);
+   if (Result != ERR_NONE)
    {
-      ErrAbort (ErrMsg, TRUE, ERR_OUT_MINC);
+      ErrAbort (ErrMsg, TRUE, Result);
    }
 
    if (!VerifyVectors (Slice, Frame, NumSlices, NumFrames, &ImInfo))
