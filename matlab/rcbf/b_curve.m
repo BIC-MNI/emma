@@ -1,6 +1,14 @@
 function integral = b_curve (args, shifted_g_even, ts_even, A, fstart, flengths)
 
-% global shifted_g_even ts_even A flengths ftimes midftimes
+% B_CURVE a two-compartment rCBF model used for delay correction
+%
+%     integral = b_curve (args, shifted_g_even, ts_even, A, ... 
+%                         fstart, flengths)
+%
+% Used by blood delay correction, this function implements a
+% two-compartment rCBF model used for fitting the blood
+% curve data to the head curve data.
+
 
 % N.B.: alpha = args(1)
 %        beta = args(2)
