@@ -142,9 +142,6 @@ void GetArguments(Matrix *Start, Matrix *Options, int nrhs, int *numvars,
 
     *numvars = max(mxGetM(Start),mxGetN(Start));
 
-    printf ("Number of variables: %d\n", *numvars);
-
-
     if (nrhs > 2)
     {
 	if (min(mxGetM(Options),mxGetN(Options)) != 1)
@@ -237,7 +234,7 @@ void SortSimplex (double **simplex, int numvars)
     while (bubbled)
     {
         bubbled = FALSE;
-        for (i=0; i<(numvars-1); i++)
+        for (i=0; i<numvars; i++)
         {
             if (simplex[i][FUNCVAL] > simplex[i+1][FUNCVAL])
             {
@@ -248,6 +245,41 @@ void SortSimplex (double **simplex, int numvars)
             }
         }
     }    
+}
+
+
+/* ----------------------------- MNI Header -----------------------------------
+@NAME       : PrintSimplex
+@INPUT      : 
+@OUTPUT     : 
+@RETURNS    : 
+@DESCRIPTION:               
+@METHOD     : 
+@GLOBALS    : 
+@CALLS      : 
+@CREATED    : 
+@MODIFIED   : 
+---------------------------------------------------------------------------- */
+void PrintSimplex (double **simplex, int numvars)
+{
+    int i,j;
+
+    printf ("Vertices:\n");
+    
+    for (i=0; i<(numvars+1); i++)
+    {
+	for (j=0; j<(numvars); j++)
+	{
+	    printf ("%lf  ", simplex[i][j]);
+	}
+	printf ("\n");
+    }
+    
+    printf ("Function Values:\n");
+    for (i=0; i<(numvars+1); i++)
+    {
+	printf ("%lf\n",simplex[i][FUNCVAL]);
+    }
 }
 
 
@@ -270,74 +302,86 @@ void GetStartingSimplex(double start[], int numvars,
     Matrix *answer[1];
     int i,j;
 
-    printf ("Creating a matrix for the function return.\n");
+    if (progress)
+    {
+	printf ("Creating a matrix for the function return.\n");
+    }
     
     answer[0] = mxCreateFull(1,1,REAL);
 
-    printf ("Filling the first vertex.\n");
+    if (progress)
+    {
+	printf ("Filling the first vertex.\n");
+    }
 
     for (i=0; i<numvars; i++)
     {
         simplex[0][i] = 0.9 * start[i];
     }
 
-    printf ("Filling the first function value.\n");
+    if (progress)
+    {
+	printf ("Filling the first function value.\n");
+    }
 
     mxSetPr(arguments[0], simplex[0]);
     mexCallMATLAB(1, answer, numargs, arguments, funfcn);
     simplex[0][FUNCVAL] = mxGetScalar(answer[0]);
 
-    printf ("First vertex is:\n");
-    for (i=0; i<numvars; i++)
+    if (progress)
     {
-	printf ("   %lf\n", simplex[0][i]);
+	printf ("Filling the remaining vertices.\n");
     }
-    printf ("First function value is:\n");
-    printf ("    %lf\n", simplex[0][FUNCVAL]);
-    printf ("Filling the remaining vertices.\n");
     
     for (i=1; i<(numvars+1); i++)
     {
 
-	printf ("Copying a starting vector.\n");
+	if (progress)
+	{
+	    printf ("Copying a starting vector.\n");
+	}
 
         CopyVector(simplex[i], start, numvars);
 
-	printf ("Comparing element (%d,%d) to zero.\n", i, (i-1));
+	if (progress)
+	{
+	    printf ("Comparing element (%d,%d) to zero.\n", i, (i-1));
+	}
 
         if (simplex[i][i-1] != 0)
         {
-	    
-	    printf ("Okay, set it equal to 1.1 times itself.\n");
-
+	    if (progress)
+	    {
+		printf ("Okay, set it equal to 1.1 times itself.\n");
+	    }
             simplex[i][i-1] *= 1.1;
         }
         else
         {
-
-	    printf ("Set it equal to 0.1.\n");
-
+	    if (progress)
+	    {
+		printf ("Set it equal to 0.1.\n");
+	    }
             simplex[i][i-1] = 0.1;
         }
-
-	printf ("Get the function value for this vertex.\n");
+	
+	if (progress)
+	{
+	    printf ("Get the function value for this vertex.\n");
+	}
 
         mxSetPr(arguments[0], simplex[i]);
         mexCallMATLAB(1, answer, numargs, arguments, funfcn);
         simplex[i][FUNCVAL] = mxGetScalar(answer[0]);
-
-	printf ("Vertex is:\n");
-	for (j=0; j<numvars; j++)
-	{
-	    printf ("   %lf\n", simplex[i][j]);
-	}
-	printf ("Function value is:\n");
-	printf ("    %lf\n", simplex[i][FUNCVAL]);
-
     }
 
     SortSimplex(simplex, numvars);
 
+    if (progress)
+    {
+	printf("Starting simplex:\n");
+	PrintSimplex(simplex, numvars);
+    }
 }
 
 
@@ -392,6 +436,7 @@ void MinimizeSimplex (double **simplex, char *funfcn, Matrix *arguments[],
 		      double tol2, double minimum[], double *finalvalue)
 {
     Matrix *answer[1];
+    char how[256];
     int i,j;
     int count;
     double temp_double;
@@ -422,10 +467,19 @@ void MinimizeSimplex (double **simplex, char *funfcn, Matrix *arguments[],
     
     while (count < maxiter)
     {
+	if (progress)
+	{
+	    printf ("Current simplex:\n");
+	    PrintSimplex(simplex, numvars);
+	}
+	
 	
         if (Terminated(simplex, numvars, tol, tol2))
         {
-	    printf ("Terminated after %d iterations.\n", count);
+	    if (progress)
+	    {
+		printf ("Terminated after %d iterations.\n", count);
+	    }
             break;
         }
 
@@ -448,6 +502,8 @@ void MinimizeSimplex (double **simplex, char *funfcn, Matrix *arguments[],
 
         CopyVector (vk, vr, numvars);
         fk = fr;
+
+	strcpy (how, "Reflect.\n");
         
         if (fr < simplex[numvars-1][FUNCVAL])
         {
@@ -468,6 +524,9 @@ void MinimizeSimplex (double **simplex, char *funfcn, Matrix *arguments[],
                 {
                     CopyVector(vk,ve,numvars);
                     fk = fe;
+		    
+		    strcpy (how, "Expand.\n");
+
                 }
             }
         }
@@ -496,6 +555,9 @@ void MinimizeSimplex (double **simplex, char *funfcn, Matrix *arguments[],
             {
                 CopyVector(vk,vc,numvars);
                 fk = fc;
+
+		strcpy (how, "Contract.\n");
+
             }
             else 
             {
@@ -517,12 +579,14 @@ void MinimizeSimplex (double **simplex, char *funfcn, Matrix *arguments[],
 
                 for (i=0; i<numvars; i++)
                 {
-                    vk[i] = (simplex[0][i] + simplex[numvars+1][i])/2;
+                    vk[i] = (simplex[0][i] + simplex[numvars][i])/2;
                 }
                 
                 mxSetPr(arguments[0], vk);
                 mexCallMATLAB(1, answer, numargs, arguments, funfcn); 
                 fk = mxGetScalar(answer[0]);
+
+		strcpy (how,"Shrink\n");
                 
                 count++;
                 
@@ -536,8 +600,14 @@ void MinimizeSimplex (double **simplex, char *funfcn, Matrix *arguments[],
         simplex[numvars][FUNCVAL] = fk;
         
         SortSimplex (simplex, numvars);
+
+	if (progress)
+	{
+	    printf ("\n-----------------------\nIteration: %s", how);
+	}
+	
     }
-    if (count >= maxiter)
+    if ((count >= maxiter) && progress)
     {
 	printf ("Maximum number of iterations exceeded!\n");
     }	
@@ -586,9 +656,6 @@ void mexFunction(int    nlhs,
     
     /* First make sure a valid number of arguments was given. */
 
-
-    printf ("Checking input arguments.\n");
-    
     if ((nrhs < MIN_IN_ARGS) || (nrhs > MAX_IN_ARGS))
     {
         strcpy (ErrMsg, "Incorrect number of arguments.");
@@ -597,12 +664,14 @@ void mexFunction(int    nlhs,
 
     GetArguments(START, OPTIONS, nrhs, &numvars, &progress, &maxiter,
                  &tol, &tol2);
-
-    printf ("Got the input arguments:\n");
-    printf ("   Number of vars: %d\n", numvars);
-    printf ("   Max. Iteration: %d\n", maxiter);
-    printf ("   Tolerance 1   : %lf\n", tol);
-    printf ("   Tolerance 2   : %lf\n", tol2);
+    if (progress)
+    {
+	printf ("Got the input arguments:\n");
+	printf ("   Number of vars: %d\n", numvars);
+	printf ("   Max. Iteration: %d\n", maxiter);
+	printf ("   Tolerance 1   : %lf\n", tol);
+	printf ("   Tolerance 2   : %lf\n", tol2);
+    }
 
     /*
      * Get the function name
@@ -612,7 +681,10 @@ void mexFunction(int    nlhs,
                                 sizeof(char));
     mxGetString(FUNFCN, funfcn, max(mxGetM(FUNFCN),mxGetN(FUNFCN))+1);
 
-    printf ("   Function name : %s\n", funfcn);	
+    if (progress)
+    {
+	printf ("   Function name : %s\n", funfcn);	
+    }
 
     /*
      * Get any additional function arguments
@@ -628,7 +700,10 @@ void mexFunction(int    nlhs,
 	numargs = 1;
     }
 
-    printf ("Number of function arguments: %d\n", numargs);
+    if (progress)
+    {
+	printf ("Number of function arguments: %d\n", numargs);
+    }
 
     if (numargs > 1)
     {
@@ -650,11 +725,17 @@ void mexFunction(int    nlhs,
     start = mxGetPr (START);
     simplex = CreateLocalMatrix (numvars+1, numvars+1);
 
-    printf ("Getting the starting simplex.\n");
+    if (progress)
+    {
+	printf ("Getting the starting simplex.\n");
+    }
 
     GetStartingSimplex (start, numvars, funfcn, arguments, numargs, simplex);
 
-    printf ("Minimizing the simplex.\n");
+    if (progress)
+    {
+	printf ("Minimizing the simplex.\n");
+    }
 
     minimum = (double *) mxCalloc (numvars, sizeof (double));
     MinimizeSimplex (simplex, funfcn, arguments, numargs, numvars, maxiter,
