@@ -55,7 +55,7 @@ char *nc_err_msg_list [] =
    "Variable not found",
    "Action prohibited on NC_GLOBAL varid",
    "Not a netcdf file",
-   "In Fortran, string too short",
+   "FORTRAN string too short",
    "MAX_NC_NAME exceeded",
    "NC_UNLIMITED size already in use"		/* error code 22 */
 };
@@ -103,6 +103,7 @@ char *minc_err_msg_list [] =
                             in here
 	      95-4-6,  GW: added the SysErrCode argument and code to use
                            it if NCErrCode is NC_SYSERR or NC_NOERR
+              95-4-18, GW: added handling of NC_EXDR condition
 @COMMENTS   : The nc_err_msg_list and minc_err_msg_list arrays above, 
               as well as the code here, are rather inflexibly defined with
 	      NetCDF 2.3.2 and MINC 0.x; if by chance the error messages
@@ -115,11 +116,17 @@ char *NCErrMsg (int NCErrCode, int SysErrCode)
    {
       return (strerror (errno));
    }
-   else if ((NCErrCode >= NC_NOERR) && (NCErrCode <= NC_EUNLIMIT))
+   else if ((NCErrCode >= NC_NOERR) && 
+	    (NCErrCode <= NC_EUNLIMIT))
    {
       return (nc_err_msg_list [NCErrCode]);
    }
-   else if ((NCErrCode >= MI_ERR_NONNUMERIC) && (NCErrCode <= MI_ERR_UNCOMPRESS))
+   else if (NCErrCode == NC_EXDR)
+   {
+      return ("XDR error (disk may be full)");
+   }
+   else if ((NCErrCode >= MI_ERR_NONNUMERIC) && 
+	    (NCErrCode <= MI_ERR_UNCOMPRESS))
    {
       return (minc_err_msg_list [NCErrCode - MI_ERR_NONNUMERIC]);
    }
