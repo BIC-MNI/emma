@@ -17,25 +17,14 @@
 #include <string.h>
 #include <stdlib.h>
 #include "mex.h"
-
-
-typedef int Boolean;
-
+#include "emmageneral.h"
 
 #define PROGNAME "ntrapz"
-
 
 #define TIMES   prhs[0]
 #define VALUES  prhs[1]
 #define WEIGHT  prhs[2]
 #define AREA    plhs[0]
-
-
-#define TRUE    1
-#define FALSE   0
-
-#define min(A, B) ((A) < (B) ? (A) : (B))
-#define max(A, B) ((A) > (B) ? (A) : (B))
 
 
 extern void TrapInt (int num_bins, double *times, double *values,
