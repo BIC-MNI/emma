@@ -1,20 +1,15 @@
-function integral = b_curve (args)
+function integral = b_curve (args, shifted_g_even, ts_even, A, midftimes)
 
-global g_even ts_even A flengths ftimes midftimes
+% global shifted_g_even ts_even A flengths ftimes midftimes
 
 % N.B.: alpha = args(1)
 %        beta = args(2)
 %       gamma = args(3)
-%       delta = args(4)
-
-% This gets the shifted activity function, g(t - delta), by shifting
-% g(t) to the right (ie. subtract delta from its actual times, ts_even)
-% and resampling at the "correct" times ts_even.
-
-shifted_g_even = lookup ((ts_even-args(4)), g_even, ts_even);
 
 % Now calculate exp (-beta * t) in the ts_even time domain, and perform
 % the convolution with the *shifted* activity g(t-delta).
+
+if (length(args) ~= 3), error ('Wrong number of fit parameters'), end;
 
 expthing = exp(-args(2)*ts_even); 	% ts_even for the convolution
 c = conv(shifted_g_even,expthing);
@@ -35,11 +30,3 @@ i = i1+i2;
 
 integral = lookup (ts_even,i,midftimes);
 integral = integral (1:length(A));
-
-
-
-
-
-
-
-
