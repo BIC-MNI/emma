@@ -17,8 +17,9 @@
  * Function prototypes.  Details in mexutils.c
  */
 
-int   ParseOptions   (Matrix *OptVector, int MaxOptions, Boolean *debug);
-char *ParseStringArg (Matrix *Mstr, char *Cstr []);
-int   ParseIntArg    (Matrix *Mvector, int MaxSize, long Cvector[]);
+double CreateNaN     (void);
+int    ParseOptions   (Matrix *OptVector, int MaxOptions, Boolean *debug);
+char  *ParseStringArg (Matrix *Mstr, char *Cstr []);
+int    ParseIntArg    (Matrix *Mvector, int MaxSize, long Cvector[]);
 
 #endif
