@@ -54,16 +54,21 @@ function [new_ts_even, Ca_even, delta] = correctblood ...
 %  of delta values (currently -5 to +10 sec), and performs a three-
 %  parameter fit with respect to alpha, beta, and gamma; the value of
 %  delta that results in the best fit is chosen as the delay time.
-%
-%  options is an entirely optional vector meant for debugging purposes.
-%  If options(1) is non-zero, then correctblood will show its progress,
-%  by printing out the results of progressive delay-correction fits.  If 
-%  it is at least 2, then correctblood will also show progress graphically,
-%  by displaying a graph of A(t) and the fits corresponding to every
-%  value of delta tried.  If options(2) is zero, then no delay correction
-%  will be performed; if options(3) is supplied, then it will be
-%  used as delta to do delay correction without the time-consuming
-%  fitting.
+
+% ------------------------------ MNI Header ----------------------------------
+%@NAME       : correctblood
+%@INPUT      : A, FrameTimes, FrameLengths, g_even, ts_even, 
+%              tau, delta, do_delay, progress
+%@OUTPUT     : new_ts_even, Ca_even, delta
+%@RETURNS    : 
+%@DESCRIPTION: Performs delay and dispersion correction of blood data.
+%@METHOD     : 
+%@GLOBALS    : 
+%@CALLS      : deriv, lookup, delaycorrect, fit_b_curve
+%@CREATED    : 93/7/21, Greg Ward
+%@MODIFIED   : Lots.  See rcs log.
+%-----------------------------------------------------------------------------
+
 
 error (nargchk (5, 9, nargin));
 
@@ -164,7 +169,6 @@ if (do_delay)
    deltas = -5:1:10;
    rss = zeros (length(deltas), 1);     % residual sum-of-squares
    params = zeros (length(deltas), 3);  % 3 parameters per fit
-   options = [0 0.1];
 
    for i = 1:length(deltas)
       delta = deltas (i);
@@ -210,11 +214,11 @@ if (do_delay)
 
 end      % if do_delay
 
-% At this point either we have performed the delay-correction fitting to 
-% get delta, or the caller set options(2) to zero so that delay-correction
-% was not explicitly done.  In this case, delta will have been set either
-% to zero or to options(3).  So set Ca_even to the g_even, shifted by
-% delta.
+% At this point either we have performed the delay-correction fitting to
+% get delta, or the caller set do_delay to zero so that delay-correction
+% was not explicitly done.  In this case, delta will have been set by
+% the caller (since it's an optional input argument).  So set Ca_even to
+% the g_even, shifted by delta.
 
 Ca_even = lookup ((ts_even-delta), g_even, ts_even);
 
