@@ -1,13 +1,12 @@
 # Options for SUN4/Sparc (SunOS)
 RANLIB      = ranlib
 MEX_EXT     = mex4
-CMEX_LIBS   = -lemma -lminc -lnetcdf \
-              -lm -lc
+CMEX_LIBS   = -lemma -lminc -lnetcdf -lm -lc
 XDR_LIB     = 
 CC          = gcc
 
 # Options for gcc.  CMEX_OPT is for CMEX programs,
 # STD_OPT is for standalone programs.
 
-CMEX_OPT    = -O2
-STD_OPT     = -O2
+CFLAGS_MEX  = -O2
+CFLAGS_STD  = -O2
