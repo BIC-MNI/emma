@@ -1,8 +1,9 @@
 \documentstyle[12pt,fullpage]{article}
 
-\title{rCBF Analysis Using Matlab}
+\title{rCBF Analysis Using MATLAB}
 \author{Mark Wolforth and Greg Ward}
-\date{Wednesday July 21, 1993}
+
+\def\code#1{{\tt #1}}
 
 \begin{document}
 
@@ -16,12 +17,14 @@
 \section{Introduction}
 
 
+%--------------------------------------------------------------
+\newpage
 \section{Mathematical Analysis}
 
 \subsection{Introduction}
 
-The two-compartment blood flow problem can be characterized by the
-following three equations:
+The two-compartment cerebral blood flow model can be characterized by
+the following three equations:
 
 \begin{equation}
 \frac{dM}{dt} = K_{1}C_{a}(t) - k_{2}M(t)      \label{eq:2comp1}
@@ -33,103 +36,642 @@ M(t) = K_{1}C_{a}(t) \otimes e^{-k_{2}t}       \label{eq:2comp2}
 A(t) = M(t) + C_{a}(t)V_{0}                    \label{eq:2comp3}
 \end{equation}
 
-In these equations, A(t) is the PET data collected over a set of
+In these equations, $A(t)$ is the PET data collected over a set of
 frames, $C_{a}(t)$ is the delay and dispersion corrected arterial
-blood sample data, and M(t) is the radioactive activity present in
-cerebral tissue.  We know both A(t) and $C_{a}(t)$, but cannot know
-M(t) without knowing $V_{0}$.  We wish to solve these equations for
-$K_{1}$, $k_{2}$, and $V_{0}$.  Of course, one approach would be to
-try and perform a curve fitting using these three equations.  However,
-this approach would be quite computationally intensive since the
-fitting would need to be performed for every pixel of a 128x128 pixel
-image.
+blood sample data, and $M(t)$ is the radioactive tracer activity
+present in cerebral tissue.  We know both $A(t)$ and $C_{a}(t)$, but
+cannot know $M(t)$ without knowing $V_{0}$.
+
+One additional point to consider is that these equations are written
+for continuous functions.  However, the PET data that is actually
+available is average activity across each frame.  Therefore, in
+order to solve the equations, we must average the non PET data
+across frames.  By combining equations (\ref{eq:2comp2}) and
+(\ref{eq:2comp3}), and averaging the non PET data over frames, we
+get:
+
+\begin{equation}
+A^{*}(t) = \frac{\int_{T_1}^{T_2} K_{1} \left[ C_{a}(t) \otimes
+e^{-k_{2}t} \right] + C_{a}(t)V_{0} dt}{T_{2} - T_{1}}
+\label{eq:2comp4}
+\end{equation}
+
+where $A^{*}(t)$ is the PET data that is actually collected (by
+definition, averaged over frames), and ${\int_{T_1}^{T_2}dt} / {(T_2 -
+T_1)}$ performs an averaging over frames ($T_1$ is the frame start
+time, $T_2$ is the frame stop time, and the integral is evaluated for
+each frame).
+
+We wish to solve equation (\ref{eq:2comp4}) for $K_{1}$, $k_{2}$, and
+$V_{0}$.  Of course, one approach would be to try to perform an
+explicit least squares curve fitting.  However, this approach would be
+quite computationally intensive since the fitting would need to be
+performed for every pixel of a 128x128 pixel image.  Fortunately,
+there is a method of solution that gives good results with reduced
+computational difficulty.
 
 \subsection{Double-Weighted Integration Method}
 
 \label{sec:double_weight}
 
-Since the time required to perform a curve fitting would be
-prohibitive, a simpler approach to solving the problem is required.
-This is to use a weighted integration method.  We initially approached
-the problem by assuming that $V_{0}$ was negligibly small.  In this
-case, A(t) and M(t) become equal, and equation (\ref{eq:2comp3}) is
-eliminated.  Taking equation (\ref{eq:2comp2}) and integrating both
-sides from 0 to the end of the last frame, we get:
+Since the time required to perform a least squares curve fitting would
+be prohibitive, a simpler approach to solving the problem is required.
+One technique is to use a weighted integration method.  We initially
+approached the problem by assuming that $V_{0}$ was negligibly small,
+in which case the $C_{a}V_{0}$ term is eliminated from equation
+(\ref{eq:2comp4}).  Taking equation (\ref{eq:2comp4}) with $C_{a}V_0$
+eliminated, and integrating both sides from time 0 to the end of the
+last frame, we get:
 
 \begin{equation}
-\int_{0}^{T} A(t) dt = K_{1} \int_{0}^{T} C_{a}(t) \otimes e^{-k_{2}t} dt
+\int_{0}^{T} A^{*}(t) dt = K_{1} \int_{0}^{T} \frac{\int_{T_1}^{T_2}
+\left[ C_{a}(t) \otimes e^{-k_{2}t} \right] dt}{T_2 - T_1}
 \end{equation}
 
-We can then take this equation, and divide it by a weighted version of
-the same function:
+We can then take this equation, and divide it by a weighted version
+of itself:
 
 \begin{equation}
-\frac{\int_{0}^{T} A(t) dt}{\int_{0}^{T} A(t) t dt} = \frac{K_{1} \int_{0}^{T} C_{a}(t) \otimes e^{-k_{2}t} dt}{K_{1} \int_{0}^{T} C_{a}(t) \otimes e^{-k_{2}t} t dt}  \label{eq:1comp}
+\frac{\int_{0}^{T} A^{*}(t) dt}{\int_{0}^{T} A^{*}(t) t dt} =
+\frac{K_{1} \int_{0}^{T} \frac{\int_{T_1}^{T_2} \left[ C_{a}(u)
+\otimes e^{-k_{2}u} \right] du}{T_2 - T_1} dt}{K_{1} \int_{0}^{T}
+\frac{\int_{T_1}^{T_2} \left[ C_{a}(u) \otimes e^{-k_{2}u} \right]
+du}{T_2 - T_1} t dt}
+\label{eq:1comp}
 \end{equation}
 
-$K_{1}$ cancels out of this equation, leaving us with an equation that
-only involves $k_{2}$.  The left side of equation (\ref{eq:1comp}) is
-easily evaluated by integrating a slice over its frames.  The right
-side of equation (\ref{eq:1comp}) is not easily solved for $k_{2}$, so
-a different approach was taken.  A look-up table was generated
-relating values of $k_{2}$ to resulting values of the right hand side
-of equation (\ref{eq:1comp}).  A linear interpolation was then
-performed to choose values of $k_{2}$ from this look-up table for each
-point in the left hand side of equation (\ref{eq:1comp}).
+$K_{1}$ cancels out of this equation, leaving us with an equation
+that only involves $k_{2}$.  The left side of equation
+(\ref{eq:1comp}) is easily evaluated by integrating the PET data.
+The right side of equation (\ref{eq:1comp}) is not easily solved for
+$k_{2}$, so a different approach was taken.  A look-up table was
+generated relating values of $k_{2}$ to resulting values of the
+right hand side of equation (\ref{eq:1comp}).  A linear
+interpolation was then performed to choose values of $k_{2}$ from
+this look-up table for each point in the left hand side of equation
+(\ref{eq:1comp}).
 
 
 \subsection{Triple-Weighted Integration Method}
 
 In order to model the complete two-compartment system, we must be able
-to solve:
+to solve equation (\ref{eq:2comp4}).  In section
+\ref{sec:double_weight},
+we solved the equation by multiplying by two different weights and
+then dividing, and we can take a similar approach with the full
+two-compartment equation.  We can weight equation (\ref{eq:2comp4})
+with {\em three} different weights and then integrate:
 
 \begin{equation}
-A(t) = K_{1}C_{a}(t) \otimes e^{-k_{2}t} + C_{a}(t)V_{0}  \label{eq:full}
-\end{equation}
-
-In section \ref{sec:double_weight}, we solved the equation by
-multiplying by two different weights and then dividing.  We can take a
-similar approach with the full two-compartment equation.  We can
-weight equation (\ref{eq:full}) with three different weights and then
-integrate:
-
-\begin{equation}
-\int_{0}^{T} w_{1}A(t)dt = K_{1} \int_{0}^{T} w_{1}C_{a}(t) \otimes e^{-k_{2}t} dt + V_{0} \int_{0}^{T}w_{1}C_{a}(t) dt  \label{eq:fullweight1}
-\end{equation}
-
-\begin{equation}
-\int_{0}^{T} w_{2}A(t)dt = K_{1} \int_{0}^{T} w_{2}C_{a}(t) \otimes e^{-k_{2}t} dt + V_{0} \int_{0}^{T}w_{2}C_{a}(t)dt  \label{eq:fullweight2}
+\int_{0}^{T} w_{1}A^{*}(t)dt = K_{1} \int_{0}^{T} w_{1}
+\frac{\int_{T_1}^{T_2} \left[ C_{a}(u) \otimes e^{-k_{2}u} \right]
+du}{T_2 - T_1} dt + V_{0} \int_{0}^{T}w_{1} \frac{\int_{T_1}^{T_2}
+C_{a}(u) du}{T_2 - T_1} dt \label{eq:fullweight1}
 \end{equation}
 
 \begin{equation}
-\int_{0}^{T} w_{3}A(t)dt = K_{1} \int_{0}^{T} w_{3}C_{a}(t) \otimes e^{-k_{2}t} dt + V_{0} \int_{0}^{T}w_{3}C_{a}(t) dt  \label{eq:fullweight3}
+\int_{0}^{T} w_{2}A^{*}(t)dt = K_{1} \int_{0}^{T} w_{2}
+\frac{\int_{T_1}^{T_2} \left[ C_{a}(u) \otimes e^{-k_{2}u} \right]
+du}{T_2 - T_1} dt + V_{0} \int_{0}^{T}w_{2} \frac{\int_{T_1}^{T_2}
+C_{a}(u) du}{T_2 - T_1} dt \label{eq:fullweight2}
 \end{equation}
-
-By multiplying equation (\ref{eq:fullweight1}) by $V_{0} \int_{0}^{T}
-w_{3}Ca(t) dt$ and equation (\ref{eq:fullweight3}) by $V_{0}
-\int_{0}^{T} w_{1}Ca(t) dt$, and then subtracting the two, we may eliminate the
-$V_{0}$ term.  A similar operation can be performed on equation
-(\ref{eq:fullweight2}) and equation (\ref{eq:fullweight3}).  This
-leaves two equations that do not contain $V_{0}$.  They may then be
-divided to produce:
 
 \begin{equation}
-\frac{\int_{0}^{T} w_{3}C_{a}(t)dt \cdot \int_{0}^{T} w_{1}A(t)dt - \\
-      \int_{0}^{T} w_{1}C_{a}(t)dt \cdot \int_{0}^{T} w_{3}A(t)dt}
-     {\int_{0}^{T} w_{3}C_{a}(t)dt \cdot \int_{0}^{T} w_{2}A(t)dt - \\
-      \int_{0}^{T} w_{2}C_{a}(t)dt \cdot \int_{0}^{T} w_{3}A(t)dt}
-=
-\frac{K_{1}\left\{\int_{0}^{T} w_{3}C_{a}(t)dt \cdot \int_{0}^{T} w_{1}C_{a}(t)\otimes e^{-k_{2}t} dt - \\
-                  \int_{0}^{T} w_{1}C_{a}(t)dt \cdot \int_{0}^{T} w_{3}C_{a}(t)\otimes e^{-k_{2}t} dt
-           \right\}}
-     {K_{1}\left\{\int_{0}^{T} w_{3}C_{a}(t)dt \cdot \int_{0}^{T} w_{2}C_{a}(t)\otimes e^{-k_{2}t} dt - \\
-                  \int_{0}^{T} w_{2}C_{a}(t)dt \cdot \int_{0}^{T} w_{3}C_{a}(t)\otimes e^{-k_{2}t} dt
-           \right\}}
+\int_{0}^{T} w_{3}A^{*}(t)dt = K_{1} \int_{0}^{T} w_{3}
+\frac{\int_{T_1}^{T_2} \left[ C_{a}(u) \otimes e^{-k_{2}u} \right]
+du}{T_2 - T_1} dt + V_{0} \int_{0}^{T}w_{3} \frac{\int_{T_1}^{T_2}
+C_{a}(u) du}{T_2 - T_1} dt \label{eq:fullweight3}
 \end{equation}
 
+By multiplying equation (\ref{eq:fullweight1}) by $V_{0}
+\int_{0}^{T} w_{3} {(\int_{T_1}^{T_2}C_{a}(u)du)}/{(T_2 - T_1)} dt$
+and equation (\ref{eq:fullweight3}) by $V_{0} \int_{0}^{T} w_{1}
+{(\int_{T_1}^{T_2}C_{a}(u)du)}/{(T_2 - T_1)} dt$, and then
+subtracting the two, we may eliminate the $V_{0}$ term.  A similar
+operation can be performed on equation (\ref{eq:fullweight2}) and
+equation (\ref{eq:fullweight3}).  This leaves two equations that do
+not contain $V_{0}$.  They may then be divided to produce:
 
+%
+\begin{equation}
+\hspace*{-1.0cm}
+\frac{
+\begin{array}{lcr}
+\multicolumn{2}{l}{
+\int_{0}^{T}\!\!w_{3}(t) \frac{(\int_{T_1}^{T_2}C_{a}(u)du)}{(T_2 - T_1)} dt \cdot 
+\int_{0}^{T}\!\!w_{1}(t)A^{*}(t)dt\,\,-}&\\
+&\multicolumn{2}{r} {\int_{0}^{T}\!\!w_{1}(t)
+\frac{(\int_{T_1}^{T_2}C_{a}(u)du)}{(T_2 - T_1)} dt \cdot
+\int_{0}^{T}\!\!w_{3}(t)A^{*}(t)dt}\end{array}
+}
+{
+\begin{array}{lcr}
+\multicolumn{2}{l}
+{\int_{0}^{T}\!\!w_{3}(t) \frac{(\int_{T_1}^{T_2}C_{a}(u)du)}{(T_2 - T_1)} dt \cdot 
+\int_{0}^{T}\!\!w_{2}(t)A^{*}(t)dt\,\,-}&\\
+&\multicolumn{2}{r}
+{\int_{0}^{T}\!\!w_{2}(t) \frac{(\int_{T_1}^{T_2}C_{a}(u)du)}{(T_2 - T_1)} dt \cdot 
+\int_{0}^{T}\!\!w_{3}(t)A^{*}(t)dt}\end{array}
+}
+ =
+\frac{
+K_{1} \left\{\!\!\!\! \begin{array}{c}
+\begin{array}{lcr}\multicolumn{2}{l}
+{\int_{0}^{T}\!\!w_{3}(t) \frac{(\int_{T_1}^{T_2}C_{a}(u)du)}{(T_2 -
+T_1)} dt \cdot
+\int_{0}^{T}\!\!w_{1}(t) \frac{(\int_{T_1}^{T_2}C_{a}(u) \otimes
+e^{-k_{2}u} du)}{(T_2 - T_1)}\, dt\,\,-}&
+\\ 
+&\multicolumn{2}{r} {\int_{0}^{T}\!\!w_{1}(t)
+\frac{(\int_{T_1}^{T_2}C_{a}(u)du)}{(T_2 - T_1)} dt \cdot
+\int_{0}^{T}\!\!w_{3}(t)  \frac{(\int_{T_1}^{T_2}C_{a}(u) \otimes
+e^{-k_{2}u} du)}{(T_2 - T_1)}\, dt}
+\end{array} \end{array} \!\!\!\! \right\} }
+{
+K_{1} \left\{ \!\!\!\! \begin{array}{c}
+\begin{array}{lcr} 
+\multicolumn{2}{l}{\int_{0}^{T}\!\!w_{3}(t) \frac{(\int_{T_1}^{T_2}C_{a}(u)du)}{(T_2 - T_1)} dt \cdot 
+\int_{0}^{T}\!\!w_{2}(t) \frac{(\int_{T_1}^{T_2}C_{a}(u) \otimes
+e^{-k_{2}u} du)}{(T_2 - T_1)}\, dt\,\,-} &
+\\
+&\multicolumn{2}{r}{\int_{0}^{T}\!\!w_{2}(t)
+\frac{(\int_{T_1}^{T_2}C_{a}(u)du)}{(T_2 - T_1)} dt \cdot
+\int_{0}^{T}\!\!w_{3}(t)  \frac{(\int_{T_1}^{T_2}C_{a}(u) \otimes
+e^{-k_{2}u} du)}{(T_2 - T_1)}\, dt} \end{array} \end{array} \!\!\!\!
+\right\} }
+\label{eq:k1two}
+\end{equation}
+
+The $K_{1}$ term cancels out of both the numerator and denominator of
+equation (\ref{eq:k1two}), leaving an equation that only involves
+$k_{2}$.  As with the equation in section \ref{sec:double_weight},
+this is very difficult to solve for $k_{2}$.  Therefore, a look-up
+table was again used.  Once the table matching values of $k_{2}$ with
+values of the right hand side of equation (\ref{eq:k1two}) has been
+created, we may evaluate $k_{2}$ through simple lookup.  With the
+$k_{2}$ data computed, finding $K_{1}$ is simply a matter of
+evaluating either the numerator or denominator of equation
+(\ref{eq:k1two}) without cancelling $K_{1}$.  With both $K_{1}$ and
+$k_{2}$ known, we may find $V_{0}$ by evaluating equation
+(\ref{eq:2comp4}).
 
 \subsection{Delay and Dispersion Correction}
+
+Since the blood samples used to estimate $C_a(t)$ are taken from the
+subject's arm, the activity data gathered from them must be corrected
+for delay and dispersion within the body.  In order to perform the
+delay correction, we used the technique of Iida, by performing a
+least squares fitting of the equation:
+
+\begin{equation}
+A^{*}(t) = \frac{\int_{T_1}^{T_2} \alpha \left[ C_a(t) \otimes e^{-\beta
+t} \right] + \gamma C_a(t) dt}{T_2 - T_1} \label{eq:delay_correc}
+\end{equation}
+
+where $A^{*}(t)$ in this case is the average activity over grey
+matter, $\int_{T_1}^{T_2}dt$ represents integration over frames,
+$\alpha$, $\beta$, and $\gamma$ are the fitting parameters, and
+$C_a(t)$ is the blood data.  The delay itself enters this equation by
+generating $C_a(t)$ from:
+
+\begin{equation}
+C_a(t) = \bar{g}(t+\delta)
+\end{equation}
+
+The function $\bar{g}$ is the result of performing dispersion
+correction on the blood sample data.  This is represented by the
+equation:
+
+\begin{equation}
+\bar{g}(t) = g(t) + \tau \frac{dg}{dt}
+\end{equation}
+
+which is an implicit deconvolution of the equation:
+
+\begin{equation}
+g(t) = \bar{g}(t) \otimes \left[ \frac{1}{\tau} e^{\frac{-t}{\tau}}
+\right]
+\end{equation}
+
+
+%--------------------------------------------------------------
+\newpage
+\section{MATLAB Implementation}
+
+\subsection{Introduction}
+
+The previous section described the mathematical model used to
+represent cerebral blood flow.  This mathematical description was
+implemented numerically in MATLAB.
+
+It is written as six different functions.
+
+
+\subsection{Program Structure}
+
+\subsection{Annotated Program Listings}
+
+\subsubsection{RCBF2}
+
+\begin{enumerate}
+\item Check the input arguments.
+\begin{verbatim}
+% Input argument checking
+
+if (nargin < 2)
+   help rcbf2
+   error ('Not enough input arguments');
+elseif (nargin < 3)
+   progress = 0;
+elseif (nargin < 4)
+   correction = 1;
+elseif (nargin > 4)
+   help rcbf2
+   error('Incorrect number of arguments.');
+end
+
+if (length(slice)~=1)
+   help rcbf2
+   error('<Slice> must be a scalar.');
+end
+\end{verbatim}
+
+\item Get the images and image information.  This includes all of the
+frames for the slice in question, the frame start times, frame
+lengths, mid-frame times, and the blood data.
+\begin{verbatim}
+img = openimage(filename);
+FrameTimes = getimageinfo (img, 'FrameTimes');
+FrameLengths = getimageinfo (img, 'FrameLengths');
+MidFTimes = FrameTimes + (FrameLengths / 2);
+[g_even, ts_even] = resampleblood (img, 'even');
+
+
+PET = getimages (img, slice, 1:length(FrameTimes));
+PET = PET * 37 / 1.05;                  % convert to decay / (g_tissue * sec)
+\end{verbatim}
+
+\item Create the weighting functions, plus some useful integrals that
+are used several times later in the program.  Here we also create a
+simple mask that excludes information outside of the brain, and apply
+it to our integrals.  This will ensure that areas outside of the
+brain will be set to zero.
+\begin{verbatim}
+w2 = MidFTimes;
+w3 = sqrt (MidFTimes);
+
+ImLen = size(PET,1);
+PET_int1 = C_trapz (MidFTimes, PET')';
+PET_int2 = C_trapz (MidFTimes, PET' .* (w2 * ones(1,ImLen)))';
+PET_int3 = C_trapz (MidFTimes, PET' .* (w3 * ones(1,ImLen)))';
+
+% Now use PET_int1 to create a simple mask, and mask all three PET integrals.
+% This does a good job of removing the outside-of-head data for CBF studies.
+
+mask = PET_int1 > mean(PET_int1);
+PET_int1 = PET_int1 .* mask;
+PET_int2 = PET_int2 .* mask;
+PET_int3 = PET_int3 .* mask;
+\end{verbatim}
+
+\item Correct the blood data for delay and dispersion, and apply the
+cross-calibration factor.  The correction will be accomplished by
+performing a curve fitting on average activity across grey matter.
+Therefore, \code{getmask()} allows the user to select grey matter by
+choosing a threshold value.  The average grey matter activity is then
+passed to \code{correctblood()}.
+\begin{verbatim}
+XCAL = 0.11;
+g_even = g_even*XCAL*37;              % units are decay / (g_tissue * sec)
+
+if (correction)
+   mask = getmask (PET_int1);
+   A = (mean (PET (find(mask),:)))';
+   [ts_even, Ca_even, delta] = correctblood ...
+                       (A, FrameTimes, FrameLengths, g_even, ts_even, progress);
+else
+   Ca_even = g_even;
+end
+\end{verbatim}
+
+\item Generate three very useful lookup tables.  These are
+$\int_{0}^{T} w (\int_{T_1}^{T_2} Ca(u) \otimes e^{-k_{2}u} du)/(T_2
+- T_1) dt$ evaluated for $w_1$, $w_2$, and $w_3$ as the weights
+($w$).  These lookup tables are used in all subsequent evaluations of
+these three weighted integrals.  The values of $k_2$ used in the
+lookup are also chosen here.
+\begin{verbatim}
+k2_lookup = (-10:0.05:10) / 60;
+[conv_int1,conv_int2,conv_int3] = findintconvo (Ca_even,ts_even,k2_lookup,...
+      MidFTimes, FrameLengths, 1, w2, w3);
+\end{verbatim}
+
+\item Generate some additional useful integrals.  These are used more
+than once in the subsequent code, and so are calculated in advance to
+try and increase the speed slightly.
+\begin{verbatim}
+Ca_mft = nframeint (ts_even, Ca_even, FrameTimes, FrameLengths);      
+
+Ca_int1 = C_trapz(MidFTimes, Ca_mft);
+Ca_int2 = C_trapz(MidFTimes, (w2 .* Ca_mft));
+Ca_int3 = C_trapz(MidFTimes, (w3 .* Ca_mft));
+\end{verbatim}
+
+\item Generate the lookup table relating k2 to values of the right
+hand side of equation (\ref{eq:k1two}).  We also calculate the left
+hand side of equation (\ref{eq:k1two}), which will be used in the
+generation of a $k_2$ image.  Since we will be looking up values of
+$k_2$ from values of rR (the right hand side of equation
+(\ref{eq:k1two})), we sort the table on rR.
+\begin{verbatim}
+rL = ((Ca_int3 .* PET_int1) - (Ca_int1 .* PET_int3)) ./ ...
+     ((Ca_int3 .* PET_int2) - (Ca_int2 .* PET_int3));
+
+rR = ((Ca_int3 * conv_int1) - (Ca_int1 * conv_int3)) ./ ...
+      ((Ca_int3 * conv_int2) - (Ca_int2 * conv_int3));
+
+% Now, we must have the k2/rR lookup table in order by rR; however, 
+% we also want to keep k2_lookup in the original order.  This
+% is because the first lookup uses rL as a lookup into rR to
+% find k2 (which requires that rR be monotonic, ie. sorted) whereas
+% subsequent lookups all use k2 to find conv_int{1,2,3} -- which 
+% requires that k2_lookup be monotonic.  So k2_lookup will be the
+% list of k2's in order, and k2_sorted will be the same list, but 
+% in order according to the sorted rR.
+
+[rR,sort_order] = sort (rR);
+k2_sorted = k2_lookup (sort_order);
+\end{verbatim}
+
+\item Generate the $k_2$ image.  This is performed through a simple
+table lookup.
+\begin{verbatim}
+k2 = lookup(rR, k2_sorted, rL);
+\end{verbatim}
+
+\item Generate the $K_1$ image by evaluating the numerator of
+equation (\ref{eq:k1two}).  All of the time consuming calculations
+have already been performed, and we can evaluate the $\int_{0}^{T} w
+(\int_{T_1}^{T_2} Ca(u) \otimes e^{-k_{2}u} du)/(T_2 - T_1) dt$ terms
+through table lookup.
+\begin{verbatim}
+K1_numer = ((Ca_int3*PET_int1) - (Ca_int1 * PET_int3));
+K1_denom = (Ca_int3 * lookup(k2_lookup,conv_int1,k2)) - ...
+           (Ca_int1 * lookup(k2_lookup,conv_int3,k2));
+K1 = K1_numer ./ K1_denom;
+\end{verbatim}
+
+\item Generate the $V_0$ image by evaluating equation
+(\ref{eq:fullweight1}).
+\begin{verbatim}
+V0 = (PET_int1 - (K1 .* lookup(k2_lookup,conv_int1,k2))) / Ca_int1;
+\end{verbatim}
+
+\end{enumerate}
+
+
+
+
+
+
+%--------------------------------------------------------------
+\newpage
+\section{MATLAB Functions}
+
+{\large\bf B\_CURVE} {\em a two-compartment rCBF model used for delay
+correction}
+\begin{verbatim}
+
+
+      integral = b_curve (args, shifted_g_even, ts_even, A, ... 
+                          fstart, flengths)
+
+
+\end{verbatim}
+
+  Used by blood delay correction, this function implements a
+  two-compartment rCBF model used for fitting the blood
+  curve data to the head curve data.
+\newpage
+
+%--------------------------------------
+
+{\large\bf CORRECTBLOOD} {\em  perform delay and dispersion corrections on blood curve}
+\begin{verbatim}
+
+
+   [new_ts_even, Ca_even, delta] = correctblood (A, FrameTimes, ...
+                                   FrameLengths, g_even, ts_even, progress)
+
+
+\end{verbatim}
+
+   The required input parameters are: 
+\begin{description}
+\item \code{A} - brain activity, averaged over all gray matter in a slice.  This
+           should be in units of decay / (gram-tissue * sec), and should
+           just be a vector - one value per frame.
+\item \code{FrameTimes} - the start time of every frame, in seconds
+\item \code{FrameLengths} - the length of every frame, in seconds
+\item \code{g\_even} - the (uncorrected) arterial input function, resampled at
+                some *evenly spaced* time domain.  Should be in units
+                of decay / (mL-blood * sec)
+\item \code{ts\_even} - the time domain at which g\_even is resampled
+\end{description}
+ 
+   The returned variables are:
+\begin{description}
+\item \code{new\_ts\_even} - generally the same as the old time scale,
+                     with some points missing from the end.
+\item \code{Ca\_even} - g\_even with dispersion and delay hopefully corrected,
+                 in units of decay / (mL-blood * sec).  
+\item \code{delay} - the delay time (ie. shift) in seconds
+\end{description}
+ 
+   A, FrameTimes, and FrameLengths must all be vectors with the same
+   number of elements (presumably the number of frames in the study).
+   g\_even and ts\_even must also be vectors with the same number of
+   elements, but their size should be much larger, due to the
+   resampling at half-second intervals performed by resampleblood.
+   
+   correctblood corrects for dispersion in blood activity by
+   calculating g(t) + tau * dg/dt, where tau (the dispersion time
+   constant) is taken to be 4.0 seconds.
+ 
+   It then attempts to correct for delay by fitting a theoretical blood
+   curve to the observed brain activity A(t).  This curve depends
+   on the parameters alpha, beta, gamma (these correspond to K1, k2,
+   and V0, although for the entire slice rather than pixel-by-pixel) and
+   delta (which is the delay time).  correctblood steps through a series
+   of delta values (currently -5 to +10 sec), and performs a three-
+   parameter fit with respect to alpha, beta, and gamma; the value of
+   delta that results in the best fit is chosen as the delay time.
+ 
+   options is an entirely optional vector meant for debugging purposes.
+   If options(1) is non-zero, then correctblood will show its progress,
+   by printing out the results of progressive delay-correction fits.  If 
+   it is at least 2, then correctblood will also show progress graphically,
+   by displaying a graph of A(t) and the fits corresponding to every
+   value of delta tried.  If options(2) is zero, then no delay correction
+   will be performed; if options(3) is supplied, then it will be
+   used as delta to do delay correction without the time-consuming
+   fitting.
+\newpage
+
+%--------------------------------------
+
+{\large\bf FINDINTCONVO} {\em   calculate tables of the integrated convolutions commonly used}
+\begin{verbatim}
+
+
+    [int1,int2,int3] = findintconvo (Ca_even, ts_even, k2_lookup,...
+                                     midftimes, flengths, w1[, w2[, w3]])
+
+
+\end{verbatim}
+
+  given a table of k2 values, generates tables of weighted integrals
+  that commonly occur in RCBF analysis.  Namely, int\_convo is a table of
+  the same size as k2\_lookup containing
+ 
+        int ( conv (Ca(t), exp(-k2*t)) * weight )
+ 
+  where the integration is carried out across frames.  weight is
+  one of w1, w2, or w3, each of which will generally be some simple
+  function of midftimes.  findintconvo will return int2 if and only if
+  w2 is supplied, and int3 if and only if w3 is supplied.  w1 is 
+  required, and int1 will always be returned.  Normally, the weight
+  functions should be vectors with the same number of elements as
+  midftimes; however, if w1 is empty then the weighting function 
+  is taken to be unity.
+ 
+  Note that in order to correctly calculate the convolution, Ca(t) must
+  be resampled at evenly spaced time intervals, and this resampled blood
+  activity should be passed as Ca\_even.  The times at which it is
+  sampled should be passed as ts\_even.  (These can be calculated by
+  resampleblood before calling findconvints.)
+ 
+  Then, the convolution of Ca(t) and exp(-k2*t) is resampled at the
+  mid-frame times (passed as midftimes) and integrated across frames
+  using flengths as dt.
+\newpage
+
+%--------------------------------------
+
+{\large\bf RCBF1} {\em a one-compartment (double-weighted integral) rCBF model.}
+\begin{verbatim}
+
+
+         [K1,k2] = rcbf1 (filename, slice)
+
+
+\end{verbatim}
+
+  A one-compartment rCBF model (without V0 or blood delay and 
+  dispersion) implemented as a MATLAB function.  The
+  compartmental equation is solved by integrating it across
+  the entire study, and then weighting this integral with two
+  different weights.  When these two integrals are divided by
+  each other, K1 is eliminated, leaving only k2.  A lookup
+  table is calculated, relating values of k2 to values of the
+  integral.  From this, k2 and be calculated.  From k2, K1 is
+  easily found by substitution into the original compartmental
+  equation.  See the document "rCBF Analysis Using MATLAB" for
+  further details of both the compartmental equations
+  themselves, and the method of solution.
+\newpage
+
+%--------------------------------------
+
+{\large\bf RCBF2} {\em a two-compartment (triple-weighted integral) rCBF model.}
+\begin{verbatim}
+
+
+        [K1,k2,V0,delta] = rcbf2 (filename, slice)
+
+
+\end{verbatim}
+
+  rcbf2 implements the three-weighted integral method of calculating
+  k2, K1, and V0 (in that order) for a particular slice.  This
+  function also returns the delay value calculated for blood
+  correction.  It first reads in a great mess of data (viz., the brain
+  activity for every frame of the slice, frame start times and
+  lengths, plasma activity, and blood sample times).  Then, a simple
+  mask is created and used to filter out roughly all points outside
+  the head.
+  
+  The actual calculations follow the procedure outlined in the
+  document "RCBF Analysis Using MATLAB".  Occasionally, comments in
+  the source code or documentation for various functions involved in
+  the analysis will refer to equations in this document.  The most
+  relevant functions in this respect are rcbf2 itself, correctblood
+  and findintconvos.
+  
+  The starting point of the three-weighted integration method is Eq.
+  10 of the RCBF document.  The left hand side of this equation, rL,
+  is calculated for every pixel.  Then, a lookup table relating a
+  series of k2 values to the rR (the right-hand side of Eq. 10) is
+  calculated.  This lookup table should have a few hundred elements,
+  as calculating rR is considerably more expensive than calculating
+  rL.  Since rL and rR are equal, we use the pixel-wise values of rL
+  to lookup k2 for every pixel.
+  
+  Then, Eq. XXX is used to calculate K1.  This requires calculating
+  the moderately complicated int\_activity (left hand side of Eq. XXX)
+  and the extremely complicated k2\_conv\_ints (right hand side).
+  However, the expression for k2\_conv\_ints appeared already in the
+  numerator of rR, so we preserve that lookup table as conv\_int1 and
+  use it to lookup k2\_conv\_ints.  These two long vectors (with one
+  number for every pixel) are then divided to get K1.  Finally, V0 is
+  calculated via Eq. YYY.
+\newpage
+
+%--------------------------------------
+
+{\large\bf DEMO} {\em  Demontrate the EMMA blood analysis package.}
+\begin{verbatim}
+
+
+      demo(slice_number, frame_number)
+
+
+\end{verbatim}
+
+  Hard-coded to use the arnaud\_20547 data
+  file, but allows input of a slice and
+  frame to display.
+\newpage
+
+%--------------------------------------
+
+{\large\bf RESAMPLEBLOOD} {\em  resample the blood activity in some new time domain}
+\begin{verbatim}
+
+
+   [new_g, new_ts] = resampleblood (handle, type[, samples])
+
+
+\end{verbatim}
+
+   reads the blood activity and sample timing data from the study
+   specified by handle, and resamples the activity data at times
+   specified by the string type.  Currently, type can be one of 'even'
+   or 'frame'.  For 'even', a new, evenly-spaced set of times will be
+   generated and used as the resampling times.  For 'frame', the mid
+   frame times will be used.  In either case, the resampled blood
+   activity is returned as new\_g, and the times used are returned as
+   new\_ts.
+ 
+   The optional argument samples specifies the number of samples
+   to take.  If it is not supplied, resampleblood will resample the
+   blood data at roughly 0.5 second intervals.
+\newpage
+
+%--------------------------------------
+
+
+
 
 
 \end{document}
