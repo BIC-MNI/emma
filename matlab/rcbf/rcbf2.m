@@ -114,14 +114,15 @@ elseif (nargin > 6)
    error('Incorrect number of arguments.');
 end
 
+img = openimage(filename);
+
 total_slices = length(slices);
-num_pixels = prod (getimageinfo (pet, 'imagesize'));
+num_pixels = prod (getimageinfo (img, 'imagesize'));
 K1 = zeros (num_pixels, total_slices);
 k2 = zeros (num_pixels, total_slices);
 V0 = zeros (num_pixels, total_slices);
 delta = zeros(1,total_slices);
 
-img = openimage(filename);
 if (getimageinfo (img, 'time') == 0)
    error ('Study is non-dynamic');
 end
