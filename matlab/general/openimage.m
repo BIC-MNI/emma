@@ -9,8 +9,61 @@ function ImHandle = openimage (filename)
 %  the size and number of images on the file, all of which can be
 %  queried via getimageinfo.
 %
-%  The value returned by openimage is a handle to be passed to getimages
+%  The value returned by openimage is a handle to be passed to getimages,
 %  putimages, getimageinfo, etc.
+
+% ------------------------------ MNI Header ----------------------------------
+%@NAME       : openimage
+%@INPUT      : filename - name of MINC file to open
+%@OUTPUT     : 
+%@RETURNS    : handle - for use with other image functions (eg. getimages,
+%					putimages, getimageinfo, etc.)
+%@DESCRIPTION: Prepares for reading/writing a MINC file from within
+%					MATLAB by generating a handle and creating a number of
+%					global variables for use by getimages, putimages, etc.
+%@METHOD     : (Note: none of this needs to be known by the end user.  It
+%					is only here to document the inner workings of the
+%					open/get/put/close image functions.)  
+%
+%					Increments the global variable ImageCount, and uses the
+%					new ImageCount as a handle to the image.  Handles are
+%					simply integers that are appended to various names to
+%					give the names of various global variables; eg., the
+%					global variable Filename3 is the name of the MINC file
+%					tagged by the handle 3.  This appending is universally
+%					done by the MATLAB string concatenation: eg., for
+%					handle=3, ['Filename' int2str(handle)] yields
+%					Filename3.  This is frequently combined with the eval
+% 
+%					This convention is followed for the variables Filename,
+%					NumFrames, NumSlices, ImageSize, PETimages, FrameTimes,
+%					FrameLengths, AvailFrames, AvailSlices, and CurLine.
+%					Note that not all of these variables are currently
+%					used; some of them are meant for a line-by-line image
+%					retrieval/storage system (coming Real Soon Now), rather
+%					than the currently implemented and rather memory
+%					intensive image-by-image system.
+%
+%					The functions getimages, putimages, getimageinfo,
+%					viewimage, getblooddata, check_sf, and closeimage also
+%					follow this convention for retrieving/storing data in
+%					these global variables.
+%
+%					Note that in the documentation for all of these
+%					functions, we will use the convention Filename# or
+%					PETimages# to refer to the "instance" of those (or
+%					other) image variables associated with the current
+%					handle.
+%@GLOBALS    : reads/increments: ImageCount
+%					creates: Filename#, NumFrames#, NumSlices#, ImageSize#,
+%					PETimages#, FrameTimes#, FrameLengths#, AvailFrames#,
+%					AvailSlices#, CurLine#
+%@CALLS      : mireadvar (CMEX)
+%					mincinfo (standalone, via unix function)
+%@CREATED    : June 1993, Greg Ward & Mark Wolforth
+%@MODIFIED   : 
+%-----------------------------------------------------------------------------
+
 
 global ImageCount MAX_FRAMES     % this does NOT create the variable if it
                                  % doesn't exist yet!
