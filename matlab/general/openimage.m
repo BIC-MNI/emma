@@ -96,27 +96,23 @@ else
    ImageCount = 1;
 end
 
-% Get some dimension sizes.  NB. if any dimensions do not exist, 
-% the associated variable will be returned as empty.  
+% Get sizes of ALL possible image dimensions. Time/frames, slices, 
+% height, width will be the elements of DimSizes where height and
+% width are the two image dimensions.  DimSizes WILL have four 
+% elements; if any of the dimensions do not exist, the corresponding
+% element of DimSizes will be zero.  (See also miinquire doc's.)
 
-NumFrames = miinquire (filename, 'dimlength', 'time');
-NumSlices = miinquire (filename, 'dimlength', 'zspace');
+DimSizes = miinquire (filename, 'imagesize');
 
-Xsize = miinquire (filename, 'dimlength', 'xspace');
-Ysize = miinquire (filename, 'dimlength', 'yspace');
+NumFrames = DimSizes (1);
+NumSlices = DimSizes (2);
+Height = DimSizes (3);
+Width = DimSizes (4);
 
-if (Xsize == Ysize)
-   ImageSize = Xsize;
+if (Height == Width)
+   ImageSize = Height;
 else
-   error ('Images are not square.');
-end
-
-if (isempty (NumFrames))
-   NumFrames = 0;
-end
-
-if (isempty (NumSlices))
-   NumSlices = 0;
+   error (['Images are not square (width ' int2str(Width), ', height ' int2str(Height) ')']);
 end
 
 % Get the frame times and lengths for all frames.  Note that mireadvar
