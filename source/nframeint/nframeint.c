@@ -17,12 +17,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include "mex.h"
-
-
-typedef int Boolean;
-
-#define TRUE    1
-#define FALSE   0
+#include "emmageneral.h"
 
 #define PROGNAME "nframeint"
 #define TIMES   prhs[0]
@@ -30,9 +25,6 @@ typedef int Boolean;
 #define START   prhs[2]
 #define LENGTHS prhs[3]
 #define INTS    plhs[0]
-
-#define min(A, B) ((A) < (B) ? (A) : (B))
-#define max(A, B) ((A) > (B) ? (A) : (B))
 
 /* External functions: need to link in monotonic.o, lookup12.o, trapint.o */
 
@@ -170,7 +162,7 @@ void mexFunction (int nlhs, Matrix *plhs [],
    if (nrhs != 4)
    {
       usage();
-      mexErrMsgTxt("Incorrect number of input arguments!");
+      mexErrMsgTxt("Incorrect number of input arguments");
    }
    
    CheckInputs (TIMES, VALUES, START, LENGTHS, &NumFrames, &Length);
