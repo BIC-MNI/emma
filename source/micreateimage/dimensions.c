@@ -9,7 +9,6 @@
 #include "micreateimage.h"
 #include "dimensions.h"
 
-#define DEBUG
 
 /* dimensions.c - micreateimage routines for creating/copying dimensions
    and dimension variables */
@@ -271,7 +270,7 @@ Boolean CopyDimVar (int ParentCDF, int ChildCDF,
    if (NumVarDims == 0)
    {
 #ifdef DEBUG
-      printf ("  copying non-subscripted variable %s\n", DimName);
+      printf ("   CopyDimVar: copying non-subscripted variable %s\n", DimName);
 #endif
       *NewVarID = micopy_var_def (ParentCDF, VarID, ChildCDF);
    }
@@ -286,7 +285,7 @@ Boolean CopyDimVar (int ParentCDF, int ChildCDF,
       ncdiminq (ParentCDF, VarDims[0], VarDimName, &VarDimLen);
       
 #ifdef DEBUG
-      printf ("  copying subscripted dimension variable %s (length %d)\n",
+      printf ("   CopyDimVar: copying subscripted dimension variable %s (length %d)\n",
               VarName, VarDimLen);
 #endif
       
@@ -318,7 +317,7 @@ Boolean CopyDimVar (int ParentCDF, int ChildCDF,
       if (DimLength != VarDimLen)
       {
 #ifdef DEBUG
-         printf ("   length of dimension not same in two files - "
+         printf ("   CopyDimVar: length of dimension not same in two files - "
                  "will not copy values\n");
 #endif
          /*
@@ -339,13 +338,13 @@ Boolean CopyDimVar (int ParentCDF, int ChildCDF,
       else
       {
 #ifdef DEBUG
-         printf ("   length of dimension same in two files - "
+         printf ("   CopyDimVar: length of dimension same in two files - "
                  "will copy everything\n");
 #endif
          
          /* The dimension lengths were equal, so just copy everything */
          
-         *NewVarID = micopy_var_def (ParentCDF, VarID, ChildCDF);
+    /*     *NewVarID = micopy_var_def (ParentCDF, VarID, ChildCDF);   */
          *CopyVals = true;
 
       }     /* if/else: dimension lengths are equal */
@@ -474,19 +473,25 @@ Boolean CreateDimVars (int ParentCDF, int ChildCDF,
 
 
       /* 
-       * Get the ID of the dimension variable in the parent file; if it
-       * is not found, print a warning and just create it in the child.
+       * Get the ID of the dimension variable in the parent file; if
+       * there is no parent file *or* the variable isn't found in it,
+       * just create the variable in the child.  Note that we will
+       * skip to the next dimension only if there is no parent file;
+       * if the dimension variable doesn't exist in the parent file,
+       * we'll go on to see if the dim-width variable does exist.
        */
 
       strcpy (VarName, DimNames [CurDim]);
       ParentVar = ncvarid (ParentCDF, VarName);
 
-      if (ParentVar == -1)
+      if ((ParentCDF == -1) || (ParentVar == -1))
       {
-         fprintf (stderr, "micreateimage: warning, dimension variable %s not "
-                  "found in parent file %s\n", VarName, ParentFile);
          micreate_group_variable (ChildCDF, VarName);
-         continue;              /* skip to next dimension */
+
+	 if (ParentCDF == -1)
+	 {
+	    continue;              /* skip to next dimension */
+	 }
       }
       else
       {
@@ -502,14 +507,13 @@ Boolean CreateDimVars (int ParentCDF, int ChildCDF,
           * here.
           */
 #ifdef DEBUG
-	 printf ("Copying dimension variable %s (dimension %s, ID %d)\n",
+	 printf (" copying dimension variable %s (dimension %s, ID %d)\n",
 		 VarName, DimNames[CurDim], ParentVar);
 #endif
          
          if (!CopyDimVar (ParentCDF, ChildCDF, ParentVar, VarName,
                           DimIDs[CurDim], DimNames[CurDim],
                           &(ChildVars[CurDim]), &Copyable))
-            
          {
             return (false);
          }
@@ -517,14 +521,14 @@ Boolean CreateDimVars (int ParentCDF, int ChildCDF,
 	 {
 	    XVal [(*NumXVal)++] = ParentVar;
 #ifdef DEBUG
-	    printf ("Will not copy values of variable %s (ID %d)\n", 
+	    printf ("  - will not copy values of variable %s (ID %d)\n", 
 		    VarName, ParentVar);
 #endif
 	 }
 #ifdef DEBUG
 	 else
 	 {
-	    printf ("Will copy values of variable %s (ID %d)\n",
+	    printf ("  - will copy values of variable %s (ID %d)\n",
 		    VarName, ParentVar);
 	 }
 #endif
@@ -532,6 +536,13 @@ Boolean CreateDimVars (int ParentCDF, int ChildCDF,
 	 XDefn [(*NumXDefn)++] = ParentVar;
 
       }     /* else: variable *was* found in parent file */
+
+
+      /* 
+       * Now do the exact same thing, only with the dimension width 
+       * variable (except here we don't create anything in the child
+       * file if there was no width variable in the parent file) 
+       */
 
       strcat (VarName, "-width");
       WidthVar = ncvarid (ParentCDF, VarName);
@@ -542,7 +553,7 @@ Boolean CreateDimVars (int ParentCDF, int ChildCDF,
          /* Do the same stuff as we did for the plain dimension variable... */
 
 #ifdef DEBUG
-	 printf ("Copying dimension variable %s (dimension %s, ID %d)\n",
+	 printf ("Copying dimension width variable %s (dimension %s, ID %d)\n",
 		 VarName, DimNames[CurDim], WidthVar);
 #endif
 
@@ -557,14 +568,14 @@ Boolean CreateDimVars (int ParentCDF, int ChildCDF,
 	 {
 	    XVal [(*NumXVal)++] = WidthVar;
 #ifdef DEBUG
-	    printf ("Will not copy values of variable %s (ID %d)\n", 
+	    printf ("  - will not copy values of variable %s (ID %d)\n", 
 		    VarName, WidthVar);
 #endif
 	 }
 #ifdef DEBUG
 	 else
 	 {
-	    printf ("Will copy values of variable %s (ID %d)\n",
+	    printf ("  - will copy values of variable %s (ID %d)\n",
 		    VarName, WidthVar);
 	 }
 #endif
@@ -576,7 +587,7 @@ Boolean CreateDimVars (int ParentCDF, int ChildCDF,
 #ifdef DEBUG
       else
       {
-         printf ("width variable %s not found -- who cares!?\n", VarName);
+         printf ("   width variable %s not found -- who cares!?\n", VarName);
       }
 #endif
 
@@ -587,7 +598,7 @@ Boolean CreateDimVars (int ParentCDF, int ChildCDF,
       int i;
       char Name [MAX_NC_NAME];
 
-      printf ("Have flagged %d variables to be excluded from defn. copy:\n",
+      printf ("CreateDimVars: Have flagged %d variables to be excluded from defn. copy:\n",
 	      *NumXDefn);
       for (i = 0; i < *NumXDefn; i++)
       {
@@ -595,12 +606,12 @@ Boolean CreateDimVars (int ParentCDF, int ChildCDF,
 	 printf (" var %s (id %d) in parent file\n", Name, XDefn[i]);
       }
 
-      printf ("Have flagged %d variables to be excluded from value copy:\n",
+      printf ("CreateDimVars: Have flagged %d variables to be excluded from value copy:\n",
 	      *NumXVal);
       for (i = 0; i < *NumXVal; i++)
       {
 	 ncvarinq (ParentCDF, XVal[i], Name, NULL, NULL, NULL, NULL);
-	 printf (" var %s (id %d) in parent file\n", Name, XVal[i]);
+	 printf (" var %s (id %d) in parent file\n\n", Name, XVal[i]);
       }
    }
 #endif
