@@ -1,3 +1,26 @@
+/* ----------------------------- MNI Header -----------------------------------
+@NAME       : mincutil.c
+@INPUT      : 
+@OUTPUT     : 
+@RETURNS    : 
+@DESCRIPTION: Set of routines for dealing with MINC files.  Deals mostly
+              with a structure (ImageInfoRec) defined in mincutil.h
+	      for telling callers all about a given MINC file.  GetImageInfo
+	      in particular is very handy.  See mireadimages.c and 
+	      miwriteimages.c for examples of these functions in action.
+@METHOD     : 
+@GLOBALS    : char *ErrMsg - set to a fairly meaningful error message
+                 when any of the functions herein fail; when this happens,
+		 they generally return NULL or a negative number, too.
+@CALLS      : NetCDF, MINC libraries.
+@CREATED    : June, 1993: Greg Ward
+@MODIFIED   : 25 August, 1993, GPW: removed global extern variable debug,
+                 and changed all debugging info to #ifdef DEBUG
+---------------------------------------------------------------------------- */
+
+
+
+
 #include <stdlib.h>
 #include "gpw.h"
 #include "minc.h"
@@ -6,7 +29,6 @@
 
 
 extern   char *ErrMsg;     /* should be defined in your main program */
-extern   Boolean debug;
 
 
 /* ----------------------------- MNI Header -----------------------------------
@@ -63,7 +85,7 @@ char *NCErrMsg (int NCErrCode)
               sets ErrMsg on error
 @DESCRIPTION: Opens a NetCDF/MINC file using ncopen.
 @METHOD     : 
-@GLOBALS    : debug, ErrMsg
+@GLOBALS    : ErrMsg
 @CALLS      : standard NetCDF, mex functions.
 @CREATED    : 93-5-31, adapted from code in micopyvardefs.c, Greg Ward
 @MODIFIED   : 93-6-4, modified debug/error handling and added Mode parameter
@@ -100,7 +122,7 @@ int OpenFile (char *Filename, int *CDF, int Mode)
 @GLOBALS    : debug, ErrMsg
 @CALLS      : standard NetCDF, library functions
 @CREATED    : 93-5-31, Greg Ward
-@MODIFIED   : 
+@MODIFIED   : 93-8-25, GPW: changed if(debug) to #ifdef DEBUG
 ---------------------------------------------------------------------------- */
 int GetVarInfo (int CDF, char vName[], VarInfoRec *vInfo)
 {
@@ -129,11 +151,10 @@ int GetVarInfo (int CDF, char vName[], VarInfoRec *vInfo)
    ncvarinq (CDF, vInfo->ID, NULL, &vInfo->DataType, 
              &vInfo->NumDims, DimIDs, &vInfo->NumAtts);
 
-   if (debug)
-   {
-      printf ("Variable %s has %d dimensions, %d attributes\n",
-                 vInfo->Name, vInfo->NumDims, vInfo->NumAtts);
-   }
+#ifdef DEBUG
+   printf ("Variable %s has %d dimensions, %d attributes\n",
+	   vInfo->Name, vInfo->NumDims, vInfo->NumAtts);
+#endif
 
    /*
     * Now loop through all the dimensions, getting info about them
@@ -143,11 +164,12 @@ int GetVarInfo (int CDF, char vName[], VarInfoRec *vInfo)
    for (dim = 0; dim < vInfo->NumDims; dim++)
    {
       ncdiminq (CDF, DimIDs [dim], Dims [dim].Name, &(Dims [dim].Size));
-      if (debug)
-      {
-         printf ("  Dim %d: %s, size %ld\n", 
-                 dim, Dims[dim].Name, Dims [dim].Size);
-      }
+
+#ifdef DEBUG
+      printf ("  Dim %d: %s, size %ld\n", 
+	      dim, Dims[dim].Name, Dims [dim].Size);
+#endif
+
    }     /* for dim */  
    vInfo->Dims = Dims;
    return (ERR_NONE);
@@ -179,7 +201,7 @@ int GetVarInfo (int CDF, char vName[], VarInfoRec *vInfo)
 @DESCRIPTION: Gets gobs of information about a MINC image variable.  See
               ImageInfoRec in myminc.h for details.
 @METHOD     : 
-@GLOBALS    : debug, ErrMsg
+@GLOBALS    : ErrMsg
 @CALLS      : standard MINC, NetCDF, library functions
 @CREATED    : 93-6-3, Greg Ward
 @MODIFIED   : 93-6-4, modified debug/error handling (GPW)
@@ -188,6 +210,7 @@ int GetVarInfo (int CDF, char vName[], VarInfoRec *vInfo)
                       changed so that SliceDim, FrameDim, HeightDim, and
                       WidthDim, are picked based on their order in the
                       MIimage variable rather than solely on their names (GPW)
+              93-8-25, GPW: changed if(debug) to #ifdef DEBUG
 @COMMENTS   : Based on GetVarInfo from mireadvar.c, and on Gabe Leger's
               open_minc_file (from mincread.c).
 ---------------------------------------------------------------------------- */
@@ -232,11 +255,10 @@ int GetImageInfo (int CDF, ImageInfoRec *Image)
    ncvarinq (CDF, Image->ID, NULL, &Image->DataType, 
              &Image->NumDims, DimIDs, &Image->NumAtts);
 
-   if (debug)
-   {
-      printf ("Image variable has %d dimensions, %d attributes\n",
-              Image->NumDims, Image->NumAtts);
-   }
+#ifdef DEBUG
+   printf ("Image variable has %d dimensions, %d attributes\n",
+	   Image->NumDims, Image->NumAtts);
+#endif
 
    /*
     * By default assume all dimensions do not exist; this will be corrected
@@ -290,19 +312,18 @@ int GetImageInfo (int CDF, ImageInfoRec *Image)
       }
 
 
-      if (debug)
-      {
-         printf ("  Dim %d: %s, size %ld\n",dim,CurDimName,CurDimSize);
-      }
+#ifdef DEBUG
+      printf ("  Dim %d: %s, size %ld\n",dim,CurDimName,CurDimSize);
+#endif
    }     /* for dim */  
   
    Image->ImageSize = Image->Width * Image->Height;
 
-   if (debug)
-   {
-      printf("Image var has %ld frames, %ld slices; each image is %ld x %ld\n",
-             Image->Frames, Image->Slices, Image->Height, Image->Width);
-   }
+#ifdef DEBUG
+   printf("Image var has %ld frames, %ld slices; each image is %ld x %ld\n",
+	  Image->Frames, Image->Slices, Image->Height, Image->Width);
+#endif
+
    return (ERR_NONE);
 
 }     /* GetImageInfo */
