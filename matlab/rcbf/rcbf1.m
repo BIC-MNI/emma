@@ -1,10 +1,20 @@
 function [K1,k2] = rcbf1 (filename, slice, progress)
-% RCBF1  
+% RCBF1 a one-compartment (double-weighted integral) rCBF model.
 %
 %        [K1,k2] = rcbf1 (filename, slice)
 %
-%  a first try at a two-compartment rCBF model (without V0
-%  or shifting) implemented as a MATLAB function.
+% A one-compartment rCBF model (without V0 or blood delay and 
+% dispersion) implemented as a MATLAB function.  The
+% compartmental equation is solved by integrating it across
+% the entire study, and then weighting this integral with two
+% different weights.  When these two integrals are divided by
+% each other, K1 is eliminated, leaving only k2.  A lookup
+% table is calculated, relating values of k2 to values of the
+% integral.  From this, k2 and be calculated.  From k2, K1 is
+% easily found by substitution into the original compartmental
+% equation.  See the document "rCBF Analysis Using Matlab" for
+% further details of both the compartmental equations
+% themselves, and the method of solution.
 
 % Input argument checking
 
