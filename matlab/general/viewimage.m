@@ -27,7 +27,13 @@ end
 % img is now square, xsize by xsize.  Set the colormap, and 
 % shift/scale img so that it maps onto 1..length(colormap)
 
-colormap (spectral);
+display = getenv('DISPLAY');
+
+if (strcmp(display,':0.0') | strcmp(display(1:4),'lear') | strcmp(display(1:4),'pria') | strcmp(display(1:4),'dunc') | strcmp(display(1:4),'port'))
+   colormap (spectral);
+else
+   colormap (gray);
+end
 num_colors = length (colormap);
 
 lo = min(min(img));
