@@ -1,84 +1,73 @@
 function ImHandle = openimage (filename)
-% openimage - sets up a MINC file and prepares for reading.
+%  handle = openimage (filename)
+% sets up a MINC file and prepares for reading.
 % Returns a "handle" to the MINC file and its associated image,
 % for use by getnextimage, etc.
 
-% Documentation for the returned handle (not necessary for the user to
-% know, but handy all the same): ImHandle is a character matrix, so
-% that each row consists of a string.  All strings are padded with
-% however many spaces are necessary to make them all the same length;
-% this will only need to be taken into account when using the
-% filename.  The contents of the rows are as follows:
-%
-%   ImHandle(1,:) = the filename passed to openimage
-%   ImHandle(2,:) = the name of the variable where images are stored
-%   ImHandle(3,:) = the name of the variable containing the start time
-%                   (in seconds, relative to the start of the study)
-%                   of *every* frame in the file, NOT just the frames
-%                   currently in memory.
-%   ImHandle(4,:) = the name of the variable containing the length
-%                   in seconds of every frame of the file
-%   ImHandle(5,:) = the name of the variable containing the list of 
-%                   frame numbers currently in memory (available via the
-%                   variable named in row 2)
-%   ImHandle(6,:) = the name of the variable containing the number of
-%                   the currently available slice (slices?).
-%   ImHandle(7,:) = the name of the variable containing the current
-%                   location (image line number) for each frame of the
-%                   file.  For frames not in memory, this variable
-%                   will hold 0.
-%                   
+global ImageCount MAX_FRAMES     % this does NOT create the variable if it
+                                 % doesn't exist yet!
+MAX_FRAMES = 30;                 % Size of the cache expressed in images
+if exist ('ImageCount') == 1
+   ImageCount = ImageCount + 1;
+else
+   ImageCount = 1;
+end
 
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Get the frame times and lengths for all frames.
 
 FrameTimes = mireadvar (filename, 'time');
 FrameLengths = mireadvar (filename, 'time-width');
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Set up the variables.  (Note that we're currently hard-coding the 
-% available slice and frame numbers; these will be referred and possibly
-% added to by getnextline.)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Set up the other variables.  (Note that we're currently hard-coding
+% the initially available slice and frame numbers; these will be
+% referred and possibly added to by getnextline.)
+CurLine = 1;
 
-CurLocs = zeros (length (FrameTimes), 1);
-CurLocs (1) = 1;
 AvailFrames = [1];
-AvailSlices = 1;
+AvailSlices = [1];
+[tmp, ImageSize] = mcdinq (filename, 'xspace');		% assumes square images!!!
+[tmp, NumSlices] = mcdinq (filename, 'zspace');
+[tmp, NumFrames] = mcdinq (filename, 'time');
 
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Assume that we want to start at the beginning, so read first frame
-% of the first slice.
+% of the first slice.  Note the "-1" because we will do everything in
+% MATLAB with 1-based array indeces, but the CMEX functions want
+% things 0-based.
 
-PETimages = mireadimages (filename, 0, 0, 0);
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Put all the variables into the global workspace so that they
-% persist.
-
-global PETimages FrameTimes FrameLengths AvailFrames AvailSlices CurLocs
+PETimages = mireadimages (filename, AvailSlices-1, AvailFrames-1, 0);
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Create the handle itself.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Now make "numbered" copies of the six variables we just created; the
+% number used is ImageCount, and the effect of the following
+% statements is to declare these numbered variables as global (so
+% other functions can access them) and to copy the local data to the
+% global variables.
 
-len = max (length (filename), length ('FrameLengths'));
-ImHandle = padstring (filename, len);
-eval(['ImHandle = [ImHandle; padstring(' '''PETimages''' ',len)];']); 
-eval(['ImHandle = [ImHandle; padstring(' '''FrameTimes''' ',len)];']); 
-eval(['ImHandle = [ImHandle; padstring(' '''FrameLengths''' ',len)];']); 
-eval(['ImHandle = [ImHandle; padstring(' '''AvailFrames''' ',len)];']); 
-eval(['ImHandle = [ImHandle; padstring(' '''AvailSlices''' ',len)];']); 
-eval(['ImHandle = [ImHandle; padstring(' '''CurLocs''' ',len)];']); 
+eval(['global Filename'     int2str(ImageCount)]);
+eval(['global NumFrames',   int2str(ImageCount)]);
+eval(['global NumSlices',   int2str(ImageCount)]);
+eval(['global ImageSize',   int2str(ImageCount)]);
+eval(['global PETimages'    int2str(ImageCount)]);
+eval(['global FrameTimes'   int2str(ImageCount)]);
+eval(['global FrameLengths',int2str(ImageCount)]);
+eval(['global AvailFrames', int2str(ImageCount)]);
+eval(['global AvailSlices', int2str(ImageCount)]);
+eval(['global CurLine',     int2str(ImageCount)]);
 
+eval(['Filename'     int2str(ImageCount) ' = filename;']);
+eval(['NumFrames'    int2str(ImageCount) ' = NumFrames;']);
+eval(['NumSlices'    int2str(ImageCount) ' = NumSlices;']);
+eval(['ImageSize'    int2str(ImageCount) ' = ImageSize;']);
+eval(['FrameTimes'   int2str(ImageCount) ' = FrameTimes;']);
+eval(['FrameLengths' int2str(ImageCount) ' = FrameLengths;']);
+eval(['CurLine'      int2str(ImageCount) ' = CurLine;']);
+eval(['AvailFrames'  int2str(ImageCount) ' = AvailFrames;']);
+eval(['AvailSlices'  int2str(ImageCount) ' = AvailSlices;']);
+eval(['PETimages'    int2str(ImageCount) ' = PETimages;']);
 
-
-
-
-
-
-
-
+ImHandle = ImageCount;
