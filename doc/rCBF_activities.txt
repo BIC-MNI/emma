@@ -94,9 +94,10 @@ The steps for finding the delay constant delta are:
          every frame in the slice, and then calculate the mean of each
          image.  The resulting values are used as A(t).
 
-   COMPLETED ON:
+   COMPLETED ON: July 16, 1993
 
-   STATUS: July 9, 1993: Wrote a Matlab script that implements the above
+   STATUS: July 16,1993: 
+           July 9, 1993: Wrote a Matlab script that implements the above
                          three steps and uses getmask.m.
            July 7, 1993: Created getmask.m.  This function handles the second
                          part of the above by displaying the image, and
@@ -109,7 +110,29 @@ The steps for finding the delay constant delta are:
 
    COMPLETED ON: 
 
-   STATUS: July 9, 1993: Performed the least squares fit without taking
+   STATUS: July 16,1993: After satisfying ourselves that the stepwise 
+                         fitting method described below gave reasonable
+                         results, we decided to add dispersion
+                         correction.  Implementation was quite easy,
+                         but unfortunately adding dispersion correction
+                         made things worse.  The blood curve no longer
+                         followed the brain curve closely.
+           July 15,1993: In order to try and solve the overdetermination
+                         problem, we have taken a stepwise incrementation
+                         approach to finding delta.  We choose a value
+                         of delta, and peform the curve fit while holding
+                         delta constant.  We then choose a new value of
+                         delta, and perform the three term curve fit again
+                         (for alpha, beta, and gamma).  After having
+                         performed the fit for several values of delta, we
+                         choose the fit that produced the least amount of
+                         error.  At the moment, we are stepping through
+                         delta with increments of 1 second.
+           July 12,1993: Found that the curve fitting problem seems to be
+                         overdetermined.  We can find several values of 
+                         alpha, beta, gamma, and delta that give good curve
+                         fits.
+           July 9, 1993: Performed the least squares fit without taking
                          dispersion into account.  The fit along the rising
                          slope was very good, but at the top of the slope
                          the fit function exploded.  We do have some ideas
@@ -128,9 +151,25 @@ In order to complete two-compartment rCBF analysis, we must:
 2) Perform a full two-compartment analysis that returns K1, k2, and V0
    using the triple-weighted integration method.
 
-   COMPLETED ON: 
+   COMPLETED ON: July 21, 1993
 
-   STATUS:
+   STATUS: July 21,1993: 
+           July 20,1993: Investigated the problems with the first pass
+                         attempt.  Since our implementation of the three-
+                         weighted method grew out of an implementation of
+                         the two-weighted method, there were some
+                         assumptions carried over that turned out invalid
+                         (for example, it did not make sense to clip
+                         negative values in the left hand quotient).  We
+                         managed to create a K1 image, but had initial
+                         difficulties since the values outside the brain
+                         had a much larger range than the values inside
+                         the brain.  Therefore, viewimage was mapping all of
+                         the values inside the brain to the same colour.
+                         We applied a mask that eliminated values outside
+                         brain in order to solve this problem.
+           July 16,1993: Wrote a first pass attempt at solving the triple-
+                         weighted integration problem.  Had limited success.
 
 3) Validate our method and implementation by submitting known data to
    Matlab analysis, and performing the same calculations by hand.
