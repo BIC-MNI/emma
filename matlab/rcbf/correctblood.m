@@ -26,8 +26,9 @@ function [new_ts_even, Ca_even, delta] = correctblood ...
 %                 correction (i.e. compute a value of delta) 
 %                 (default: 1, to do the correction)
 %      progress - 0 for total silence (except for errors)
-%                 1 to print progress messages
-%                 2 to print progress messages and graph intermediate steps
+%                 1 for minimal progress messages
+%                 2 for lots of progress messages
+%                 3 for lots of messages and graphical updates of the fitting
 %
 %  The returned variables are:
 %      new_ts_even - generally the same as the old time scale,
@@ -90,10 +91,6 @@ if (nargin < 6)                 % tau not given
    tau = 4;
 end;
    
-if (progress) 
-   disp ('correctblood:');
-end
-
 if (~do_delay) 
    disp (['No delay-fitting will be performed; will use delta = ' ...
            int2str(delta)]);
@@ -110,7 +107,7 @@ MidFTimes = MidFTimes (first60);        % first minute again
 
 % If graphical progress: plot the caller-supplied PET activity
 
-if (progress >= 2)
+if (progress >= 3)
    figure;
    plot (MidFTimes, A, 'or');
    hold on
@@ -121,7 +118,7 @@ end;
 
 % If graphical progress: plot the uncorrected blood data
 
-if (progress >= 2)
+if (progress >= 3)
    figure;
    plot (ts_even, g_even, 'y:');
    title ('Blood activity: dotted=g(t), solid=g(t) + tau*dg/dt');
@@ -147,7 +144,7 @@ g_even = smooth_g_even + tau*deriv_g;
 
 % Add the dispersion-corrected blood curve to the uncorrected one
 
-if (progress >= 2)
+if (progress >= 3)
    plot (ts_even, g_even, 'r');
    drawnow
 end
@@ -165,14 +162,16 @@ init = [.0001 .000125 .03];
 
 if (do_delay)
 
-   if (progress), fprintf ('Performing fits...\n'), end
+   if (progress), fprintf ('Fitting for delay correction'), end
+   if (progress >= 2), fprintf (':\n'), end
+
    deltas = -5:1:10;
    rss = zeros (length(deltas), 1);     % residual sum-of-squares
    params = zeros (length(deltas), 3);  % 3 parameters per fit
 
    for i = 1:length(deltas)
       delta = deltas (i);
-      if (progress), fprintf ('delta = %.1f', delta), end
+      if (progress >= 2), fprintf ('delta = %.1f', delta), end
 
       % Get the shifted activity function, g(t - delta), by shifting g(t)
       % to the right (ie. subtract delta from its actual times, ts_even)
@@ -195,10 +194,12 @@ if (do_delay)
                             A, FrameTimes, FrameLengths);
 
       init = final;
-      if (progress)
+      if (progress == 1)                % minimal progress messages
+         fprintf ('.');
+      elseif (progress >= 2)            % more progress messages
          fprintf ('; final = [%g %g %g]; residual = %g\n', final, rss (i));
 
-         if (progress >= 2)
+         if (progress >= 3)             % report progress graphically
             plot (MidFTimes, ...
 		  b_curve(final, ...
 	                  shifted_g_even(g_select), ...
@@ -210,7 +211,11 @@ if (do_delay)
    end      % for delta
 
    [err, where] = min (rss);            % find smallest residual
-   delta = deltas (where);                      % delta for best fit
+   delta = deltas (where);              % select delta for best fit
+   
+   if (progress)                        % minimal progress
+      fprintf ('using delta = %.1f\n', delta);
+   end
 
 end      % if do_delay
 
