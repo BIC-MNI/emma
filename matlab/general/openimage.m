@@ -81,11 +81,14 @@ function ImHandle = openimage (filename, mode)
 %              image sizes.
 %              95-4-12 - 4/20, Greg Ward: changed to handle compressed
 %                              files and the new Flags# global variable
+%              97-5-27 Mark Wolforth: Minor modification to work with
+%                                     Matlab 5, which handles global
+%                                     variables differently from Matlab 4.x
 %-----------------------------------------------------------------------------
 
 
-global ImageCount                % this does NOT create the variable if it
-                                 % doesn't exist yet!
+global ImageCount                % Creates an empty matrix if variable does
+				 % not exist yet!
 
 error (nargchk (1, 2, nargin));
 
@@ -146,7 +149,9 @@ if (strcmp (filename(len-2:len), '.gz') | ...
    % Note that checking the directory with fopen might not be
    % portable!  Works on IRIX and SunOS, at least.
    
-   tdir = [tempdir 'emma' int2str(clock)];
+   now = clock;
+   timestring = sprintf ('%d%d%d%d%d%s', now(1:5),int2str(now(6)));
+   tdir = [tempdir 'emma' timestring];
    id = fopen (tdir, 'r');		% try to open the temp dir
    if (id ~= -1)			% if it succeeded, that's bad! means
       fclose (id);			% the dir already exists
@@ -187,7 +192,7 @@ end
    
 % The file exists, so we will be opening it... so figure out the handle.
 
-if exist ('ImageCount') == 1
+if ~isempty (ImageCount)
    ImageCount = ImageCount + 1;
 else
    ImageCount = 1;
