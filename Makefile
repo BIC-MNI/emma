@@ -5,7 +5,7 @@
 # The only change you should make to this file is EMMA_ROOT; other
 # site-specific options are in Makefile.site.
 #
-# $Id: Makefile,v 1.5 2004-03-11 15:45:17 bert Exp $
+# $Id: Makefile,v 1.6 2004-10-06 15:05:59 bert Exp $
 #
 
 
@@ -44,7 +44,7 @@ CMEX_TARGETS = delaycorrect lookup miinquire mireadimages mireadvar \
                nfmins nframeint ntrapz rescale
 
 C_TARGETS    = bloodtonc bldtobnc includeblood micreateimage \
-               miwriteimages miwritevar
+               miwriteimages miwritevar miwriteatt
 
 TARGETS      = $(CMEX_TARGETS) $(C_TARGETS)
 
