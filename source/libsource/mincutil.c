@@ -23,34 +23,34 @@ extern   Boolean debug;
 ---------------------------------------------------------------------------- */
 char *NCErrMsg (int NCErrCode)
 {
-	switch (NCErrCode)
-	{
-		case NC_SYSERR       : return ("System error (possible file or directory not found");
-		case NC_NOERR        : return ("No Error");
-		case NC_EBADID       : return ("Not a netcdf id");
-		case NC_ENFILE       : return ("Too many netcdfs open");
-		case NC_EEXIST       : return ("netcdf file exists && NC_NOCLOBBER");
-		case NC_EINVAL       : return ("Invalid Argument");
-		case NC_EPERM        : return ("Write to read only");
-		case NC_ENOTINDEFINE : return ("Operation not allowed in data mode");
-		case NC_EINDEFINE    : return ("Operation not allowed in define mode");
-		case NC_EINVALCOORDS : return ("Coordinates out of Domain");
-		case NC_EMAXDIMS     : return ("MAX_NC_DIMS exceeded");
-		case NC_ENAMEINUSE   : return ("String match to name in use");
-		case NC_ENOTATT      : return ("Attribute not found");
-		case NC_EMAXATTS     : return ("MAX_NC_ATTRS exceeded");
-		case NC_EBADTYPE     : return ("Not a netcdf data type");
-		case NC_EBADDIM      : return ("Invalid dimension id");
-		case NC_EUNLIMPOS    : return ("NC_UNLIMITED in the wrong index");
-		case NC_EMAXVARS     : return ("MAX_NC_VARS exceeded");
-		case NC_ENOTVAR      : return ("Variable not found");
-		case NC_EGLOBAL      : return ("Action prohibited on NC_GLOBAL varid");
-		case NC_ENOTNC       : return ("Not a netcdf file");
-		case NC_ESTS         : return ("In Fortran, string too short");
-		case NC_EMAXNAME     : return ("MAX_NC_NAME exceeded");
-		case NC_EUNLIMIT     : return ("NC_UNLIMITED size already in use");
-		default					: return ("UNKNOWN NetCDF Error Code!!!");
-	}
+   switch (NCErrCode)
+   {
+      case NC_SYSERR       : return ("System error (possible file or directory not found");
+      case NC_NOERR        : return ("No Error");
+      case NC_EBADID       : return ("Not a netcdf id");
+      case NC_ENFILE       : return ("Too many netcdfs open");
+      case NC_EEXIST       : return ("netcdf file exists && NC_NOCLOBBER");
+      case NC_EINVAL       : return ("Invalid Argument");
+      case NC_EPERM        : return ("Write to read only");
+      case NC_ENOTINDEFINE : return ("Operation not allowed in data mode");
+      case NC_EINDEFINE    : return ("Operation not allowed in define mode");
+      case NC_EINVALCOORDS : return ("Coordinates out of Domain");
+      case NC_EMAXDIMS     : return ("MAX_NC_DIMS exceeded");
+      case NC_ENAMEINUSE   : return ("String match to name in use");
+      case NC_ENOTATT      : return ("Attribute not found");
+      case NC_EMAXATTS     : return ("MAX_NC_ATTRS exceeded");
+      case NC_EBADTYPE     : return ("Not a netcdf data type");
+      case NC_EBADDIM      : return ("Invalid dimension id");
+      case NC_EUNLIMPOS    : return ("NC_UNLIMITED in the wrong index");
+      case NC_EMAXVARS     : return ("MAX_NC_VARS exceeded");
+      case NC_ENOTVAR      : return ("Variable not found");
+      case NC_EGLOBAL      : return ("Action prohibited on NC_GLOBAL varid");
+      case NC_ENOTNC       : return ("Not a netcdf file");
+      case NC_ESTS         : return ("In Fortran, string too short");
+      case NC_EMAXNAME     : return ("MAX_NC_NAME exceeded");
+      case NC_EUNLIMIT     : return ("NC_UNLIMITED size already in use");
+      default              : return ("UNKNOWN NetCDF Error Code!!!");
+   }
 }
 
 /* ----------------------------- MNI Header -----------------------------------
@@ -79,7 +79,7 @@ int OpenFile (char *Filename, int *CDF, int Mode)
    if (*CDF == MI_ERROR)
    {
       sprintf (ErrMsg, "Error opening file %s: %s", 
-					Filename, NCErrMsg(ncerr));
+               Filename, NCErrMsg(ncerr));
       return (ERR_IN_MINC);
    }  
    return (ERR_NONE);
@@ -149,11 +149,11 @@ int GetVarInfo (int CDF, char vName[], VarInfoRec *vInfo)
       if (debug)
       {
          printf ("  Dim %d: %s, size %ld\n", 
-					  dim, Dims[dim].Name, Dims [dim].Size);
+                 dim, Dims[dim].Name, Dims [dim].Size);
       }
    }     /* for dim */  
    vInfo->Dims = Dims;
-	return (ERR_NONE);
+   return (ERR_NONE);
 }     /* GetVarInfo */
 
 
@@ -177,21 +177,22 @@ int GetVarInfo (int CDF, char vName[], VarInfoRec *vInfo)
               dimensions, particularly time.
 @RETURNS    : ERR_NONE if all went well
               ERR_NO_VAR if any of the required variables (currently
-              MIimage, MIimagemax, and MIimagemin) were not found
-              in the file.
+              only MIimage) were not found in the file.
+				  ERR_BAD_MINC if the order of dimensions is invalid
 @DESCRIPTION: Gets gobs of information about a MINC image variable.  See
               ImageInfoRec in myminc.h for details.
 @METHOD     : 
 @GLOBALS    : debug, ErrMsg
 @CALLS      : standard MINC, NetCDF, library functions
 @CREATED    : 93-6-3, Greg Ward
-@MODIFIED   : 93-6-4, modified debug/error handling
+@MODIFIED   : 93-6-4, modified debug/error handling (GPW)
+              93-8-2, removed requirements that MIimagemax and MIimagemin
+				          be present (GPW)
+                      changed so that SliceDim, FrameDim, HeightDim, and
+							 WidthDim, are picked based on their order in the
+							 MIimage variable rather than solely on their names (GPW)
 @COMMENTS   : Based on GetVarInfo from mireadvar.c, and on Gabe Leger's
               open_minc_file (from mincread.c).
-              Note -- assumes that MIimagemax and MIimagemin correctly
-              point to the max and min variables for MIimage.  Should
-              probably be fixed to "follow" the image-max/min pointers
-              in the actual MIimage variable...?
 ---------------------------------------------------------------------------- */
 int GetImageInfo (int CDF, ImageInfoRec *Image)
 {
@@ -203,19 +204,15 @@ int GetImageInfo (int CDF, ImageInfoRec *Image)
 
    Image->CDF = CDF;
    Image->ID = ncvarid (CDF, MIimage);
-   Image->MaxID = ncvarid (CDF, MIimagemax);
-   Image->MinID = ncvarid (CDF, MIimagemin);
 
    /* 
-    * Abort if there was an error finding any of the variables
+    * Abort if there was an error finding the image variable
     */
 
-   if ((Image->ID == MI_ERROR) || 
-       (Image->MaxID == MI_ERROR) ||
-       (Image->MinID == MI_ERROR))
+   if (Image->ID == MI_ERROR)
    {
       sprintf (ErrMsg,
-					"Error in MINC file: could not find all required variables");
+               "Error in MINC file: could not find image variable");
       return (ERR_NO_VAR);
    }     /* if ID == MI_ERROR */
 
@@ -231,47 +228,60 @@ int GetImageInfo (int CDF, ImageInfoRec *Image)
    if (debug)
    {
       printf ("Image variable has %d dimensions, %d attributes\n",
-				  Image->NumDims, Image->NumAtts);
+              Image->NumDims, Image->NumAtts);
    }
+
+   /*
+    * By default assume all dimensions do not exist; this will be corrected
+    * as they are found in the loop below.
+    */
+
+   Image->FrameDim = Image->SliceDim = Image->HeightDim = Image->WidthDim = -1;
+   Image->Frames = Image->Slices = Image->Height = Image->Width = 0;
 
    /*
     * Now loop through all the dimensions, getting info about them
     * and determining from that FrameDim, Frames, SliceDim, Slices, etc.
     */
 
-   Image->FrameDim = Image->SliceDim = Image->HeightDim = Image->WidthDim = -1;
-   Image->Frames = Image->Slices = Image->Height = Image->Width = 0;
-
    for (dim = 0; dim < Image->NumDims; dim++)
    {
       ncdiminq (CDF, DimIDs [dim], CurDimName, &CurDimSize);
 
-      /* 
-       * Assign the {..}Dim members of Image based entirely on the name
-       * of the dimension.  Thus, the dimensions *could* be in any order
-       * you like, this just takes it as it is.
-       */
+		/*
+       * Classify dimensions based on their order (and name, for time dim
+		 * only).  If MItime (frames) is found, it must be dimension 0 or 1;
+		 * the slice dimension will be next, followed by height, and width.
+		 * This code was taken pretty much verbatim from Gabe's mincread.
+		 */
 
-      if (strcmp (MItime, CurDimName) == 0)     /* time dimension = frames */
-      {
+		if (strcmp (CurDimName, MItime) == 0)
+		{
          Image->FrameDim = dim;
          Image->Frames = CurDimSize;
-      }
-      else if (strcmp (MIzspace, CurDimName) == 0) /* z dimension = slices */
-      {
-         Image->SliceDim = dim;
-         Image->Slices = CurDimSize;
-      }
-      else if (strcmp (MIyspace, CurDimName) == 0) /* y dimension = height */
-      {
-         Image->HeightDim = dim;
-         Image->Height = CurDimSize;
-      }
-      else if (strcmp (MIxspace, CurDimName) == 0) /* x dimension = width */
-      {
-         Image->WidthDim = dim;
-         Image->Width = CurDimSize;
-      }
+			if (dim > Image->NumDims-3)
+			{
+				sprintf (ErrMsg, "Found time as an image dimension (dimension %d)",
+							dim);
+				return (ERR_BAD_MINC);
+			}
+		}
+		else if ((dim == Image->NumDims-3) || (dim == Image->NumDims-4))
+		{
+			Image->SliceDim = dim;
+			Image->Slices = CurDimSize;
+		}
+		else if (dim == Image->NumDims-2)
+		{
+			Image->HeightDim = dim;
+			Image->Height = CurDimSize;
+		}
+		else if (dim == Image->NumDims-1)
+		{
+			Image->WidthDim = dim;
+			Image->Width = CurDimSize;
+		}
+
 
       if (debug)
       {
@@ -284,7 +294,7 @@ int GetImageInfo (int CDF, ImageInfoRec *Image)
    if (debug)
    {
       printf("Image var has %ld frames, %ld slices; each image is %ld x %ld\n",
-				 Image->Frames, Image->Slices, Image->Height, Image->Width);
+             Image->Frames, Image->Slices, Image->Height, Image->Width);
    }
    return (ERR_NONE);
 
