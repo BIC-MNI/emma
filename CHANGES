@@ -10,7 +10,9 @@ Release 0.9.4 (14 October, 1997)
  * Fixed a bug in gettaggedregion (elimination of non-unique slices bombed)
  * Upped the maximum number of images we can read at a time with 
    mireadimages (to be more fMRI-friendly)
- * Various tweaks to the build process
+ * Overhauled all the Makefiles, and tweaked things so we can compile
+   with MATLAB 4 or 5
+ * Added RCS identifiers to every MATLAB and C source file
 
 Release 0.9.3 (22 November, 1995)
 -------------
