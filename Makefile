@@ -1,9 +1,11 @@
 #
-# Top-level Makefile for the EMMA Matlab Medical Analysis package.
+# Top-level Makefile for EMMA.
 #
-# Changes made here should propagate to lower level make files.
+# Changes made here should propagate to lower level makefiles.
 # The only change you should make to this file is EMMA_ROOT; other
 # site-specific options are in Makefile.site.
+#
+# $Id: Makefile,v 1.2 1997-10-09 21:14:20 greg Exp $
 #
 
 #
@@ -15,7 +17,7 @@ EMMA_ROOT   = /usr/people/wolforth/work/emma
 
 #
 # Include site-specific and architecture-specific definitions.
-# (Makefile.site *must* be editied in order for EMMA to compile
+# (Makefile.site *must* be edited in order for EMMA to compile
 # properly!)
 #
 
@@ -37,8 +39,6 @@ C_SOURCES   = $(EMMA_ROOT)/source
 #                                                    #
 ######################################################
 
-
-#export RANLIB MEX_EXT CMEX_LIBS XDR_LIB CC CMEX_OPT STD_OPT
 
 CMEX_TARGETS = delaycorrect lookup miinquire mireadimages mireadvar \
                nfmins nframeint ntrapz rescale
@@ -75,3 +75,25 @@ install:
 
 clean:
 	rm -f `find . \( -name \*.o -o -name \*.$(MEX_EXT) -o -name lib\*.a \) -print` bin/*
+
+
+# Prepare for and build a distribution.
+
+include Makefile.version
+
+distprep: 
+	cd doc ; $(MAKE)
+
+rcsname:
+	@for file in `cat MANIFEST` ; do \
+	  echo "rcs -q -N$(RCSNAME): -s$(STATE) $$file" ; \
+	  rcs -q -N$(RCSNAME): -s$(STATE) $$file ; \
+	done
+
+dist: distprep
+	mkdir $(RELEASE)
+	perl5 -MExtUtils::Manifest=maniread,manicopy \
+	  -e '$$mani = maniread;' \
+	  -e 'manicopy ($$mani, "$(RELEASE)", "best");
+	gtar czf $(ARCHIVE) $(RELEASE)
+	rm -rf $(RELEASE)
