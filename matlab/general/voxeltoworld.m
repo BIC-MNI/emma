@@ -1,15 +1,15 @@
-function [out] = voxel2world (volume, in, option)
-% VOXEL2WORLD  convert points from world to voxel coordinates
+function [out] = voxeltoworld (volume, in, option)
+% VOXELTOWORLD  convert points from world to voxel coordinates
 %
-%   w_points = voxel2world (volume, v_points [, 'external'])
+%   w_points = voxeltoworld (volume, v_points [, 'external'])
 % or
-%   w2v_xfm = voxel2world (volume)
+%   wtov_xfm = voxeltoworld (volume)
 % 
 % If the first form is used, then v_points must be a matrix with N
 % columns (for N points) and either 3 or 4 rows.  (If four rows are
 % supplied, then the fourth should be all ones; if only three rows are
 % supplied, a fourth row of all ones will be added.)  Normally,
-% voxel2world assumes that the the input voxel coordinates originate
+% voxeltoworld assumes that the the input voxel coordinates originate
 % from slice/pixel numbers within EMMA, i.e. that the coordinates are
 % 1-based.  In this case, the coordinates must be made zero-based by
 % subtracting one before applying the voxel-to-world transform.
@@ -19,9 +19,9 @@ function [out] = voxel2world (volume, in, option)
 %  
 % If the second form is used then just the voxel-to-world transform (a
 % 4x4 matrix) is returned.  This is simply the matrix returned by
-% getvoxel2world.  Note that to apply this transform to voxel
+% getvoxeltoworld.  Note that to apply this transform to voxel
 % coordinates, they must already be zero-based, so you will have to
-% subtract one yourself.  (See the help for getvoxel2world for more
+% subtract one yourself.  (See the help for getvoxeltoworld for more
 % information.)
 % 
 % The volume parameter can be either an image handle or a filename.
@@ -29,7 +29,7 @@ function [out] = voxel2world (volume, in, option)
 % EXAMPLES
 %
 % SEE ALSO
-%   getvoxel2world, world2voxel
+%   getvoxeltoworld, worldtovoxel
 
 % by Greg Ward 95/3/12
 
@@ -51,7 +51,7 @@ function [out] = voxel2world (volume, in, option)
 %
 
 if (nargin < 1 | nargin > 3)
-  help voxel2world
+  help voxeltoworld
   error ('Incorrect number of arguments');
 end
 
@@ -64,7 +64,7 @@ if (nargin == 3)
    nargin = 2;
 end
 
-v2w = getvoxel2world (volume);
+v2w = getvoxeltoworld (volume);
 
 
 % If only one argument was supplied, just return the transform
