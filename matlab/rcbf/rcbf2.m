@@ -100,7 +100,7 @@ PET_int3 = PET_int3 .* mask;
 
 % Apply the cross-calibration factor.
 XCAL = 0.11;
-g_even = g_even*XCAL*37;              % units are decay / (g_tissue * sec)
+g_even = g_even*XCAL*37/1.05;    % units are decay / (g_tissue * sec)
 
 if (correction)
    mask = getmask (PET_int1);
