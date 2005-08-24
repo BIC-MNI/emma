@@ -42,7 +42,7 @@ function data = mireadvar(minc_file, varname, start, count, options);
 %  Mireadimages, however, does all that work for you given just slice
 %  and frame numbers.
 
-% $Id: mireadvar.m,v 1.4 2000-04-10 16:08:15 neelin Exp $
+% $Id: mireadvar.m,v 1.5 2005-08-24 22:27:01 bert Exp $
 % $Name:  $
 
 %  MIREADVAR by Greg Ward.  See mireadvar.c for more illumination.
@@ -66,7 +66,7 @@ end
 fclose(fid);
 
 % Call mincinfo
-[stat,out] = unix(['mincinfo -error "" -varvalues ' varname ' ' minc_file]);
+[stat,out] = unix(['mincinfo -error "" -varvalues ' varname ' "' minc_file '"']);
 if (length(out) > 0)
   ind=find(~isspace(out));
   if (length(ind)==0); ind=1;end

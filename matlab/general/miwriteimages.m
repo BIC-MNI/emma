@@ -19,7 +19,7 @@ function miwriteimages (filename, images, slices, frames)
 %  is called by miwriteimages.m via a shell escape.  Neither of these
 %  programs are meant for everyday use by the end user.
 
-% $Id: miwriteimages.m,v 1.17 2004-10-06 15:04:50 bert Exp $
+% $Id: miwriteimages.m,v 1.18 2005-08-24 22:27:01 bert Exp $
 % $Name:  $
 
 if (nargin < 2) | (nargin > 4)
@@ -89,7 +89,7 @@ fclose (outfile);
 % Finally, do a shell escape to miwriteimages to write the data from the
 % temporary (raw) file to the MINC file.
 
-execstr = sprintf ('miwriteimages %s %s %s %s', ...
+execstr = sprintf ('miwriteimages "%s" %s %s %s', ...
    filename, slicelist, framelist, tempfile);
 result = unix (execstr);
 

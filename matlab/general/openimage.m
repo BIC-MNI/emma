@@ -67,7 +67,7 @@ function ImHandle = openimage (filename, mode)
 %              97-5-27 Mark Wolforth: Minor modification to work with
 %                                     Matlab 5, which handles global
 %                                     variables differently from Matlab 4.x
-%@VERSION    : $Id: openimage.m,v 1.28 2004-10-06 15:04:36 bert Exp $
+%@VERSION    : $Id: openimage.m,v 1.29 2005-08-24 22:27:01 bert Exp $
 %              $Name:  $
 %-----------------------------------------------------------------------------
 
@@ -140,7 +140,7 @@ if (strcmp (filename(len-2:len), '.gz') | ...
    newname = [tdir '/' filename((lastslash+1):(lastdot-1))];
    if (exist (newname) ~= 2)
       fprintf ('(uncompressing...');
-      status = unix (['gunzip -c ' filename ' > ' newname]);
+      status = unix (['gunzip -c "' filename '" > "' newname '"']);
       if (status ~= 0)
 	 error (['Error trying to uncompress file ' filename]);
       end

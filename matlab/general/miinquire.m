@@ -94,7 +94,7 @@ function [o1, o2, o3, o4, o5, o6, o7, o8, o9, o10] = ...
 % 'attvalue') implies that there should be three MATLAB variables
 % to put the information in.
 
-% $Id: miinquire.m,v 1.6 2000-04-10 16:08:14 neelin Exp $
+% $Id: miinquire.m,v 1.7 2005-08-24 22:27:00 bert Exp $
 % $Name:  $
 
 % Check number of input arguments
@@ -137,7 +137,7 @@ while (iin <= nargs)
       strcmp(option, 'permutation'))
     
     % Get dimension names from file
-    [stat,out] = unix(['mincinfo -vardims image ' minc_file]);
+    [stat,out] = unix(['mincinfo -vardims image "' minc_file '"']);
     if (stat ~= 0)
       error(['Error getting image dimensions from file ' minc_file]);
     end
@@ -182,7 +182,7 @@ while (iin <= nargs)
       for i=1:length(dimcodes)
         opts = [opts '-dimlength ' dimcodes(i) 'space '];
       end
-      [stat,out] = unix(['mincinfo ' opts minc_file]);
+      [stat,out] = unix(['mincinfo ' opts ' "' minc_file '"']);
       result = sscanf(out, '            %d');
       
     elseif (strcmp(option, 'orientation'))
@@ -272,7 +272,7 @@ while (iin <= nargs)
     end
     
     % Call mincinfo
-    [stat,out] = unix(['mincinfo -error "" ' miopt ' ' minc_file]);
+    [stat,out] = unix(['mincinfo -error "" ' miopt ' "' minc_file '"']);
     if (length(out) > 0)
       ind=find(~isspace(out));
       if (length(ind)==0); ind=1;end

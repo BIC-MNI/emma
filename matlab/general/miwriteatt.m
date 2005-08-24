@@ -13,7 +13,7 @@ function miwriteatt(filename, varname, attname, data)
 %  is called by miwriteatt.m via a shell escape.  Neither of these
 %  programs are meant for everyday use by the end user.
 
-% $Id: miwriteatt.m,v 2.1 2004-10-06 15:03:07 bert Exp $
+% $Id: miwriteatt.m,v 2.2 2005-08-24 22:27:01 bert Exp $
 % $Name:  $
 
 if (nargin ~= 4)
@@ -47,6 +47,5 @@ else
     datatyp = 'double';
 end
 
-execstr = sprintf('miwriteatt %s %s %s %s %s', filename, varname, attname, datatyp, datastr);
-disp(execstr);
+execstr = sprintf('miwriteatt "%s" %s %s %s %s', filename, varname, attname, datatyp, datastr);
 result = unix (execstr);

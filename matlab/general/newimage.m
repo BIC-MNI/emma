@@ -90,7 +90,7 @@ function handle = newimage (NewFile, DimSizes, ParentFile, ...
 %                              image type/valid range/orientation;
 %                              a few more fixes to the argument handling code
 %              27 May 1997   - Modified to work with Matlab 5 (MW)
-%@VERSION    : $Id: newimage.m,v 2.16 2000-04-10 16:00:52 neelin Exp $
+%@VERSION    : $Id: newimage.m,v 2.17 2005-08-24 22:27:01 bert Exp $
 %              $Name:  $
 %-----------------------------------------------------------------------------
 
@@ -251,10 +251,10 @@ end
 
 
 if (Parent == -1)
-   execstr = sprintf ('micreateimage %s -size %d %d %d %d -type %s -valid_range %.20g %.20g -orientation %s', ...
+   execstr = sprintf ('micreateimage "%s" -size %d %d %d %d -type %s -valid_range %.20g %.20g -orientation %s', ...
 		      NewFile, DimSizes, ImageType, ValidRange, Orientation);
 else
-   execstr = sprintf ('micreateimage %s -parent %s -size %d %d %d %d -type %s -valid_range %.20g %.20g -orientation %s', ...
+   execstr = sprintf ('micreateimage "%s" -parent "%s" -size %d %d %d %d -type %s -valid_range %.20g %.20g -orientation %s', ...
 		      NewFile, ParentFile, DimSizes, ...
 		      ImageType, ValidRange, Orientation);
 end
