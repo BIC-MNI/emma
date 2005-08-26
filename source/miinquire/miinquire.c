@@ -14,7 +14,7 @@
               93-9-29 to 93-9-30, added orientation and finished attvalue (GPW)
 	      94-3-10, changed if (debug) to #ifdef DEBUG everywhere
                        removed "gpw.h" because Boolean is defined in mexutils.h
-@VERSION    : $Id: miinquire.c,v 1.19 2004-03-11 15:42:43 bert Exp $
+@VERSION    : $Id: miinquire.c,v 1.20 2005-08-26 18:52:22 bert Exp $
               $Name:  $
 ---------------------------------------------------------------------------- */
 
@@ -35,9 +35,12 @@
 #include "mexutils.h"
 #include "emmageneral.h"
 
+#ifdef _MSC_VER                 /* If building for MS-Windows.. */
+#define strcasecmp stricmp      /* Microsoft does not provide strcasecmp() */
+#endif /* _MSC_VER */
+
 #define PROGNAME "miinquire"
 #define DEBUG 0
-
 
 /* Borrowed from Peter's mincinfo */
 
