@@ -1,3 +1,14 @@
+Release 0.9.8
+-------------
+* Change scripts to make them work when a space is present in a filename.
+* Added Makefile.msvc-win32, a makefile for Microsoft C++ using
+Microsoft's "NMAKE" 
+* Minor tweak to miinquire.c for Windows builds.
+
+Release 0.9.7
+-------------
+* Build fixes for Matlab
+
 Release 0.9.6
 -------------
  * Added Makefile.macosx
