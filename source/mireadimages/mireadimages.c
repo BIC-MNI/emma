@@ -18,7 +18,7 @@
                  the memory needed for the image(s), it is reused.  This
                  reduces the risk of memory fragmentation.
 @COMMENTS   : For full usage documentation, see mireadimages.m
-@VERSION    : $Id: mireadimages.c,v 1.22 2004-09-21 18:41:01 bert Exp $
+@VERSION    : $Id: mireadimages.c,v 1.23 2008-01-10 12:23:23 rotor Exp $
               $Name:  $
 ---------------------------------------------------------------------------- */
 
@@ -73,7 +73,7 @@ double  NaN;                    /* NaN in native C format */
 #define OLD_MEMORY     prhs[OLD_MEMORY_POS-1]   /* old memory space to re-use */
 #define VECTOR_IMAGES  plhs[0]                  /* array of images: one per columns */
 
-#define MAX_READABLE   256           /* max number of slices or frames that
+#define MAX_READABLE   1024           /* max number of slices or frames that
                                         can be read at a time */
 
 /*

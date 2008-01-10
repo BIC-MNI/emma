@@ -9,7 +9,7 @@
 @CALLS      : 
 @CREATED    : June 1993, Greg Ward
 @MODIFIED   : 
-@VERSION    : $Id: miwriteimages.c,v 1.14 1999-07-20 18:35:49 neelin Exp $
+@VERSION    : $Id: miwriteimages.c,v 1.15 2008-01-10 12:23:23 rotor Exp $
               $Name:  $
 ---------------------------------------------------------------------------- */
 
@@ -32,7 +32,7 @@
 #define TEMP_FILE      argv[4]
 #define PROGNAME       "miwriteimages"
 
-#define MAX_WRITEABLE 160	/* maximum number of images we can write */
+#define MAX_WRITEABLE 1024	/* maximum number of images we can write */
 				/* in one go (this is the same as  */
 				/* MAXREADABLE in mireadimages.c */
 
