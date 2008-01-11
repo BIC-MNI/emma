@@ -5,7 +5,7 @@
 # The only change you should make to this file is EMMA_ROOT; other
 # site-specific options are in Makefile.site.
 #
-# $Id: Makefile,v 1.9 2008-01-11 15:37:20 claude Exp $
+# $Id: Makefile,v 1.10 2008-01-11 15:44:18 claude Exp $
 #
 
 
@@ -16,12 +16,6 @@
 # 
 
 EMMA_ROOT   = 
-
-#
-# Define default version of minc.
-#
-
-MINC_BASE = 2
 
 #
 # Include site-specific and architecture-specific definitions.

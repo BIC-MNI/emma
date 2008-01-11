@@ -3,7 +3,7 @@
 # included by a makefile that has already defined EMMA_ROOT, which must
 # either be empty or a directory with a trailing slash.
 #
-# $Id: Makefile.site,v 1.9 2008-01-11 01:58:29 claude Exp $
+# $Id: Makefile.site,v 1.10 2008-01-11 15:44:18 claude Exp $
 #
 
 SHELL       = /bin/sh
@@ -66,6 +66,8 @@ MEX_FLAGS   =
 # if MINC and NetCDF are in different directories, you can add more -L
 # or -I options as needed.
 #
+
+MINC_BASE = 2
 
 MINCLIBPATH = -L/usr/local/lib
 MINCINCPATH = -I/usr/local/include
