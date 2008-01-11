@@ -1,4 +1,23 @@
                     ------------------------------
+                              EMMA 0.9.9
+
+                            10 January 2008
+                    ------------------------------
+
+This version can now be built with minc2. The following instructions 
+are suggested to build it:
+1 - build minc2, HDF5, netcdf
+2 - make MINCLIBPATH=... MINCINCPATH=... CC=gcc MATLAB_INSTALL_DIR=...
+    BIN_INSTALL_DIR=... DOC_INSTALL_DIR=... MINC_BASE=2 
+    make MINCLIBPATH=... MINCINCPATH=... CC=gcc MATLAB_INSTALL_DIR=...
+    BIN_INSTALL_DIR=... DOC_INSTALL_DIR=... MINC_BASE=2 install
+    where you have to fill in the blanks for the paths in the above.
+    The Makefile will try to autodetect your architecture (if Linux,
+    IRIX, SunOS or Darwin).
+
+The maintainer of this release is Claude Lepage, claude@bic.mni.mcgill.ca
+
+                    ------------------------------
                               EMMA 0.9.6
 
                             11 March 2004

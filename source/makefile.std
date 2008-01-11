@@ -24,7 +24,7 @@
 #
 # by Greg Ward 1994/03/10
 #
-# $Id: makefile.std,v 1.5 2000-03-30 20:00:55 neelin Exp $
+# $Id: makefile.std,v 1.6 2008-01-11 01:58:29 claude Exp $
 # ------------------------------------------------------------------
 
 # This makefile gets included from one directory lower, so we must
@@ -40,8 +40,7 @@ EMMA_BIN = $(EMMA_ROOT)bin
 
 include $(EMMA_ROOT)Makefile.site
 
-LDFLAGS  = $(LIBDIRS) -lemma -lminc -lnetcdf $(XDR_LIB)
-
+LDFLAGS  = $(LIBDIRS) -lemma $(MINCLIBS) -lm -lc $(XDR_LIB)
 
 PROG_SRC = $(PROG).c
 PROG_OBJ = $(PROG).o

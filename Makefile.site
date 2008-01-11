@@ -3,7 +3,7 @@
 # included by a makefile that has already defined EMMA_ROOT, which must
 # either be empty or a directory with a trailing slash.
 #
-# $Id: Makefile.site,v 1.8 2004-03-11 15:46:25 bert Exp $
+# $Id: Makefile.site,v 1.9 2008-01-11 01:58:29 claude Exp $
 #
 
 SHELL       = /bin/sh
@@ -15,7 +15,23 @@ SHELL       = /bin/sh
 # EMMA).
 #
 
-MACHINE     = irix6
+ifneq ($(findstring IRIX,$(shell uname)),)
+  MACHINE     = irix6
+else
+  ifneq ($(findstring Linux,$(shell uname)),)
+    MACHINE     = linux
+  else
+    ifneq ($(findstring Darwin,$(shell uname)),)
+      MACHINE     = macosx
+    else
+      ifneq ($(findstring SunOS,$(shell uname)),)
+        MACHINE     = sun4
+      else
+        MACHINE     = 
+      endif
+    endif
+  endif
+endif
 
 # 
 # If you need to define any preprocessor tokens, go ahead and do it here.
@@ -51,9 +67,15 @@ MEX_FLAGS   =
 # or -I options as needed.
 #
 
-MINCLIB     = -L/usr/local/lib
-MINCINC     = -I/usr/local/include
+MINCLIBPATH = -L/usr/local/lib
+MINCINCPATH = -I/usr/local/include
 
+ifeq ($(MINC_BASE),2)
+  MINCLIBS = -lminc2 -lnetcdf -lhdf5 -lz
+  DEFINES += -DMINC2
+else
+  MINCLIBS = -lminc -lnetcdf
+endif
 
 #
 # Where to find the EMMA library and header files.  You shouldn't change these.
@@ -92,10 +114,10 @@ DOC_INSTALL_DIR    = /usr/local/doc
 #
 
 INCLUDES = -I$(EMMAINC) \
-             $(MINCINC)
+             $(MINCINCPATH)
 
 LIBDIRS  = -L$(EMMALIB) \
-             $(MINCLIB)
+             $(MINCLIBPATH)
 
 #
 # Now include the architecture-dependent options, such as compiler,

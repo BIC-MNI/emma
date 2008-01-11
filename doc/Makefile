@@ -66,9 +66,9 @@ rcbf.dvi: rcbf.toc rcbf.aux
 	latex rcbf
 
 flow.ps: flow.xfig
-	fig2dev -Lps $? $@
+	fig2dev -Leps $? $@
 structure.ps: structure.xfig
-	fig2dev -Lps $? $@
+	fig2dev -Leps $? $@
 
 
 #

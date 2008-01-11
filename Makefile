@@ -5,7 +5,7 @@
 # The only change you should make to this file is EMMA_ROOT; other
 # site-specific options are in Makefile.site.
 #
-# $Id: Makefile,v 1.6 2004-10-06 15:05:59 bert Exp $
+# $Id: Makefile,v 1.7 2008-01-11 01:58:29 claude Exp $
 #
 
 
@@ -31,7 +31,11 @@ include Makefile.site
 
 C_SOURCES   = source
 
+#
+# On most machines, this is tar, but one could use gtar (IRIX).
+#
 
+GTAR = tar
 
 ######################################################
 #                                                    #
@@ -55,7 +59,7 @@ default: all
 # Make sure that we make the EMMA library first.
 #
 
-all : emmalibrary
+all : emmalibrary emmadoc
 	@echo "*** building all C programs..."
 	@for d in $(TARGETS); do \
 	  if test -d $(C_SOURCES)/$$d; then \
@@ -68,7 +72,12 @@ emmalibrary:
 	@echo "*** building the EMMA library..."
 	cd $(C_SOURCES)/libsource; $(MAKE) $(makeargs)
 
+emmadoc: 
+	@echo "*** building the EMMA documentation..."
+	cd doc ; $(MAKE)
+
 install:
+	@echo "*** installing the EMMA library..."
 	if [ ! -d $(BIN_INSTALL_DIR) ] ; \
 	  then mkdir $(BIN_INSTALL_DIR) ; fi
 	if [ ! -d $(MATLAB_INSTALL_DIR) ] ; \
@@ -125,5 +134,5 @@ dist: distprep
 	mkdir $(RELEASE)/bin $(RELEASE)/lib
 	find $(RELEASE) -type d -print | xargs chmod 755
 	touch $(RELEASE)/source/libsource/.depend
-	gtar czf $(ARCHIVE) $(RELEASE)
+	$(GTAR) czf $(ARCHIVE) $(RELEASE)
 	rm -rf $(RELEASE)

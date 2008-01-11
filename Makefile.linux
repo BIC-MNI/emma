@@ -3,7 +3,7 @@
 
 RANLIB      = 
 MEX_EXT     = mexglx
-CMEX_LIBS   = -lemma -lminc -lnetcdf -lm -lc
+CMEX_LIBS   = -lemma $(MINCLIBS) -lm -lc
 XDR_LIB     = 
 CC          = cc
 

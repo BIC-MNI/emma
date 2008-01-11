@@ -1,7 +1,7 @@
 # Options for MAC OS 10.3.2
 RANLIB      = ranlib
 MEX_EXT     = mexmac
-CMEX_LIBS   = -lemma -lminc -lnetcdf -lm -lc
+CMEX_LIBS   = -lemma $(MINCLIBS) -lm -lc
 XDR_LIB     = 
 CC          = gcc
 

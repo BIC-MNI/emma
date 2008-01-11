@@ -1,4 +1,4 @@
-\documentstyle[11pt,fullpage]{article}
+\documentclass[11pt]{article}
 
 \title{Data Simulation and Program Verification Using MATLAB and Maple V}
 \author{Greg Ward \and Mark Wolforth}
@@ -105,8 +105,8 @@ Note the use of \code{:=} for assignment.  If you had typed
 then Maple would have simply created an ``equation'' object, which
 would be accessible only through \code{"}.  In the former case,
 \code{f} is logically equivalent to \verb|sin (x) / x^2|; that is,
-using \code{f} in an expression is the same as using \verb|sin (x) /
-x^2|.  In the second case, \code{f} is only mathematically equivalent,
+using \code{f} in an expression is the same as using \verb|sin (x) / x^2|.  
+In the second case, \code{f} is only mathematically equivalent,
 and only within the context of the expression itself. {\em This}
 expression could be passed to a Maple function such as \code{solve} to
 find the inverse of the expression to which \code{f} is equated.

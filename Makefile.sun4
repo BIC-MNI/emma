@@ -1,7 +1,7 @@
 # Options for SUN4/Sparc (SunOS)
 RANLIB      = ranlib
 MEX_EXT     = mex4
-CMEX_LIBS   = -lemma -lminc -lnetcdf -lm -lc
+CMEX_LIBS   = -lemma $(MINCLIBS) -lm -lc
 XDR_LIB     = 
 CC          = gcc
 

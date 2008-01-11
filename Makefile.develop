@@ -3,12 +3,12 @@
 # 
 # Development version - not to be included in EMMA distributions.
 #
-# $Id: Makefile.develop,v 1.3 2000-03-30 19:33:23 greg Exp $
+# $Id: Makefile.develop,v 1.4 2008-01-11 01:58:29 claude Exp $
 #
 
 RANLIB      = 
 MEX_EXT     = mexsg
-CMEX_LIBS   = -lemma -lminc -lnetcdf -lm
+CMEX_LIBS   = -lemma $(MINCLIBS) -lm
 XDR_LIB     = 
 CC          = cc
 
