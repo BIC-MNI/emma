@@ -5,7 +5,7 @@
 # The only change you should make to this file is EMMA_ROOT; other
 # site-specific options are in Makefile.site.
 #
-# $Id: Makefile,v 1.10 2008-01-11 15:44:18 claude Exp $
+# $Id: Makefile,v 1.11 2008-01-11 16:08:00 claude Exp $
 #
 
 
@@ -79,9 +79,9 @@ emmadoc:
 install:
 	@echo "*** installing the EMMA library..."
 	if [ ! -d $(BIN_INSTALL_DIR) ] ; \
-	  then mkdir $(BIN_INSTALL_DIR) ; fi
+	  then mkdir -p $(BIN_INSTALL_DIR) ; fi
 	if [ ! -d $(MATLAB_INSTALL_DIR) ] ; \
-	  then mkdir $(MATLAB_INSTALL_DIR) ; fi
+	  then mkdir -p $(MATLAB_INSTALL_DIR) ; fi
 	cd bin ; cp $(C_TARGETS) $(BIN_INSTALL_DIR)
 	cd matlab ; for d in general rcbf fdg roi; do cp $$d/* $(MATLAB_INSTALL_DIR) ; done
 	cd doc ; $(MAKE) install

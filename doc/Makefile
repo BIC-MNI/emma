@@ -91,7 +91,7 @@ simul.dvi: simul.toc simul.aux
 # 
 
 install:
-	if [ ! -d $(DOC_INSTALL_DIR) ]; then mkdir $(DOC_INSTALL_DIR) ; fi
+	if [ ! -d $(DOC_INSTALL_DIR) ]; then mkdir -p $(DOC_INSTALL_DIR) ; fi
 	cp emma.ps rcbf.ps $(DOC_INSTALL_DIR)
 
 
