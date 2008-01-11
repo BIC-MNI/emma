@@ -4,16 +4,21 @@
                             10 January 2008
                     ------------------------------
 
-This version can now be built with minc2. The following instructions 
-are suggested to build it:
+This version can now be built with minc2 (which has become the default
+for compilation). The following steps are suggested to build it:
 1 - build minc2, HDF5, netcdf
 2 - make MINCLIBPATH=... MINCINCPATH=... CC=gcc MATLAB_INSTALL_DIR=...
-    BIN_INSTALL_DIR=... DOC_INSTALL_DIR=... MINC_BASE=2 
+    BIN_INSTALL_DIR=... DOC_INSTALL_DIR=... 
     make MINCLIBPATH=... MINCINCPATH=... CC=gcc MATLAB_INSTALL_DIR=...
-    BIN_INSTALL_DIR=... DOC_INSTALL_DIR=... MINC_BASE=2 install
+    BIN_INSTALL_DIR=... DOC_INSTALL_DIR=... install
     where you have to fill in the blanks for the paths in the above.
     The Makefile will try to autodetect your architecture (if Linux,
-    IRIX, SunOS or Darwin).
+    IRIX, SunOS or Darwin). For minc1, add the option MINC_BASE=1.
+    MINCLIBPATH has the form MINCLIBPATH=-L/usr/local/mni/bin (this
+    string is passed to the linker so you must add -L in front).
+    MINCINCPATH has the form MINCINCPATH=-I/usr/local/mni/include
+    (this string is passed to the preprocessor to you must add -I 
+    in front). 
 
 The maintainer of this release is Claude Lepage, claude@bic.mni.mcgill.ca
 
