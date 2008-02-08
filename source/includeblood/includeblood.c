@@ -4,14 +4,13 @@
 @GLOBALS    : 
 @CREATED    : May 1995, Mark Wolforth
 @MODIFIED   : 
-@VERSION    : $Id: includeblood.c,v 1.5 1997-10-21 15:49:49 greg Rel $
+@VERSION    : $Id: includeblood.c,v 1.6 2008-02-08 03:19:11 rotor Exp $
               $Name:  $
 ---------------------------------------------------------------------------- */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <malloc.h>
 #include <minc.h>
 #include "ncblood.h"
 
