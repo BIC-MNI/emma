@@ -2,7 +2,13 @@
 # Distribution version.
 
 RANLIB      = 
-MEX_EXT     = mexglx
+ifneq ($(findstring x86_64,$(shell uname -m)),)
+  MEX_EXT     = mexa64
+  MEX_FPIC    = -fPIC
+else
+  MEX_EXT     = mexglx
+  MEX_FPIC    =
+endif
 CMEX_LIBS   = -lemma $(MINCLIBS) -lm -lc
 XDR_LIB     = 
 CC          = cc
@@ -10,5 +16,5 @@ CC          = cc
 # Options for GCC compiler.  CMEX_OPT is for CMEX programs,
 # STD_OPT is for standalone programs.
 
-CFLAGS_MEX  = -O3 -m486 -funsigned-char
-CFLAGS_STD  = -O3 -m486 -funsigned-char
+CFLAGS_MEX  = -O3 -m486 -funsigned-char $(MEX_FPIC)
+CFLAGS_STD  = -O3 -m486 -funsigned-char $(MEX_FPIC)
