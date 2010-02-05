@@ -1,4 +1,18 @@
                     ------------------------------
+                              EMMA 1.0.0
+
+                            5 February 2010
+                    ------------------------------
+
+This version fixes a segmentation fault that commonly occurs on
+64-bit architectures. It is a mystery why 32 bits work, but this
+could be related to the Matlab mex compiler in 32 vs 64 bits. The
+new code seems to work in both 32 and 64 bits with recent versions
+of Matlab and the surfstats package.
+
+The maintainer of this release is Claude Lepage, claude@bic.mni.mcgill.ca
+
+                    ------------------------------
                               EMMA 0.9.9
 
                             10 January 2008

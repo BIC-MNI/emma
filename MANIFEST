@@ -1,5 +1,5 @@
 # Manifest file for EMMA
-# $Id: MANIFEST,v 1.6 2005-08-26 19:40:21 bert Exp $
+# $Id: MANIFEST,v 1.7 2010-02-05 04:50:58 claude Exp $
 # $Name:  $
 README
 CHANGES
@@ -93,7 +93,6 @@ source/include/cvterr
 matlab/general/dispimage.m
 matlab/general/getcwd.m
 matlab/general/handlefield.m
-matlab/general/unix.m
 matlab/general/getblooddata.m
 matlab/general/check_sf.m
 matlab/general/getmask.m

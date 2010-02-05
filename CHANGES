@@ -1,3 +1,12 @@
+Release 1.0.0
+-------------
+* Remove unix.m which is likely an obsolete and faulty
+  implementation of a wrapper to call a unix command. Use
+  the one provided by matlab. This was causing a segmentation
+  fault in 64 bits.
+* Remove obsolete -m486 optimization compiler flag for Linux.
+  Go for simplicity, ignore machine specific optimizations.
+
 Release 0.9.9
 -------------
 * Build with minc2
