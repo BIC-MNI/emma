@@ -53,6 +53,6 @@ dep: .depend
 	$(CC) -M $(INCLUDES) -I$(MATLABINC) $(LIBSRC) > .depend
 
 clean:
-	rm -f *.o $(EMMALIB)/libemma.a
+	rm -f *.o $(EMMALIB)/libemma.a .depend
 
 include .depend
